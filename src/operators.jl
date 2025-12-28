@@ -1,35 +1,54 @@
-# Quantum operators with user-defined actions
+# Quantum operators
+
+# ============== Abstract Operator Type ==============
 
 """
-    Operator{B}(name, basis, action)
+    AbstractOperator{B}
 
-A quantum operator acting on states in basis `B`. Created via `Operator(name, basis) do ket ... end`.
+Abstract supertype for all quantum operators in basis `B`.
+"""
+abstract type AbstractOperator{B<:AbstractBasis} end
 
-The `action` function receives a `BasisKet` and should return:
-- A number (scalar)
-- A ket (`BasisKet`, `weightedKet`, or `sumKet`)
-- Zero (for annihilation of vacuum, etc.)
+# ============== Outer Product Operator |ψ⟩⟨ϕ| ==============
 
-# Example
+"""
+    Operator{B}(ket, bra)
+    ket * bra'  (automatically creates Operator)
+
+An operator formed as the outer product |ψ⟩⟨ϕ|. This is the standard
+quantum mechanical representation of operators.
+
+When applied to a state: (|ψ⟩⟨ϕ|)|χ⟩ = |ψ⟩⟨ϕ|χ⟩ = ⟨ϕ|χ⟩ |ψ⟩
+
+# Examples
 ```julia
 H = HilbertSpace(:H, 2)
 Zb = Basis(H, :z)
+up = BasisKet(Zb, :↑)
+down = BasisKet(Zb, :↓)
 
-# Pauli Z operator: σz|↑⟩ = |↑⟩, σz|↓⟩ = -|↓⟩
-σz = Operator(:σz, Zb) do ket
-    ket.index == :↑ ? BasisKet(Zb, :↑) : -1 * BasisKet(Zb, :↓)
-end
+# Projector onto |↑⟩
+P_up = up * up'  # |↑⟩⟨↑|
 
-# Apply to a state
-σz * BasisKet(Zb, :↑)  # → |↑⟩
+# Apply: P_up|↑⟩ = |↑⟩, P_up|↓⟩ = 0
+P_up * up   # → |↑⟩
+P_up * down # → 0
+
+# Ladder operator |↑⟩⟨↓|
+σ_plus = up * down'
+σ_plus * down  # → |↑⟩
 ```
 
-See also: [`AdjointOperator`](@ref), [`OperatorProduct`](@ref)
+See also: [`SumOperator`](@ref), [`ScaledOperator`](@ref), [`FunctionOperator`](@ref)
 """
-struct Operator{B<:AbstractBasis}
-    name::Symbol
-    basis::B
-    action::Function
+struct Operator{B<:AbstractBasis, T} <: AbstractOperator{B}
+    ket::AbstractKet{B}
+    bra::AbstractBra{B}
+    coeff::T
+    
+    function Operator(ket::AbstractKet{B}, bra::AbstractBra{B}, coeff::T=1) where {B<:AbstractBasis, T}
+        new{B, T}(ket, bra, coeff)
+    end
 end
 
 """
@@ -37,154 +56,423 @@ end
 
 Get the basis that an operator is defined in.
 """
-basis(op::Operator) = op.basis
+basis(op::Operator{B}) where B = B
 
-# do-block syntax: Operator(name, basis) do ket ... end
-Operator(action::Function, name::Symbol, basis::B) where B<:AbstractBasis = Operator{B}(name, basis, action)
-
-# Apply operator to kets
-"""
-    op * ket
-
-Apply operator `op` to ket. The operator's action function determines the result.
-Operator and ket must be in the same basis.
-"""
-function Base.:*(op::Operator{B}, ket::BasisKet{B}) where {B<:AbstractBasis}
-    op.action(ket)
+# Create operator from ket * bra
+function Base.:*(ket::BasisKet{B}, bra::BasisBra{B}) where B<:AbstractBasis
+    Operator(ket, bra, 1)
 end
 
-# Cross-basis application: requires basis transform
-function Base.:*(op::Operator{B1}, ket::BasisKet{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
-    # Check if spaces are compatible
-    space(B1) == space(B2) || 
-        throw(DimensionMismatch("Operator in $(B1) cannot act on ket in $(B2): different spaces"))
-    # For now, return symbolic OpKet for cross-basis application
-    # TODO: auto-transform if transform is defined
-    OpKet(op, ket)
+function Base.:*(ket::weightedKet{B}, bra::BasisBra{B}) where B
+    Operator(ket.Ket, bra, ket.weight)
 end
 
-function Base.:*(op::Operator, ket::weightedKet)
+function Base.:*(ket::BasisKet{B}, bra::weightedBra{B}) where B
+    Operator(ket, bra.Bra, bra.weight)
+end
+
+function Base.:*(ket::weightedKet{B}, bra::weightedBra{B}) where B
+    Operator(ket.Ket, bra.Bra, ket.weight * bra.weight)
+end
+
+# Display
+function Base.show(io::IO, op::Operator)
+    if op.coeff == 1
+        print(io, _ket_str(op.ket), _bra_str(op.bra))
+    else
+        print(io, op.coeff, "·", _ket_str(op.ket), _bra_str(op.bra))
+    end
+end
+
+# Helper functions for display
+_ket_str(k::BasisKet) = "|$(k.index)⟩"
+_bra_str(b::BasisBra) = "⟨$(b.index)|"
+
+# Apply operator to ket: (|ψ⟩⟨ϕ|)|χ⟩ = ⟨ϕ|χ⟩ |ψ⟩
+function Base.:*(op::Operator{B}, ket::BasisKet{B}) where B
+    inner = BasisBra{B}(op.bra.index) * ket
+    if inner == 0
+        return 0
+    else
+        op.coeff * inner * op.ket
+    end
+end
+
+function Base.:*(op::Operator{B}, ket::weightedKet{B}) where B
     result = op * ket.Ket
     result isa Number ? result * ket.weight : ket.weight * result
 end
 
-function Base.:*(op::Operator, ket::sumKet{B,T}) where {B,T}
+function Base.:*(op::Operator{B}, ket::sumKet{B,T}) where {B,T}
+    total = nothing
+    for (k, w) in zip(ket.kets, ket.weights)
+        result = op * k
+        term = result isa Number ? result * w : w * result
+        if !iszero(term)
+            total = isnothing(total) ? term : total + term
+        end
+    end
+    isnothing(total) ? 0 : total
+end
+
+# Adjoint: (|ψ⟩⟨ϕ|)† = |ϕ⟩⟨ψ|
+function Base.adjoint(op::Operator{B,T}) where {B,T}
+    # Swap ket↔bra and conjugate coefficient
+    new_ket = BasisKet{B}(op.bra.index)
+    new_bra = BasisBra{B}(op.ket isa BasisKet ? op.ket.index : nothing)
+    Operator(new_ket, new_bra, conj(op.coeff))
+end
+
+# ============== Sum of Operators ==============
+
+"""
+    SumOperator{B}
+
+Sum of operators: Â + B̂. Created via operator addition.
+"""
+struct SumOperator{B<:AbstractBasis} <: AbstractOperator{B}
+    terms::Vector{<:AbstractOperator{B}}
+end
+
+basis(op::SumOperator{B}) where B = B
+
+function Base.:+(op1::AbstractOperator{B}, op2::AbstractOperator{B}) where B
+    terms1 = op1 isa SumOperator ? op1.terms : [op1]
+    terms2 = op2 isa SumOperator ? op2.terms : [op2]
+    SumOperator{B}(vcat(terms1, terms2))
+end
+
+function Base.:-(op1::AbstractOperator{B}, op2::AbstractOperator{B}) where B
+    op1 + (-1 * op2)
+end
+
+function Base.show(io::IO, op::SumOperator)
+    for (i, term) in enumerate(op.terms)
+        i > 1 && print(io, " + ")
+        print(io, term)
+    end
+end
+
+# Apply sum of operators - specific ket types to avoid ambiguity
+function Base.:*(op::SumOperator{B}, ket::BasisKet{B}) where B
+    total = nothing
+    for term in op.terms
+        result = term * ket
+        if !iszero(result)
+            total = isnothing(total) ? result : total + result
+        end
+    end
+    isnothing(total) ? 0 : total
+end
+
+function Base.:*(op::SumOperator{B}, ket::weightedKet{B}) where B
+    total = nothing
+    for term in op.terms
+        result = term * ket
+        if !iszero(result)
+            total = isnothing(total) ? result : total + result
+        end
+    end
+    isnothing(total) ? 0 : total
+end
+
+function Base.:*(op::SumOperator{B}, ket::sumKet{B,T}) where {B,T}
+    total = nothing
+    for term in op.terms
+        result = term * ket
+        if !iszero(result)
+            total = isnothing(total) ? result : total + result
+        end
+    end
+    isnothing(total) ? 0 : total
+end
+
+function Base.adjoint(op::SumOperator{B}) where B
+    SumOperator{B}([adjoint(t) for t in op.terms])
+end
+
+# ============== Scaled Operator ==============
+
+"""
+    ScaledOperator{B,T}
+
+Operator multiplied by a scalar. Created via `scalar * operator`.
+"""
+struct ScaledOperator{B<:AbstractBasis, T} <: AbstractOperator{B}
+    coeff::T
+    op::AbstractOperator{B}
+end
+
+basis(op::ScaledOperator{B}) where B = B
+
+function Base.:*(a::Number, op::AbstractOperator{B}) where B
+    ScaledOperator{B, typeof(a)}(a, op)
+end
+
+function Base.:*(op::AbstractOperator, a::Number)
+    a * op
+end
+
+function Base.:/(op::AbstractOperator, a::Number)
+    (1/a) * op
+end
+
+function Base.show(io::IO, op::ScaledOperator)
+    print(io, op.coeff, "·(", op.op, ")")
+end
+
+function Base.:*(op::ScaledOperator{B}, ket::BasisKet{B}) where B
+    result = op.op * ket
+    result isa Number ? op.coeff * result : op.coeff * result
+end
+
+function Base.:*(op::ScaledOperator{B}, ket::weightedKet{B}) where B
+    result = op.op * ket
+    result isa Number ? op.coeff * result : op.coeff * result
+end
+
+function Base.:*(op::ScaledOperator{B}, ket::sumKet{B,T}) where {B,T}
+    result = op.op * ket
+    result isa Number ? op.coeff * result : op.coeff * result
+end
+
+function Base.adjoint(op::ScaledOperator{B,T}) where {B,T}
+    ScaledOperator{B,T}(conj(op.coeff), adjoint(op.op))
+end
+
+# Avoid double scaling
+function Base.:*(a::Number, op::ScaledOperator{B,T}) where {B,T}
+    ScaledOperator{B, promote_type(typeof(a),T)}(a * op.coeff, op.op)
+end
+
+# ============== Operator Product ==============
+
+"""
+    OperatorProduct{B}
+
+Product of operators: ÂB̂. Created via operator multiplication.
+"""
+struct OperatorProduct{B<:AbstractBasis} <: AbstractOperator{B}
+    ops::Vector{<:AbstractOperator{B}}
+end
+
+basis(op::OperatorProduct{B}) where B = B
+
+function Base.:*(op1::AbstractOperator{B}, op2::AbstractOperator{B}) where B
+    ops1 = op1 isa OperatorProduct ? op1.ops : [op1]
+    ops2 = op2 isa OperatorProduct ? op2.ops : [op2]
+    OperatorProduct{B}(vcat(ops1, ops2))
+end
+
+function Base.show(io::IO, prod::OperatorProduct)
+    for op in prod.ops
+        print(io, "(", op, ")")
+    end
+end
+
+# Apply product: (ÂB̂)|ψ⟩ = Â(B̂|ψ⟩) - specific ket types to avoid ambiguity
+function Base.:*(prod::OperatorProduct{B}, ket::BasisKet{B}) where B
+    result = ket
+    for op in reverse(prod.ops)
+        result = op * result
+        iszero(result) && return 0
+    end
+    result
+end
+
+function Base.:*(prod::OperatorProduct{B}, ket::weightedKet{B}) where B
+    result = ket
+    for op in reverse(prod.ops)
+        result = op * result
+        iszero(result) && return 0
+    end
+    result
+end
+
+function Base.:*(prod::OperatorProduct{B}, ket::sumKet{B,T}) where {B,T}
+    result = ket
+    for op in reverse(prod.ops)
+        result = op * result
+        iszero(result) && return 0
+    end
+    result
+end
+
+function Base.adjoint(prod::OperatorProduct{B}) where B
+    OperatorProduct{B}(reverse([adjoint(op) for op in prod.ops]))
+end
+
+# ============== Function-based Operator ==============
+
+"""
+    FunctionOperator{B}(name, basis, action)
+
+A quantum operator defined by a function. Created via `FunctionOperator(name, basis) do ket ... end`.
+
+The `action` function receives a `BasisKet` and should return:
+- A number (scalar)
+- A ket (`BasisKet`, `weightedKet`, or `sumKet`)
+- Zero (for annihilation of vacuum, etc.)
+
+Use this for operators that are easier to define procedurally (e.g., ladder operators).
+
+# Example
+```julia
+F = FockSpace(:F)
+Fb = Basis(F, :n)
+
+# Annihilation operator: â|n⟩ = √n |n-1⟩
+â = FunctionOperator(:â, Fb) do ket
+    n = parse(Int, string(ket.index))
+    n == 0 ? 0 : √n * BasisKet(Fb, n - 1)
+end
+```
+
+See also: [`Operator`](@ref)
+"""
+struct FunctionOperator{B<:AbstractBasis} <: AbstractOperator{B}
+    name::Symbol
+    basis::B
+    action::Function
+end
+
+basis(op::FunctionOperator) = op.basis
+
+# do-block syntax
+FunctionOperator(action::Function, name::Symbol, basis::B) where B<:AbstractBasis = 
+    FunctionOperator{B}(name, basis, action)
+
+# Apply
+function Base.:*(op::FunctionOperator{B}, ket::BasisKet{B}) where {B<:AbstractBasis}
+    op.action(ket)
+end
+
+function Base.:*(op::FunctionOperator, ket::weightedKet)
+    result = op * ket.Ket
+    result isa Number ? result * ket.weight : ket.weight * result
+end
+
+function Base.:*(op::FunctionOperator, ket::sumKet{B,T}) where {B,T}
     results = [op * BasisKet{B}(k.index) for k in ket.kets]
     weights = ket.weights
     
-    # Combine results, handling numbers and kets
     total = nothing
     for (r, w) in zip(results, weights)
         term = r isa Number ? r * w : w * r
-        total = isnothing(total) ? term : total + term
+        if !iszero(term)
+            total = isnothing(total) ? term : total + term
+        end
     end
-    total
+    isnothing(total) ? 0 : total
 end
 
-# Make operator callable
-(op::Operator)(ket::AbstractKet) = op * ket
+# Make callable
+(op::FunctionOperator)(ket::AbstractKet) = op * ket
 
 # Display
-Base.show(io::IO, op::Operator) = print(io, op.name)
+Base.show(io::IO, op::FunctionOperator) = print(io, op.name)
 
-# Adjoint operator (wrapper)
+# Adjoint (wrapper)
 """
-    AdjointOperator{B}
+    AdjointFunctionOperator{B}
 
-The Hermitian conjugate of an operator. Created via `op'`.
+The Hermitian conjugate of a FunctionOperator. Created via `op'`.
 """
-struct AdjointOperator{B<:AbstractBasis}
-    parent::Operator{B}
+struct AdjointFunctionOperator{B<:AbstractBasis} <: AbstractOperator{B}
+    parent::FunctionOperator{B}
 end
 
-Base.adjoint(op::Operator) = AdjointOperator(op)
-Base.adjoint(op::AdjointOperator) = op.parent
+Base.adjoint(op::FunctionOperator) = AdjointFunctionOperator(op)
+Base.adjoint(op::AdjointFunctionOperator) = op.parent
 
-basis(op::AdjointOperator) = basis(op.parent)
+basis(op::AdjointFunctionOperator) = basis(op.parent)
 
-Base.show(io::IO, op::AdjointOperator) = print(io, op.parent.name, "†")
+Base.show(io::IO, op::AdjointFunctionOperator) = print(io, op.parent.name, "†")
 
-# Apply adjoint operator to bras (from the right)
-function Base.:*(bra::AbstractBra, op::Operator)
-    # ⟨ψ|Ô returns a new bra-like object
-    # For now, return symbolic
-    OpBra(bra, op)
+# ============== Cross-type operations ==============
+
+# FunctionOperator * Operator products
+function Base.:*(op1::FunctionOperator{B}, op2::Operator{B}) where B
+    OperatorProduct{B}([op1, op2])
 end
 
+function Base.:*(op1::Operator{B}, op2::FunctionOperator{B}) where B
+    OperatorProduct{B}([op1, op2])
+end
+
+# ============== Symbolic representations ==============
+
 """
-    OpBra
+    OpBra{B1, B2}
 
 Symbolic representation of a bra with an operator applied: ⟨ψ|Ô
 """
 struct OpBra{B1<:AbstractBasis, B2<:AbstractBasis}
     bra::AbstractBra{B1}
-    op::Operator{B2}
+    op::AbstractOperator{B2}
 end
 
-Base.show(io::IO, ob::OpBra) = print(io, ob.bra, ob.op.name)
+Base.show(io::IO, ob::OpBra) = print(io, ob.bra, ob.op)
+
+function Base.:*(bra::AbstractBra{B}, op::AbstractOperator{B}) where B
+    OpBra(bra, op)
+end
 
 # ⟨ψ|Ô|ϕ⟩ = ⟨ψ|(Ô|ϕ⟩)
-function Base.:*(ob::OpBra, ket::AbstractKet)
+function Base.:*(ob::OpBra{B,B}, ket::AbstractKet{B}) where B
     result = ob.op * ket
-    result isa Number ? result * (ob.bra * BasisKet{basis(ob.bra)}(nothing)) : ob.bra * result
+    result isa Number ? result * (ob.bra * BasisKet{B}(nothing)) : ob.bra * result
 end
 
 """
-    OpKet
+    OpKet{B1, B2}
 
 Symbolic representation of an operator applied to a ket: Ô|ψ⟩
-Used when the result cannot be simplified (e.g., cross-basis application).
+Used when the result cannot be simplified.
 """
 struct OpKet{B1<:AbstractBasis, B2<:AbstractBasis}
-    op::Operator{B1}
+    op::AbstractOperator{B1}
     ket::AbstractKet{B2}
 end
 
-Base.show(io::IO, ok::OpKet) = print(io, ok.op.name, ok.ket)
+Base.show(io::IO, ok::OpKet) = print(io, ok.op, ok.ket)
 
-# Operator algebra (symbolic for now)
+# Cross-basis application helper - returns symbolic OpKet
+function _cross_basis_apply(op::AbstractOperator{B1}, ket::AbstractKet{B2}) where {B1, B2}
+    space(B1) == space(B2) || 
+        throw(DimensionMismatch("Operator in $(B1) cannot act on ket in $(B2): different spaces"))
+    OpKet(op, ket)
+end
+
+# ============== Identity operator ==============
+
 """
-    OperatorProduct{B}
+    IdentityOp{B}
 
-Product of operators in the same basis: ÂB̂
+The identity operator on basis B. Created via `IdentityOp(basis)`.
 """
-struct OperatorProduct{B<:AbstractBasis}
-    ops::Vector{Union{Operator{B}, AdjointOperator{B}}}
-end
-
-basis(prod::OperatorProduct{B}) where B = B
-
-function Base.:*(op1::Operator{B}, op2::Operator{B}) where B
-    OperatorProduct{B}([op1, op2])
-end
-
-function Base.:*(prod::OperatorProduct{B}, op::Operator{B}) where B
-    OperatorProduct{B}([prod.ops..., op])
-end
-
-function Base.:*(op::Operator{B}, prod::OperatorProduct{B}) where B
-    OperatorProduct{B}([op, prod.ops...])
-end
-
-function Base.show(io::IO, prod::OperatorProduct)
-    for op in prod.ops
-        print(io, op)
+struct IdentityOp{B<:AbstractBasis} <: AbstractOperator{B}
+    function IdentityOp(::Type{B}) where B<:AbstractBasis
+        new{B}()
+    end
+    function IdentityOp(b::B) where B<:AbstractBasis
+        new{B}()
     end
 end
 
-# Apply product of operators: (ÂB̂)|ψ⟩ = Â(B̂|ψ⟩)
-function Base.:*(prod::OperatorProduct{B}, ket::BasisKet{B}) where B
-    result = ket
-    for op in reverse(prod.ops)
-        result = op * result
-    end
-    result
-end
+basis(::IdentityOp{B}) where B = B
 
-function Base.:*(prod::OperatorProduct, ket::AbstractKet)
-    result = ket
-    for op in reverse(prod.ops)
-        result = op * result
-    end
-    result
-end
+Base.:*(::IdentityOp{B}, ket::AbstractKet{B}) where B = ket
+Base.:*(op::AbstractOperator{B}, ::IdentityOp{B}) where B = op
+Base.:*(::IdentityOp{B}, op::AbstractOperator{B}) where B = op
+Base.:*(::IdentityOp{B}, ::IdentityOp{B}) where B = IdentityOp{B}()
+
+Base.adjoint(id::IdentityOp) = id
+
+Base.show(io::IO, ::IdentityOp{B}) where B = print(io, "𝕀")
+
+# ============== Zero checking ==============
+
+Base.iszero(x::Number) = x == 0
+Base.iszero(::AbstractKet) = false
+Base.iszero(::AbstractOperator) = false

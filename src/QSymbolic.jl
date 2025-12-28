@@ -13,7 +13,9 @@ export ProductKet, ProductBra, SumProductKet, SumProductBra
 export InnerProduct
 
 # Types - Operators
-export Operator, AdjointOperator, OpKet, OpBra, OperatorProduct
+export AbstractOperator, Operator, SumOperator, ScaledOperator, OperatorProduct
+export FunctionOperator, AdjointFunctionOperator
+export OpKet, OpBra, IdentityOp
 
 # Types - Symbolic scalars
 export AbstractSymbolic, Sym, SymNum, SymExpr
