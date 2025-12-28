@@ -8,10 +8,10 @@ A named Hilbert space with optional finite dimension.
 # Examples
 ```jldoctest
 julia> H = HilbertSpace(:H, 2)  # qubit
-HilbertSpace{(:H,), (2,)}()
+ℋ(H, dim=2)
 
 julia> F = HilbertSpace(:F)     # infinite-dim
-HilbertSpace{(:F,), (nothing,)}()
+ℋ(F)
 ```
 """
 struct HilbertSpace{name, dim} <: AbstractSpace{name, dim}
@@ -32,7 +32,7 @@ julia> H1 = HilbertSpace(:A, 2);
 julia> H2 = HilbertSpace(:B, 3);
 
 julia> H1 ⊗ H2
-CompositeSpace{(:A, :B), (2, 3)}()
+ℋ(A) ⊗ ℋ(B)
 ```
 """
 struct CompositeSpace{name, dim} <: AbstractSpace{name, dim}
@@ -52,7 +52,7 @@ Equivalent to `HilbertSpace(name, nothing)`.
 # Examples
 ```jldoctest
 julia> F = FockSpace(:F)
-HilbertSpace{(:F,), (nothing,)}()
+ℋ(F)
 ```
 """
 FockSpace(A::Symbol) = HilbertSpace(A, nothing)

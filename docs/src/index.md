@@ -14,7 +14,7 @@
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/YOUR_USERNAME/QSymbolic.jl")
+Pkg.add(url="https://github.com/TendonFFF/QSymbolic.jl")
 ```
 
 ## Quick Start

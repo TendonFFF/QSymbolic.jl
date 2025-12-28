@@ -11,10 +11,10 @@ are orthonormal; cross-basis inner products require a transform.
 julia> H = HilbertSpace(:spin, 2);
 
 julia> Zb = Basis(H, :z)  # spin-z basis
-Basis{:z}
+Basis{z}
 
 julia> Xb = Basis(H, :x)  # spin-x basis
-Basis{:x}
+Basis{x}
 ```
 
 See also: [`define_transform!`](@ref), [`DefaultBasis`](@ref), [`CompositeBasis`](@ref)
@@ -61,7 +61,7 @@ julia> H1, H2 = HilbertSpace(:A, 2), HilbertSpace(:B, 2);
 julia> Za, Zb = Basis(H1, :z), Basis(H2, :z);
 
 julia> Za ⊗ Zb
-Basis{:z}⊗Basis{:z}
+Basis{z}⊗Basis{z}
 ```
 
 See also: [`Basis`](@ref), [`define_transform!`](@ref)

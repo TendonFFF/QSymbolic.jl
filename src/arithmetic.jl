@@ -74,11 +74,41 @@ end
     Base.$(:(/))(bra::AbstractBra, W::Number) = bra * (1 / W)
 end
 
+"""
+    FockKet(space::HilbertSpace, n::Int)
+
+Create a Fock state |n⟩ in the given infinite-dimensional Hilbert space.
+The space must have `nothing` as its dimension (created via `HilbertSpace(:name)` or `FockSpace(:name)`).
+
+# Examples
+```jldoctest
+julia> F = FockSpace(:F);
+
+julia> n0 = FockKet(F, 0)  # ground state
+|0⟩
+
+julia> n1 = FockKet(F, 1)  # first excited
+|1⟩
+```
+"""
 function FockKet(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
     dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
     BasisKet(space, n)
 end
 
+"""
+    FockBra(space::HilbertSpace, n::Int)
+
+Create a Fock bra ⟨n| in the given infinite-dimensional Hilbert space.
+
+# Examples
+```jldoctest
+julia> F = FockSpace(:F);
+
+julia> FockBra(F, 0)
+⟨0|
+```
+"""
 function FockBra(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
     dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
     BasisBra(space, n)
@@ -206,7 +236,9 @@ function Base.show(io::IO, b::Basis{S,name}) where {S,name}
 end
 
 function Base.show(io::IO, ::CompositeBasis{B1,B2}) where {B1,B2}
-    print(io, B1, "⊗", B2)
+    show(io, B1())
+    print(io, "⊗")
+    show(io, B2())
 end
 
 function Base.show(io::IO, pk::ProductKet)

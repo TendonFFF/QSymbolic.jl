@@ -1,12 +1,15 @@
 using Documenter
 using QSymbolic
 
+# Setup for doctests - makes QSymbolic exports available
+DocMeta.setdocmeta!(QSymbolic, :DocTestSetup, :(using QSymbolic); recursive=true)
+
 makedocs(
     sitename = "QSymbolic.jl",
     modules = [QSymbolic],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
-        canonical = "https://YOUR_USERNAME.github.io/QSymbolic.jl",
+        canonical = "https://TendonFFF.github.io/QSymbolic.jl",
         assets = String[],
     ),
     pages = [
@@ -27,7 +30,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/YOUR_USERNAME/QSymbolic.jl.git",
+    repo = "github.com/TendonFFF/QSymbolic.jl.git",
     devbranch = "main",
     push_preview = true,
 )
