@@ -1,5 +1,8 @@
 # QSymbolic.jl
 
+[![CI](https://github.com/TendonFFF/QSymbolic.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/TendonFFF/QSymbolic.jl/actions/workflows/CI.yml)
+[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://TendonFFF.github.io/QSymbolic.jl)
+
 A Julia package for symbolic quantum mechanics computations.
 
 ## Installation
