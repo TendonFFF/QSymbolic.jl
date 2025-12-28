@@ -194,6 +194,30 @@ function Base.:*(op::SumOperator{B}, ket::sumKet{B,T}) where {B,T}
     isnothing(total) ? 0 : total
 end
 
+# SumOperator on ProductKet (CompositeBasis)
+function Base.:*(op::SumOperator{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B2}) where {B1,B2}
+    total = nothing
+    for term in op.terms
+        result = term * ket
+        if !iszero(result)
+            total = isnothing(total) ? result : total + result
+        end
+    end
+    isnothing(total) ? 0 : total
+end
+
+# SumOperator on SumProductKet (CompositeBasis)
+function Base.:*(op::SumOperator{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
+    total = nothing
+    for term in op.terms
+        result = term * ket
+        if !iszero(result)
+            total = isnothing(total) ? result : total + result
+        end
+    end
+    isnothing(total) ? 0 : total
+end
+
 function Base.adjoint(op::SumOperator{B}) where B
     SumOperator{B}([adjoint(t) for t in op.terms])
 end
@@ -239,6 +263,18 @@ function Base.:*(op::ScaledOperator{B}, ket::weightedKet{B}) where B
 end
 
 function Base.:*(op::ScaledOperator{B}, ket::sumKet{B,T}) where {B,T}
+    result = op.op * ket
+    result isa Number ? op.coeff * result : op.coeff * result
+end
+
+# ScaledOperator on ProductKet (CompositeBasis)
+function Base.:*(op::ScaledOperator{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B2}) where {B1,B2}
+    result = op.op * ket
+    result isa Number ? op.coeff * result : op.coeff * result
+end
+
+# ScaledOperator on SumProductKet (CompositeBasis)
+function Base.:*(op::ScaledOperator{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
     result = op.op * ket
     result isa Number ? op.coeff * result : op.coeff * result
 end
@@ -297,6 +333,26 @@ function Base.:*(prod::OperatorProduct{B}, ket::weightedKet{B}) where B
 end
 
 function Base.:*(prod::OperatorProduct{B}, ket::sumKet{B,T}) where {B,T}
+    result = ket
+    for op in reverse(prod.ops)
+        result = op * result
+        iszero(result) && return 0
+    end
+    result
+end
+
+# OperatorProduct on ProductKet (CompositeBasis)
+function Base.:*(prod::OperatorProduct{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B2}) where {B1,B2}
+    result = ket
+    for op in reverse(prod.ops)
+        result = op * result
+        iszero(result) && return 0
+    end
+    result
+end
+
+# OperatorProduct on SumProductKet (CompositeBasis)
+function Base.:*(prod::OperatorProduct{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
     result = ket
     for op in reverse(prod.ops)
         result = op * result
@@ -390,10 +446,10 @@ function Base.:*(op::FunctionOperator{CompositeBasis{B1,B2}}, ket::SumProductKet
     total = nothing
     for (k, w) in zip(ket.kets, ket.weights)
         result = op.action(k)
+        # Check if result is zero BEFORE multiplying by weight (to avoid 0*symbolic issues)
+        iszero(result) && continue
         term = result isa Number ? result * w : w * result
-        if !iszero(term)
-            total = isnothing(total) ? term : total + term
-        end
+        total = isnothing(total) ? term : total + term
     end
     isnothing(total) ? 0 : total
 end
@@ -630,3 +686,52 @@ Base.show(io::IO, ::IdentityOp{B}) where B = print(io, "𝕀")
 Base.iszero(x::Number) = x == 0
 Base.iszero(::AbstractKet) = false
 Base.iszero(::AbstractOperator) = false
+
+# ============== Automatic basis transformation ==============
+#
+# When an operator in basis B1 acts on a ket in basis B2,
+# and B1 ≠ B2 but they're in the same space, automatically
+# transform the ket to B1 before applying the operator.
+#
+
+"""
+    _try_transform_and_apply(op, ket) -> result or nothing
+
+Try to transform ket to operator's basis and apply. Returns nothing if no transform exists.
+"""
+function _try_transform_and_apply(op::AbstractOperator{B1}, ket::AbstractKet{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
+    # Check if same space
+    space(B1) == space(B2) || return nothing
+    # Check if ket is already in operator's basis (for composite bases)
+    # ProductKet{A1,A2} is in CompositeBasis{A1,A2}, SumProductKet{A1,A2} is also in CompositeBasis{A1,A2}
+    ket_basis = _ket_composite_basis(ket)
+    if !isnothing(ket_basis) && ket_basis == B1
+        return nothing  # Already in same basis - let specific same-basis method handle it
+    end
+    # Check if transform exists
+    has_transform(B2, B1) || return nothing
+    # Transform ket to operator's basis and apply
+    transformed_ket = transform(ket, B1)
+    return op * transformed_ket
+end
+
+# Helper to get the composite basis type from a product ket
+_ket_composite_basis(::ProductKet{A1,A2}) where {A1,A2} = CompositeBasis{A1,A2}
+_ket_composite_basis(::SumProductKet{A1,A2}) where {A1,A2} = CompositeBasis{A1,A2}
+_ket_composite_basis(::AbstractKet) = nothing
+
+# Cross-basis application for all operator types
+# These catch cases where operator basis B1 ≠ ket basis B2
+
+# General AbstractOperator × AbstractKet (fallback with auto-transform)
+function Base.:*(op::AbstractOperator{B1}, ket::AbstractKet{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
+    result = _try_transform_and_apply(op, ket)
+    if isnothing(result)
+        if space(B1) == space(B2)
+            throw(ArgumentError("No transform registered from $B2 to $B1. Define one with define_transform!"))
+        else
+            throw(ArgumentError("Cannot apply operator on $(space(B1)) to ket on $(space(B2))"))
+        end
+    end
+    return result
+end

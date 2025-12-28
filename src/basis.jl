@@ -95,8 +95,26 @@ Get the second component basis of a composite basis.
 basis2(::Type{CompositeBasis{B1,B2}}) where {B1,B2} = B2
 basis2(::CompositeBasis{B1,B2}) where {B1,B2} = B2
 
-space(::Type{CompositeBasis{B1,B2}}) where {B1,B2} = CompositeSpace
-space(::CompositeBasis{B1,B2}) where {B1,B2} = CompositeSpace
+# Space of a composite basis is the composite of its component spaces
+function _composite_space_type(::Type{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
+    S1 = space(B1)
+    S2 = space(B2)
+    # Handle nested composite spaces - flatten the type parameters
+    if S1 <: CompositeSpace && S2 <: CompositeSpace
+        # Both are composite - this would be deeply nested, just return the product
+        CompositeSpace{(S1.parameters[1]..., S2.parameters[1]...), (S1.parameters[2]..., S2.parameters[2]...)}
+    elseif S1 <: CompositeSpace
+        CompositeSpace{(S1.parameters[1]..., S2.parameters[1]...), (S1.parameters[2]..., S2.parameters[2]...)}
+    elseif S2 <: CompositeSpace
+        CompositeSpace{(S1.parameters[1]..., S2.parameters[1]...), (S1.parameters[2]..., S2.parameters[2]...)}
+    else
+        # Both are simple HilbertSpaces
+        CompositeSpace{(S1.parameters[1]..., S2.parameters[1]...), (S1.parameters[2]..., S2.parameters[2]...)}
+    end
+end
+
+space(::Type{CompositeBasis{B1,B2}}) where {B1,B2} = _composite_space_type(B1, B2)
+space(::CompositeBasis{B1,B2}) where {B1,B2} = _composite_space_type(B1, B2)
 
 @eval Base.$(:(==))(::CompositeBasis{A1,A2}, ::CompositeBasis{B1,B2}) where {A1,A2,B1,B2} = A1 == B1 && A2 == B2
 

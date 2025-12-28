@@ -6,9 +6,15 @@ Basis transformation registry and functions.
 const BASIS_TRANSFORMS = Dict{Tuple{Type,Type}, Function}()
 
 """
-    define_transform!(from::Basis, to::Basis, f::Function)
+    define_transform!(f::Function, from::AbstractBasis, to::AbstractBasis)
 
-Register a basis transformation. `f(index)` returns a sumKet in target basis.
+Register a basis transformation. `f(index)` or `f(ket)` returns a ket in target basis.
+
+The two bases must be on the same space. This works for:
+- `Basis` to `Basis` (same space)
+- `CompositeBasis` to `CompositeBasis` (same composite space)
+- `Basis` on composite space to `CompositeBasis` (eigenbasis to product basis)
+- `CompositeBasis` to `Basis` on composite space (product basis to eigenbasis)
 
 # Example
 ```julia
@@ -19,16 +25,20 @@ up_z, down_z = BasisKet(Zb, :↑), BasisKet(Zb, :↓)
 define_transform!(Xb, Zb) do idx
     idx == :↑ ? (up_z + down_z) / √2 : (up_z - down_z) / √2
 end
+
+# For composite systems, can transform between eigenbasis and product basis:
+composite = H1 ⊗ H2
+eigenbasis = Basis(composite, :dressed)
+product_basis = B1 ⊗ B2
+
+define_transform!(eigenbasis, product_basis) do idx
+    # Return superposition in product basis
+    ...
+end
 ```
 """
-function define_transform!(f::Function, from::Basis{S1,n1}, to::Basis{S2,n2}) where {S1,S2,n1,n2}
-    S1 == S2 || throw(ArgumentError("Bases must be on the same space"))
-    BASIS_TRANSFORMS[(typeof(from), typeof(to))] = f
-    nothing
-end
-
-# Also allow explicit composite basis transforms (for entangled bases)
-function define_transform!(f::Function, from::CompositeBasis{B1,B2}, to::CompositeBasis{B3,B4}) where {B1,B2,B3,B4}
+function define_transform!(f::Function, from::B1, to::B2) where {B1<:AbstractBasis, B2<:AbstractBasis}
+    space(B1) == space(B2) || throw(ArgumentError("Bases must be on the same space: $(space(B1)) vs $(space(B2))"))
     BASIS_TRANSFORMS[(typeof(from), typeof(to))] = f
     nothing
 end
@@ -60,16 +70,25 @@ get_transform(::Type{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasi
     BASIS_TRANSFORMS[(B1, B2)]
 
 """
-    transform(ket::BasisKet{B1}, ::Type{B2}) -> sumKet{B2}
+    transform(ket::BasisKet{B1}, ::Type{B2}) -> AbstractKet{B2}
 
 Transform a ket from basis B1 to basis B2.
+For single-system bases, returns sumKet. For composite systems, may return SumProductKet.
 """
 function transform(ket::BasisKet{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
     has_transform(B1, B2) || throw(ArgumentError("No transform registered from $B1 to $B2"))
     f = get_transform(B1, B2)
+    # Transform function receives the index
     result = f(ket.index)
     result isa AbstractKet || throw(ArgumentError("Transform must return a ket"))
-    result isa sumKet ? result : sumKet(result)
+    # Wrap in appropriate sum type if needed
+    if result isa BasisKet
+        sumKet(result)
+    elseif result isa ProductKet
+        SumProductKet([result], [1])
+    else
+        result
+    end
 end
 
 """
@@ -78,6 +97,11 @@ end
 Transform a product ket to a different composite basis using factorized transforms.
 """
 function transform(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
+    # Identity transform - already in target basis
+    if A1 == B1 && A2 == B2
+        return SumProductKet([ket], [1])
+    end
+    
     # Check for explicit composite transform first
     if haskey(BASIS_TRANSFORMS, (CompositeBasis{A1,A2}, CompositeBasis{B1,B2}))
         f = get_transform(CompositeBasis{A1,A2}, CompositeBasis{B1,B2})
@@ -100,6 +124,61 @@ function transform(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where 
     end
     
     return SumProductKet(result_kets, result_weights)
+end
+
+"""
+    transform(ket::ProductKet, ::Type{B}) where {B<:Basis}
+
+Transform a product ket to a single basis on the composite space (e.g., eigenbasis).
+Requires an explicit transform from the composite basis to the target basis.
+"""
+function transform(ket::ProductKet{A1,A2}, ::Type{B}) where {A1,A2,B<:Basis}
+    CB = CompositeBasis{A1,A2}
+    has_transform(CB, B) || throw(ArgumentError("No transform registered from $CB to $B"))
+    f = get_transform(CB, B)
+    # For ProductKet, create a combined index (tuple of indices from each component)
+    combined_idx = (ket.ket1.index, ket.ket2.index)
+    result = f(combined_idx)
+    result isa AbstractKet || throw(ArgumentError("Transform must return a ket"))
+    if result isa BasisKet
+        sumKet(result)
+    else
+        result
+    end
+end
+
+# Transform for SumProductKet
+function transform(sk::SumProductKet{A1,A2,T}, ::Type{B}) where {A1,A2,T,B<:AbstractBasis}
+    # Identity transform - already in target basis
+    if B == CompositeBasis{A1,A2}
+        return sk
+    end
+    # Transform each component and combine
+    total = nothing
+    for (k, w) in zip(sk.kets, sk.weights)
+        transformed = transform(k, B)
+        term = w * transformed
+        total = isnothing(total) ? term : total + term
+    end
+    isnothing(total) ? 0 : total
+end
+
+# Transform for sumKet
+function transform(sk::sumKet{B1,T}, ::Type{B2}) where {B1,T,B2<:AbstractBasis}
+    has_transform(B1, B2) || throw(ArgumentError("No transform registered from $B1 to $B2"))
+    # Transform each component and combine
+    total = nothing
+    for (k, w) in zip(sk.kets, sk.weights)
+        transformed = transform(k, B2)
+        term = w * transformed
+        total = isnothing(total) ? term : total + term
+    end
+    isnothing(total) ? 0 : total
+end
+
+# Transform for weightedKet
+function transform(wk::weightedKet{B1}, ::Type{B2}) where {B1,B2<:AbstractBasis}
+    wk.weight * transform(wk.Ket, B2)
 end
 
 """

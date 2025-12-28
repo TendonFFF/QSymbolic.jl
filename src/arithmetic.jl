@@ -335,3 +335,36 @@ end
     Base.$(:(//))(sk::SumProductKet, W::Number) = sk * (1 // W)
     Base.$(:(/))(sk::SumProductKet, W::Number) = sk * (1 / W)
 end
+
+# Addition/subtraction for product states
+@eval begin
+    # ProductKet + ProductKet -> SumProductKet
+    function Base.$(:(+))(pk1::ProductKet{B1,B2}, pk2::ProductKet{B1,B2}) where {B1,B2}
+        SumProductKet([pk1, pk2], [1, 1])
+    end
+    function Base.$(:(-))(pk1::ProductKet{B1,B2}, pk2::ProductKet{B1,B2}) where {B1,B2}
+        SumProductKet([pk1, pk2], [1, -1])
+    end
+    
+    # ProductKet + SumProductKet
+    function Base.$(:(+))(pk::ProductKet{B1,B2}, sk::SumProductKet{B1,B2,T}) where {B1,B2,T}
+        SumProductKet(vcat([pk], sk.kets), vcat([one(T)], sk.weights))
+    end
+    function Base.$(:(+))(sk::SumProductKet{B1,B2,T}, pk::ProductKet{B1,B2}) where {B1,B2,T}
+        SumProductKet(vcat(sk.kets, [pk]), vcat(sk.weights, [one(T)]))
+    end
+    function Base.$(:(-))(pk::ProductKet{B1,B2}, sk::SumProductKet{B1,B2,T}) where {B1,B2,T}
+        SumProductKet(vcat([pk], sk.kets), vcat([one(T)], -sk.weights))
+    end
+    function Base.$(:(-))(sk::SumProductKet{B1,B2,T}, pk::ProductKet{B1,B2}) where {B1,B2,T}
+        SumProductKet(vcat(sk.kets, [pk]), vcat(sk.weights, [-one(T)]))
+    end
+    
+    # SumProductKet + SumProductKet
+    function Base.$(:(+))(sk1::SumProductKet{B1,B2}, sk2::SumProductKet{B1,B2}) where {B1,B2}
+        SumProductKet(vcat(sk1.kets, sk2.kets), vcat(sk1.weights, sk2.weights))
+    end
+    function Base.$(:(-))(sk1::SumProductKet{B1,B2}, sk2::SumProductKet{B1,B2}) where {B1,B2}
+        SumProductKet(vcat(sk1.kets, sk2.kets), vcat(sk1.weights, -sk2.weights))
+    end
+end
