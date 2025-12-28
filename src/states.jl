@@ -1,10 +1,13 @@
 # Ket and Bra state vectors
 
+# Index type alias for kets and bras - supports symbolic indices
+const KetIndex = Union{Symbol, Nothing, AbstractSymbolic}
+
 """
     BasisKet(basis, index)
     BasisKet(space, index)  # uses DefaultBasis
 
-A basis ket |index⟩ in the specified basis.
+A basis ket |index⟩ in the specified basis. Index can be a Symbol, Int, or symbolic expression.
 
 # Examples
 ```jldoctest
@@ -19,12 +22,18 @@ julia> ψ = BasisKet(H, :ψ)     # |ψ⟩ in default basis
 |ψ⟩
 ```
 
+Symbolic indices are also supported:
+```julia
+n = Sym(:n)
+ket_n = BasisKet(Fock_basis, n)  # |n⟩ with symbolic index
+```
+
 See also: [`BasisBra`](@ref), [`weightedKet`](@ref), [`sumKet`](@ref)
 """
 struct BasisKet{B<:AbstractBasis} <: AbstractKet{B}
-    index::Union{Symbol, Nothing}
+    index::KetIndex
 
-    function BasisKet(::B, idx::Union{Symbol, Nothing}=nothing) where B<:AbstractBasis
+    function BasisKet(::B, idx::KetIndex=nothing) where B<:AbstractBasis
         new{B}(idx)
     end
     function BasisKet(::B, idx::Int) where B<:AbstractBasis
@@ -33,9 +42,16 @@ struct BasisKet{B<:AbstractBasis} <: AbstractKet{B}
     function BasisKet{B}(idx::Union{Symbol, Int, Nothing}=nothing) where B<:AbstractBasis
         new{B}(isnothing(idx) ? nothing : Symbol(idx))
     end
+    function BasisKet{B}(idx::AbstractSymbolic) where B<:AbstractBasis
+        new{B}(idx)
+    end
     function BasisKet(space::AbstractSpace, idx::Union{Symbol, Int, Nothing}=nothing)
         B = DefaultBasis{typeof(space)}
         new{B}(isnothing(idx) ? nothing : Symbol(idx))
+    end
+    function BasisKet(space::AbstractSpace, idx::AbstractSymbolic)
+        B = DefaultBasis{typeof(space)}
+        new{B}(idx)
     end
 end
 
@@ -95,6 +111,7 @@ end
     BasisBra(space, index)  # uses DefaultBasis
 
 A basis bra ⟨index| in the specified basis. Also created via `ket'`.
+Index can be a Symbol, Int, or symbolic expression.
 
 # Examples
 ```jldoctest
@@ -107,9 +124,9 @@ julia> ψ'
 ```
 """
 struct BasisBra{B<:AbstractBasis} <: AbstractBra{B}
-    index::Union{Symbol, Nothing}
+    index::KetIndex
 
-    function BasisBra(::B, idx::Union{Symbol, Nothing}=nothing) where B<:AbstractBasis
+    function BasisBra(::B, idx::KetIndex=nothing) where B<:AbstractBasis
         new{B}(idx)
     end
     function BasisBra(::B, idx::Int) where B<:AbstractBasis
@@ -118,9 +135,16 @@ struct BasisBra{B<:AbstractBasis} <: AbstractBra{B}
     function BasisBra{B}(idx::Union{Symbol, Int, Nothing}=nothing) where B<:AbstractBasis
         new{B}(isnothing(idx) ? nothing : Symbol(idx))
     end
+    function BasisBra{B}(idx::AbstractSymbolic) where B<:AbstractBasis
+        new{B}(idx)
+    end
     function BasisBra(space::AbstractSpace, idx::Union{Symbol, Int, Nothing}=nothing)
         B = DefaultBasis{typeof(space)}
         new{B}(isnothing(idx) ? nothing : Symbol(idx))
+    end
+    function BasisBra(space::AbstractSpace, idx::AbstractSymbolic)
+        B = DefaultBasis{typeof(space)}
+        new{B}(idx)
     end
 end
 

@@ -21,12 +21,12 @@ end
 
 # Kets
 function Base.show(io::IO, ket::BasisKet{space}) where space
-    name = isnothing(ket.display_name) ? "ψ" : string(ket.display_name)
+    name = isnothing(ket.index) ? "ψ" : string(ket.index)
     print(io, "|", name, "⟩")
 end
 
 function Base.show(io::IO, ket::weightedKet{space}) where space
-    name = isnothing(ket.Ket.display_name) ? "ψ" : string(ket.Ket.display_name)
+    name = isnothing(ket.Ket.index) ? "ψ" : string(ket.Ket.index)
     w = ket.weight
     if w == 1
         print(io, "|", name, "⟩")
@@ -45,7 +45,7 @@ function Base.show(io::IO, ket::sumKet{space}) where space
     
     terms = String[]
     for (k, w) in zip(ket.kets, ket.weights)
-        name = isnothing(k.display_name) ? "ψ" : string(k.display_name)
+        name = isnothing(k.index) ? "ψ" : string(k.index)
         if w == 1
             push!(terms, "|$name⟩")
         elseif w == -1
@@ -68,12 +68,12 @@ end
 
 # Bras
 function Base.show(io::IO, bra::BasisBra{space}) where space
-    name = isnothing(bra.display_name) ? "ψ" : string(bra.display_name)
+    name = isnothing(bra.index) ? "ψ" : string(bra.index)
     print(io, "⟨", name, "|")
 end
 
 function Base.show(io::IO, bra::weightedBra{space}) where space
-    name = isnothing(bra.Bra.display_name) ? "ψ" : string(bra.Bra.display_name)
+    name = isnothing(bra.Bra.index) ? "ψ" : string(bra.Bra.index)
     w = bra.weight
     if w == 1
         print(io, "⟨", name, "|")
@@ -92,7 +92,7 @@ function Base.show(io::IO, bra::sumBra{space}) where space
     
     terms = String[]
     for (b, w) in zip(bra.bras, bra.weights)
-        name = isnothing(b.display_name) ? "ψ" : string(b.display_name)
+        name = isnothing(b.index) ? "ψ" : string(b.index)
         if w == 1
             push!(terms, "⟨$name|")
         elseif w == -1

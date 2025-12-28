@@ -127,6 +127,10 @@ Base.sqrt(a::AbstractSymbolic) = SymExpr(:sqrt, a)
 Base.conj(a::AbstractSymbolic) = SymExpr(:conj, a)
 Base.adjoint(a::AbstractSymbolic) = conj(a)
 
+# Real/Imag parts (return symbolic expressions)
+Base.real(a::AbstractSymbolic) = SymExpr(:real, a)
+Base.imag(a::AbstractSymbolic) = SymExpr(:imag, a)
+
 # Absolute value
 Base.abs(a::AbstractSymbolic) = SymExpr(:abs, a)
 Base.abs2(a::AbstractSymbolic) = SymExpr(:abs2, a)
@@ -315,6 +319,20 @@ Base.:(==)(a::Number, b::SymNum) = a == b.value
 function Base.:(==)(a::SymExpr, b::SymExpr)
     a.op == b.op && length(a.args) == length(b.args) && all(a.args .== b.args)
 end
+
+# SymExpr is never equal to a simple Sym or SymNum (structurally)
+Base.:(==)(::SymExpr, ::Sym) = false
+Base.:(==)(::Sym, ::SymExpr) = false
+Base.:(==)(::SymExpr, ::SymNum) = false
+Base.:(==)(::SymNum, ::SymExpr) = false
+Base.:(==)(::Sym, ::SymNum) = false
+Base.:(==)(::SymNum, ::Sym) = false
+
+# Comparing with plain numbers
+Base.:(==)(::SymExpr, ::Number) = false
+Base.:(==)(::Number, ::SymExpr) = false
+Base.:(==)(::Sym, ::Number) = false
+Base.:(==)(::Number, ::Sym) = false
 
 # Approximate equality (evaluate if possible)
 function Base.isapprox(a::AbstractSymbolic, b::Number; kwargs...)

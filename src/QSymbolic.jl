@@ -16,6 +16,7 @@ export InnerProduct
 export AbstractOperator, Operator, SumOperator, ScaledOperator, OperatorProduct
 export FunctionOperator, AdjointFunctionOperator
 export OpKet, OpBra, IdentityOp
+export create_ladder_operators
 
 # Types - Symbolic scalars
 export AbstractSymbolic, Sym, SymNum, SymExpr

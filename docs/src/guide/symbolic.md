@@ -159,25 +159,75 @@ simplify(SymNum(2) * SymNum(3))  # → 6
 
 ## Use with Quantum States
 
-Symbolic scalars integrate with the quantum state system:
+Symbolic scalars integrate fully with the quantum state system.
+
+### Symbolic Indices
+
+BasisKet and BasisBra accept symbolic indices, enabling general representations like |n⟩ for arbitrary n:
+
+```julia
+using QSymbolic
+
+F = FockSpace(:fock)
+Fb = Basis(F, :n)
+
+# Create symbolic index
+n = Sym(:n)
+
+# Ket with symbolic index |n⟩
+ket_n = BasisKet(Fb, n)
+ket_n  # → |n⟩
+
+# Bra with symbolic index ⟨n|
+bra_n = BasisBra(Fb, n)
+bra_n  # → ⟨n|
+
+# Adjoint preserves symbolic index
+ket_n'  # → ⟨n|
+```
+
+### Symbolic Weights
+
+Weighted kets and sum states can have symbolic coefficients:
 
 ```julia
 using QSymbolic
 
 H = HilbertSpace(:H, 2)
-Zb = Basis(H, :z)
-up = BasisKet(Zb, :↑)
-down = BasisKet(Zb, :↓)
+ψ = BasisKet(H, :ψ)
+ϕ = BasisKet(H, :ϕ)
 
-# Symbolic coefficient
-θ = Sym(:θ)
+# Symbolic amplitudes
+α = Sym(:α)
+β = Sym(:β)
 
-# State with symbolic amplitude
-# (In general form - for actual use you'd define the arithmetic)
-coeff = cos(θ)
+# Weighted ket with symbolic coefficient
+weighted = α * ψ
+weighted  # → (α)|ψ⟩
 
-# Build superposition with symbolic weights
-# Note: Full integration depends on state arithmetic supporting AbstractSymbolic
+# Superposition with symbolic amplitudes
+state = α * ψ + β * ϕ
+state  # → (α)|ψ⟩ + (β)|ϕ⟩
+
+# Extract symbols from weights
+symbols(state.weights[1])  # → Set([:α])
+```
+
+### Concrete Substitution
+
+You can substitute symbolic values with concrete numbers:
+
+```julia
+# Create state with symbolic coefficients
+α = Sym(:α)
+β = Sym(:β)
+state = α * ψ + β * ϕ
+
+# Substitute to get concrete values
+concrete_weights = substitute.(state.weights, Ref(Dict(:α => 1/√2, :β => 1/√2)))
+
+# Check all are numeric
+all(is_numeric, concrete_weights)  # → true
 ```
 
 ## Example: Parametric Expressions

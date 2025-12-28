@@ -52,11 +52,18 @@ struct Operator{B<:AbstractBasis, T} <: AbstractOperator{B}
 end
 
 """
-    basis(op::Operator)
+    basis(op::AbstractOperator)
 
-Get the basis that an operator is defined in.
+Get the basis type that an operator is defined in.
 """
-basis(op::Operator{B}) where B = B
+basis(::AbstractOperator{B}) where B = B
+
+"""
+    space(op::AbstractOperator)
+
+Get the space type that an operator acts on.
+"""
+space(::AbstractOperator{B}) where B = space(B)
 
 # Create operator from ket * bra
 function Base.:*(ket::BasisKet{B}, bra::BasisBra{B}) where B<:AbstractBasis
@@ -134,7 +141,7 @@ struct SumOperator{B<:AbstractBasis} <: AbstractOperator{B}
     terms::Vector{<:AbstractOperator{B}}
 end
 
-basis(op::SumOperator{B}) where B = B
+# basis inherited from AbstractOperator
 
 function Base.:+(op1::AbstractOperator{B}, op2::AbstractOperator{B}) where B
     terms1 = op1 isa SumOperator ? op1.terms : [op1]
@@ -203,7 +210,7 @@ struct ScaledOperator{B<:AbstractBasis, T} <: AbstractOperator{B}
     op::AbstractOperator{B}
 end
 
-basis(op::ScaledOperator{B}) where B = B
+# basis inherited from AbstractOperator
 
 function Base.:*(a::Number, op::AbstractOperator{B}) where B
     ScaledOperator{B, typeof(a)}(a, op)
@@ -256,7 +263,7 @@ struct OperatorProduct{B<:AbstractBasis} <: AbstractOperator{B}
     ops::Vector{<:AbstractOperator{B}}
 end
 
-basis(op::OperatorProduct{B}) where B = B
+# basis inherited from AbstractOperator
 
 function Base.:*(op1::AbstractOperator{B}, op2::AbstractOperator{B}) where B
     ops1 = op1 isa OperatorProduct ? op1.ops : [op1]
@@ -305,7 +312,7 @@ end
 # ============== Function-based Operator ==============
 
 """
-    FunctionOperator{B}(name, basis, action)
+    FunctionOperator{B}(name, basis, action; adjoint_action=nothing)
 
 A quantum operator defined by a function. Created via `FunctionOperator(name, basis) do ket ... end`.
 
@@ -313,6 +320,9 @@ The `action` function receives a `BasisKet` and should return:
 - A number (scalar)
 - A ket (`BasisKet`, `weightedKet`, or `sumKet`)
 - Zero (for annihilation of vacuum, etc.)
+
+Optionally provide `adjoint_action` to define how the adjoint operator acts.
+If not provided, applying the adjoint returns a symbolic `OpKet`.
 
 Use this for operators that are easier to define procedurally (e.g., ladder operators).
 
@@ -326,25 +336,66 @@ Fb = Basis(F, :n)
     n = parse(Int, string(ket.index))
     n == 0 ? 0 : √n * BasisKet(Fb, n - 1)
 end
+
+# With explicit adjoint action (creation operator):
+â = FunctionOperator(:â, Fb; 
+    adjoint_action = ket -> begin
+        n = parse(Int, string(ket.index))
+        √(n + 1) * BasisKet(Fb, n + 1)
+    end
+) do ket
+    n = parse(Int, string(ket.index))
+    n == 0 ? 0 : √n * BasisKet(Fb, n - 1)
+end
 ```
 
-See also: [`Operator`](@ref)
+See also: [`Operator`](@ref), [`create_ladder_operators`](@ref)
 """
 struct FunctionOperator{B<:AbstractBasis} <: AbstractOperator{B}
     name::Symbol
     basis::B
     action::Function
+    adjoint_action::Union{Function, Nothing}
+    
+    function FunctionOperator{B}(name::Symbol, basis::B, action::Function, adjoint_action::Union{Function, Nothing}=nothing) where B<:AbstractBasis
+        new{B}(name, basis, action, adjoint_action)
+    end
 end
 
-basis(op::FunctionOperator) = op.basis
+# basis inherited from AbstractOperator
+# Note: op.basis field stores an instance but basis() returns the type B
 
 # do-block syntax
-FunctionOperator(action::Function, name::Symbol, basis::B) where B<:AbstractBasis = 
-    FunctionOperator{B}(name, basis, action)
+function FunctionOperator(action::Function, name::Symbol, basis::B; adjoint_action::Union{Function, Nothing}=nothing) where B<:AbstractBasis
+    FunctionOperator{B}(name, basis, action, adjoint_action)
+end
+
+# Regular constructor
+function FunctionOperator(name::Symbol, basis::B, action::Function; adjoint_action::Union{Function, Nothing}=nothing) where B<:AbstractBasis
+    FunctionOperator{B}(name, basis, action, adjoint_action)
+end
 
 # Apply
 function Base.:*(op::FunctionOperator{B}, ket::BasisKet{B}) where {B<:AbstractBasis}
     op.action(ket)
+end
+
+# ProductKet lives in CompositeBasis{B1,B2}
+function Base.:*(op::FunctionOperator{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
+    op.action(ket)
+end
+
+# SumProductKet lives in CompositeBasis{B1,B2}
+function Base.:*(op::FunctionOperator{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1<:AbstractBasis, B2<:AbstractBasis, T}
+    total = nothing
+    for (k, w) in zip(ket.kets, ket.weights)
+        result = op.action(k)
+        term = result isa Number ? result * w : w * result
+        if !iszero(term)
+            total = isnothing(total) ? term : total + term
+        end
+    end
+    isnothing(total) ? 0 : total
 end
 
 function Base.:*(op::FunctionOperator, ket::weightedKet)
@@ -385,9 +436,57 @@ end
 Base.adjoint(op::FunctionOperator) = AdjointFunctionOperator(op)
 Base.adjoint(op::AdjointFunctionOperator) = op.parent
 
-basis(op::AdjointFunctionOperator) = basis(op.parent)
+# basis inherited from AbstractOperator
 
 Base.show(io::IO, op::AdjointFunctionOperator) = print(io, op.parent.name, "†")
+
+# AdjointFunctionOperator application - uses adjoint_action if defined, otherwise symbolic
+function Base.:*(op::AdjointFunctionOperator{B}, ket::BasisKet{B}) where B
+    if !isnothing(op.parent.adjoint_action)
+        op.parent.adjoint_action(ket)
+    else
+        OpKet(op, ket)
+    end
+end
+
+# ProductKet lives in CompositeBasis{B1,B2}
+function Base.:*(op::AdjointFunctionOperator{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
+    if !isnothing(op.parent.adjoint_action)
+        op.parent.adjoint_action(ket)
+    else
+        OpKet(op, ket)
+    end
+end
+
+# SumProductKet lives in CompositeBasis{B1,B2}
+function Base.:*(op::AdjointFunctionOperator{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1<:AbstractBasis, B2<:AbstractBasis, T}
+    total = nothing
+    for (k, w) in zip(ket.kets, ket.weights)
+        result = op * k
+        term = result isa Number ? result * w : w * result
+        if !iszero(term)
+            total = isnothing(total) ? term : total + term
+        end
+    end
+    isnothing(total) ? 0 : total
+end
+
+function Base.:*(op::AdjointFunctionOperator{B}, ket::weightedKet{B}) where B
+    result = op * ket.Ket
+    result isa Number ? result * ket.weight : ket.weight * result
+end
+
+function Base.:*(op::AdjointFunctionOperator{B}, ket::sumKet{B,T}) where {B,T}
+    total = nothing
+    for (k, w) in zip(ket.kets, ket.weights)
+        result = op * k
+        term = result isa Number ? result * w : w * result
+        if !iszero(term)
+            total = isnothing(total) ? term : total + term
+        end
+    end
+    isnothing(total) ? 0 : total
+end
 
 # ============== Cross-type operations ==============
 
@@ -398,6 +497,61 @@ end
 
 function Base.:*(op1::Operator{B}, op2::FunctionOperator{B}) where B
     OperatorProduct{B}([op1, op2])
+end
+
+# AdjointFunctionOperator cross-type products
+function Base.:*(op1::AdjointFunctionOperator{B}, op2::AbstractOperator{B}) where B
+    OperatorProduct{B}([op1, op2])
+end
+
+function Base.:*(op1::AbstractOperator{B}, op2::AdjointFunctionOperator{B}) where B
+    OperatorProduct{B}([op1, op2])
+end
+
+# Avoid ambiguity with OperatorProduct
+function Base.:*(op1::AdjointFunctionOperator{B}, op2::OperatorProduct{B}) where B
+    OperatorProduct{B}(vcat([op1], op2.ops))
+end
+
+function Base.:*(op1::OperatorProduct{B}, op2::AdjointFunctionOperator{B}) where B
+    OperatorProduct{B}(vcat(op1.ops, [op2]))
+end
+
+# ============== Convenience constructors ==============
+
+"""
+    create_ladder_operators(basis; name=:a)
+
+Create bosonic annihilation and creation operators for a Fock space basis.
+Returns `(â, â†)` where:
+- â|n⟩ = √n |n-1⟩  (annihilation)
+- â†|n⟩ = √(n+1) |n+1⟩  (creation)
+
+# Example
+```julia
+F = FockSpace(:mode)
+Fb = Basis(F, :n)
+â, â† = create_ladder_operators(Fb)
+
+n0 = BasisKet(Fb, 0)
+n1 = BasisKet(Fb, 1)
+
+â * n1   # → √1 |0⟩
+â† * n0  # → √1 |1⟩
+```
+"""
+function create_ladder_operators(basis::B; name::Symbol=:a) where B<:AbstractBasis
+    â = FunctionOperator(name, basis; 
+        adjoint_action = ket -> begin
+            n = ket.index isa Symbol ? parse(Int, string(ket.index)) : Int(ket.index)
+            √(n + 1) * BasisKet(basis, n + 1)
+        end
+    ) do ket
+        n = ket.index isa Symbol ? parse(Int, string(ket.index)) : Int(ket.index)
+        n == 0 ? 0 : √n * BasisKet(basis, n - 1)
+    end
+    
+    return â, â'
 end
 
 # ============== Symbolic representations ==============
@@ -460,7 +614,7 @@ struct IdentityOp{B<:AbstractBasis} <: AbstractOperator{B}
     end
 end
 
-basis(::IdentityOp{B}) where B = B
+# basis inherited from AbstractOperator
 
 Base.:*(::IdentityOp{B}, ket::AbstractKet{B}) where B = ket
 Base.:*(op::AbstractOperator{B}, ::IdentityOp{B}) where B = op

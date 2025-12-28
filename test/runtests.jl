@@ -397,3 +397,132 @@ end
     @test result3 isa weightedKet
     @test result3.weight == 3
 end
+
+@testitem "FunctionOperator with adjoint action" begin
+    using QSymbolic
+    
+    F = FockSpace(:mode)
+    Fb = Basis(F, :n)
+    
+    # Create ladder operators with explicit adjoint
+    a, adag = create_ladder_operators(Fb)
+    
+    n0 = BasisKet(Fb, 0)
+    n1 = BasisKet(Fb, 1)
+    n2 = BasisKet(Fb, 2)
+    
+    # Annihilation: a|n⟩ = √n |n-1⟩
+    @test a * n0 == 0
+    result = a * n1
+    @test result isa weightedKet
+    @test result.weight ≈ 1.0
+    @test result.Ket.index == Symbol("0")
+    
+    # Creation: a†|n⟩ = √(n+1) |n+1⟩
+    result = adag * n0
+    @test result isa weightedKet
+    @test result.weight ≈ 1.0
+    @test result.Ket.index == Symbol("1")
+    
+    # Number operator: N = a†a
+    N = adag * a
+    @test N isa OperatorProduct
+    
+    result = N * n2
+    @test result isa weightedKet
+    @test result.weight ≈ 2.0
+    @test result.Ket.index == Symbol("2")
+end
+
+@testitem "FunctionOperator arithmetic" begin
+    using QSymbolic
+    
+    F = FockSpace(:mode)
+    Fb = Basis(F, :n)
+    
+    a, adag = create_ladder_operators(Fb)
+    n0 = BasisKet(Fb, 0)
+    n1 = BasisKet(Fb, 1)
+    
+    # Scalar multiplication
+    scaled = 2 * a
+    @test scaled isa ScaledOperator
+    result = scaled * n1
+    @test result isa weightedKet
+    @test result.weight ≈ 2.0
+    
+    # Addition
+    sum_op = a + adag
+    @test sum_op isa SumOperator
+    
+    # Subtraction
+    diff_op = a - adag
+    @test diff_op isa SumOperator
+    
+    # Product with other operators
+    prod = a * adag
+    @test prod isa OperatorProduct
+end
+
+@testitem "Symbolic indices for kets and bras" begin
+    using QSymbolic
+    
+    F = FockSpace(:fock)
+    Fb = Basis(F, :n)
+    
+    # Create symbolic index
+    n = Sym(:n)
+    
+    # BasisKet with symbolic index
+    ket_n = BasisKet(Fb, n)
+    @test ket_n isa BasisKet
+    @test ket_n.index isa AbstractSymbolic
+    @test ket_n.index == n
+    
+    # BasisBra with symbolic index
+    bra_n = BasisBra(Fb, n)
+    @test bra_n isa BasisBra
+    @test bra_n.index isa AbstractSymbolic
+    
+    # Adjoint of ket with symbolic index
+    ket_n_adj = ket_n'
+    @test ket_n_adj isa BasisBra
+    @test ket_n_adj.index == n
+    
+    # Weighted ket with symbolic index
+    weighted = 2 * ket_n
+    @test weighted isa weightedKet
+    @test weighted.Ket.index == n
+    
+    # Symbolic weights
+    α = Sym(:α)
+    weighted_sym = α * BasisKet(Fb, :0)
+    @test weighted_sym isa weightedKet
+    @test weighted_sym.weight isa AbstractSymbolic
+    
+    # Display (should show symbolic)
+    io = IOBuffer()
+    show(io, ket_n)
+    @test occursin("n", String(take!(io)))
+end
+
+@testitem "Symbolic arithmetic with quantum states" begin
+    using QSymbolic
+    
+    H = HilbertSpace(:H, 2)
+    ψ = BasisKet(H, :ψ)
+    ϕ = BasisKet(H, :ϕ)
+    
+    # Symbolic coefficients in sum
+    α = Sym(:α)
+    β = Sym(:β)
+    
+    state = α * ψ + β * ϕ
+    @test state isa sumKet
+    @test :α in symbols(state.weights[1])
+    @test :β in symbols(state.weights[2])
+    
+    # Substitution workflow
+    concrete = substitute.(state.weights, Ref(Dict(:α => 1/√2, :β => 1/√2)))
+    @test all(is_numeric, concrete)
+end

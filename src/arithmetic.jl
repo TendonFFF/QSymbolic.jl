@@ -254,9 +254,21 @@ function Base.show(io::IO, sk::SumProductKet)
         print(io, "|", sk.display_name, "⟩")
     else
         for (i, (k, w)) in enumerate(zip(sk.kets, sk.weights))
-            i > 1 && print(io, real(w) >= 0 ? " + " : " - ")
-            i == 1 && real(w) < 0 && print(io, "-")
-            abs(w) != 1 && print(io, abs(w), "·")
+            if i > 1
+                # For symbolic weights, always use +
+                if w isa Number && !(w isa AbstractSymbolic) && real(w) < 0
+                    print(io, " - ")
+                    w = -w
+                else
+                    print(io, " + ")
+                end
+            elseif w isa Number && !(w isa AbstractSymbolic) && real(w) < 0
+                print(io, "-")
+                w = -w
+            end
+            if w != 1
+                print(io, "(", w, ")·")
+            end
             print(io, k)
         end
     end
