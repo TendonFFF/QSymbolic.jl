@@ -12,6 +12,9 @@ export BasisKet, BasisBra, weightedKet, weightedBra, sumKet, sumBra
 export ProductKet, ProductBra, SumProductKet, SumProductBra
 export InnerProduct
 
+# Types - Operators
+export Operator, AdjointOperator, OpKet, OpBra, OperatorProduct
+
 # Functions - Spaces & Bases
 export ⊗, space, basis, basisname, basis1, basis2
 
@@ -29,6 +32,7 @@ include("basis.jl")
 include("states.jl")
 include("basis_transforms.jl")
 include("arithmetic.jl")
+include("operators.jl")
 include("miscellaneous.jl")
 
 end
