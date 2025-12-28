@@ -526,3 +526,54 @@ end
     concrete = substitute.(state.weights, Ref(Dict(:α => 1/√2, :β => 1/√2)))
     @test all(is_numeric, concrete)
 end
+@testitem "Multi-index for states" begin
+    using QSymbolic
+    
+    # Setup composite space
+    H1 = HilbertSpace(:A, 2)
+    H2 = HilbertSpace(:B, 2)
+    composite = H1 ⊗ H2
+    
+    # Multi-index with symbols
+    ket_sym = BasisKet(composite, (:↑, :↓))
+    @test ket_sym isa BasisKet
+    @test ket_sym.index == (:↑, :↓)
+    @test ket_sym.index isa Tuple
+    
+    # Multi-index with integers (converted to symbols)
+    ket_int = BasisKet(composite, (0, 1))
+    @test ket_int.index == (Symbol("0"), Symbol("1"))
+    
+    # Multi-index with symbolic
+    n = Sym(:n)
+    m = Sym(:m)
+    ket_symbolic = BasisKet(composite, (n, m))
+    @test ket_symbolic.index == (n, m)
+    @test ket_symbolic.index[1] isa AbstractSymbolic
+    @test ket_symbolic.index[2] isa AbstractSymbolic
+    
+    # Mixed index (symbol + symbolic)
+    ket_mixed = BasisKet(composite, (:↑, n))
+    @test ket_mixed.index == (:↑, n)
+    
+    # Bra multi-index
+    bra_sym = BasisBra(composite, (:↑, :↓))
+    @test bra_sym.index == (:↑, :↓)
+    
+    # Adjoint preserves multi-index
+    bra_adj = ket_sym'
+    @test bra_adj isa BasisBra
+    @test bra_adj.index == (:↑, :↓)
+    
+    # Display format (comma-separated)
+    io = IOBuffer()
+    show(io, ket_sym)
+    @test String(take!(io)) == "|↑,↓⟩"
+    
+    # CompositeBasis
+    B1 = Basis(H1, :z)
+    B2 = Basis(H2, :z)
+    CB = B1 ⊗ B2
+    ket_cb = BasisKet(CB, (n, m))
+    @test ket_cb.index == (n, m)
+end

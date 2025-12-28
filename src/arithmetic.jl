@@ -181,14 +181,25 @@ end
     Base.$(:(*))(bras::sumBra, kets::weightedKet) = bras * sumKet(kets)
 end
 
+# Helper to format index (single or multi)
+function _format_index(idx)
+    if isnothing(idx)
+        "ψ"
+    elseif idx isa Tuple
+        join(string.(idx), ",")
+    else
+        string(idx)
+    end
+end
+
 # Show methods
 function Base.show(io::IO, ket::BasisKet)
-    name = isnothing(ket.index) ? "ψ" : string(ket.index)
+    name = _format_index(ket.index)
     print(io, "|", name, "⟩")
 end
 
 function Base.show(io::IO, bra::BasisBra)
-    name = isnothing(bra.index) ? "ψ" : string(bra.index)
+    name = _format_index(bra.index)
     print(io, "⟨", name, "|")
 end
 

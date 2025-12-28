@@ -1,13 +1,25 @@
 # Ket and Bra state vectors
 
-# Index type alias for kets and bras - supports symbolic indices
-const KetIndex = Union{Symbol, Nothing, AbstractSymbolic}
+# Single index type - supports symbolic indices
+const SingleIndex = Union{Symbol, Nothing, AbstractSymbolic}
+
+# Multi-index type - tuple of single indices (for composite systems)
+const MultiIndex = Tuple{Vararg{SingleIndex}}
+
+# Combined index type - single or multi-index
+const KetIndex = Union{SingleIndex, MultiIndex}
 
 """
     BasisKet(basis, index)
     BasisKet(space, index)  # uses DefaultBasis
 
-A basis ket |index⟩ in the specified basis. Index can be a Symbol, Int, or symbolic expression.
+A basis ket |index⟩ in the specified basis. 
+
+Index can be:
+- A `Symbol` (e.g., `:↑`, `:ψ`)
+- An `Int` (converted to Symbol)
+- A symbolic expression (`Sym`, `SymExpr`)
+- A tuple for multi-index (e.g., `(:n, :m)` for composite bases)
 
 # Examples
 ```jldoctest
@@ -28,6 +40,12 @@ n = Sym(:n)
 ket_n = BasisKet(Fock_basis, n)  # |n⟩ with symbolic index
 ```
 
+Multi-indices for composite bases:
+```julia
+composite_basis = B1 ⊗ B2
+ket = BasisKet(composite_basis, (Sym(:n), Sym(:m)))  # |n,m⟩
+```
+
 See also: [`BasisBra`](@ref), [`weightedKet`](@ref), [`sumKet`](@ref)
 """
 struct BasisKet{B<:AbstractBasis} <: AbstractKet{B}
@@ -39,10 +57,17 @@ struct BasisKet{B<:AbstractBasis} <: AbstractKet{B}
     function BasisKet(::B, idx::Int) where B<:AbstractBasis
         new{B}(Symbol(idx))
     end
+    # Multi-index from tuple of integers
+    function BasisKet(::B, idx::Tuple{Vararg{Int}}) where B<:AbstractBasis
+        new{B}(Symbol.(idx))
+    end
     function BasisKet{B}(idx::Union{Symbol, Int, Nothing}=nothing) where B<:AbstractBasis
         new{B}(isnothing(idx) ? nothing : Symbol(idx))
     end
     function BasisKet{B}(idx::AbstractSymbolic) where B<:AbstractBasis
+        new{B}(idx)
+    end
+    function BasisKet{B}(idx::MultiIndex) where B<:AbstractBasis
         new{B}(idx)
     end
     function BasisKet(space::AbstractSpace, idx::Union{Symbol, Int, Nothing}=nothing)
@@ -52,6 +77,15 @@ struct BasisKet{B<:AbstractBasis} <: AbstractKet{B}
     function BasisKet(space::AbstractSpace, idx::AbstractSymbolic)
         B = DefaultBasis{typeof(space)}
         new{B}(idx)
+    end
+    function BasisKet(space::AbstractSpace, idx::MultiIndex)
+        B = DefaultBasis{typeof(space)}
+        new{B}(idx)
+    end
+    # Multi-index from tuple of integers (space version)
+    function BasisKet(space::AbstractSpace, idx::Tuple{Vararg{Int}})
+        B = DefaultBasis{typeof(space)}
+        new{B}(Symbol.(idx))
     end
 end
 
@@ -111,7 +145,12 @@ end
     BasisBra(space, index)  # uses DefaultBasis
 
 A basis bra ⟨index| in the specified basis. Also created via `ket'`.
-Index can be a Symbol, Int, or symbolic expression.
+
+Index can be:
+- A `Symbol` (e.g., `:↑`, `:ψ`)
+- An `Int` (converted to Symbol)
+- A symbolic expression (`Sym`, `SymExpr`)
+- A tuple for multi-index (e.g., `(:n, :m)` for composite bases)
 
 # Examples
 ```jldoctest
@@ -132,10 +171,17 @@ struct BasisBra{B<:AbstractBasis} <: AbstractBra{B}
     function BasisBra(::B, idx::Int) where B<:AbstractBasis
         new{B}(Symbol(idx))
     end
+    # Multi-index from tuple of integers
+    function BasisBra(::B, idx::Tuple{Vararg{Int}}) where B<:AbstractBasis
+        new{B}(Symbol.(idx))
+    end
     function BasisBra{B}(idx::Union{Symbol, Int, Nothing}=nothing) where B<:AbstractBasis
         new{B}(isnothing(idx) ? nothing : Symbol(idx))
     end
     function BasisBra{B}(idx::AbstractSymbolic) where B<:AbstractBasis
+        new{B}(idx)
+    end
+    function BasisBra{B}(idx::MultiIndex) where B<:AbstractBasis
         new{B}(idx)
     end
     function BasisBra(space::AbstractSpace, idx::Union{Symbol, Int, Nothing}=nothing)
@@ -145,6 +191,15 @@ struct BasisBra{B<:AbstractBasis} <: AbstractBra{B}
     function BasisBra(space::AbstractSpace, idx::AbstractSymbolic)
         B = DefaultBasis{typeof(space)}
         new{B}(idx)
+    end
+    function BasisBra(space::AbstractSpace, idx::MultiIndex)
+        B = DefaultBasis{typeof(space)}
+        new{B}(idx)
+    end
+    # Multi-index from tuple of integers (space version)
+    function BasisBra(space::AbstractSpace, idx::Tuple{Vararg{Int}})
+        B = DefaultBasis{typeof(space)}
+        new{B}(Symbol.(idx))
     end
 end
 

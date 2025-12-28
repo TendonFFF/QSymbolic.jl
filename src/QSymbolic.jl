@@ -11,6 +11,7 @@ export AbstractKet, AbstractBra
 export BasisKet, BasisBra, weightedKet, weightedBra, sumKet, sumBra
 export ProductKet, ProductBra, SumProductKet, SumProductBra
 export InnerProduct
+export SingleIndex, MultiIndex, KetIndex  # Index type aliases
 
 # Types - Operators
 export AbstractOperator, Operator, SumOperator, ScaledOperator, OperatorProduct

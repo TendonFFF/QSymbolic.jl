@@ -366,12 +366,12 @@ end
 # Note: op.basis field stores an instance but basis() returns the type B
 
 # do-block syntax
-function FunctionOperator(action::Function, name::Symbol, basis::B; adjoint_action::Union{Function, Nothing}=nothing) where B<:AbstractBasis
+function FunctionOperator(action::F, name::Symbol, basis::B; adjoint_action::Union{Function, Nothing}=nothing) where {F<:Function,B<:AbstractBasis}
     FunctionOperator{B}(name, basis, action, adjoint_action)
 end
 
 # Regular constructor
-function FunctionOperator(name::Symbol, basis::B, action::Function; adjoint_action::Union{Function, Nothing}=nothing) where B<:AbstractBasis
+function FunctionOperator(name::Symbol, basis::B, action::F; adjoint_action::Union{Function, Nothing}=nothing) where {F<:Function,B<:AbstractBasis}
     FunctionOperator{B}(name, basis, action, adjoint_action)
 end
 
