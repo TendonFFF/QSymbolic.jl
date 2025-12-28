@@ -6,7 +6,7 @@ A Julia package for symbolic quantum mechanics computations.
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/yourusername/QSymbolic.jl")
+Pkg.add(url="https://github.com/TendonFFF/QSymbolic.jl")
 ```
 
 Or for local development:
