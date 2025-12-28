@@ -305,3 +305,95 @@ end
     @test simplify(SymNum(2) + SymNum(3)) == SymNum(5)
     @test simplify(SymNum(2) * SymNum(3)) == SymNum(6)
 end
+
+@testitem "Outer product operators" begin
+    using QSymbolic
+    
+    H = HilbertSpace(:spin, 2)
+    Zb = Basis(H, :z)
+    up = BasisKet(Zb, :↑)
+    down = BasisKet(Zb, :↓)
+    
+    # Create operator via outer product
+    P_up = up * up'
+    @test P_up isa Operator
+    
+    # Projector action
+    result = P_up * up
+    @test result isa weightedKet
+    
+    @test P_up * down == 0
+    
+    # Ladder operator
+    σ_plus = up * down'
+    @test (σ_plus * down) isa weightedKet
+    @test σ_plus * up == 0
+    
+    # Adjoint
+    σ_minus = σ_plus'
+    @test (σ_minus * up) isa weightedKet
+    @test σ_minus * down == 0
+end
+
+@testitem "Operator algebra" begin
+    using QSymbolic
+    
+    H = HilbertSpace(:spin, 2)
+    Zb = Basis(H, :z)
+    up = BasisKet(Zb, :↑)
+    down = BasisKet(Zb, :↓)
+    
+    P_up = up * up'
+    P_down = down * down'
+    
+    # Sum of operators (identity)
+    I = P_up + P_down
+    @test I isa SumOperator
+    @test (I * up) isa weightedKet
+    @test (I * down) isa weightedKet
+    
+    # Pauli Z
+    σz = P_up - P_down
+    @test σz isa SumOperator
+    
+    # Apply to superposition
+    ψ = (up + down) / √2
+    result = σz * ψ
+    @test result isa sumKet
+    
+    # Operator product
+    σ_plus = up * down'
+    σ_minus = down * up'
+    product = σ_plus * σ_minus
+    @test product isa OperatorProduct
+    
+    # (σ+σ-)|↑⟩ = |↑⟩⟨↓|↓⟩⟨↑|↑⟩ = |↑⟩
+    @test (product * up) isa weightedKet
+    @test product * down == 0
+end
+
+@testitem "Function operators" begin
+    using QSymbolic
+    
+    F = FockSpace(:mode)
+    Fb = Basis(F, :n)
+    
+    # Simple number operator: N|n⟩ = n|n⟩
+    N = FunctionOperator(:N, Fb) do ket
+        n = parse(Int, string(ket.index))
+        n * ket
+    end
+    
+    n0 = BasisKet(Fb, 0)
+    n3 = BasisKet(Fb, 3)
+    
+    # N|0⟩ = 0|0⟩ (zero weight, not literal 0)
+    result0 = N * n0
+    @test result0 isa weightedKet
+    @test result0.weight == 0
+    
+    # N|3⟩ = 3|3⟩
+    result3 = N * n3
+    @test result3 isa weightedKet
+    @test result3.weight == 3
+end

@@ -1,0 +1,134 @@
+# Operators
+
+Quantum operators transform states and are essential for describing observables and dynamics. QSymbolic.jl provides outer product operators, operator algebra, and function-defined operators.
+
+## Overview
+
+| Type | Description |
+|:-----|:------------|
+| `Operator` | Outer product `\|ψ⟩⟨ϕ\|` with coefficient |
+| `SumOperator` | Sum of operators: Â + B̂ |
+| `ScaledOperator` | Scalar times operator: α·Â |
+| `OperatorProduct` | Product of operators: ÂB̂ |
+| `FunctionOperator` | Operator defined by a function |
+| `IdentityOp` | Identity operator 𝕀 |
+
+## Abstract Type
+
+```@docs
+AbstractOperator
+```
+
+## Outer Product Operator
+
+The primary way to build operators from states:
+
+```@docs
+Operator
+```
+
+## Operator Algebra Types
+
+### Sum of Operators
+
+```@docs
+SumOperator
+```
+
+### Scaled Operator
+
+```@docs
+ScaledOperator
+```
+
+### Operator Product
+
+```@docs
+OperatorProduct
+```
+
+## Function-Based Operator
+
+For operators with procedural definitions:
+
+```@docs
+FunctionOperator
+AdjointFunctionOperator
+```
+
+## Identity Operator
+
+```@docs
+IdentityOp
+```
+
+## Symbolic Types
+
+When operator application cannot be simplified:
+
+```@docs
+OpKet
+OpBra
+```
+
+## Accessor Functions
+
+```@docs
+basis(::Operator)
+```
+
+## Examples
+
+### Projectors and Ladder Operators
+
+```julia
+using QSymbolic
+
+H = HilbertSpace(:spin, 2)
+Zb = Basis(H, :z)
+up = BasisKet(Zb, :↑)
+down = BasisKet(Zb, :↓)
+
+# Projector
+P_up = up * up'         # |↑⟩⟨↑|
+
+# Ladder operators
+σ_plus = up * down'     # |↑⟩⟨↓|
+σ_minus = down * up'    # |↓⟩⟨↑|
+
+# Apply
+P_up * up       # → |↑⟩
+σ_plus * down   # → |↑⟩
+```
+
+### Pauli Matrices
+
+```julia
+# Build from outer products
+σx = up * down' + down * up'
+σy = -im * (up * down') + im * (down * up')
+σz = up * up' - down * down'
+
+# Eigenvalue equations
+σz * up    # → |↑⟩
+σz * down  # → -|↓⟩
+```
+
+### Function Operator (Fock Space)
+
+```julia
+F = FockSpace(:mode)
+Fb = Basis(F, :n)
+
+# Annihilation operator
+â = FunctionOperator(:â, Fb) do ket
+    n = parse(Int, string(ket.index))
+    n == 0 ? 0 : √n * BasisKet(Fb, n - 1)
+end
+
+# Creation operator  
+â† = FunctionOperator(:â†, Fb) do ket
+    n = parse(Int, string(ket.index))
+    √(n + 1) * BasisKet(Fb, n + 1)
+end
+```
