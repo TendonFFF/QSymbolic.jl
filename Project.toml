@@ -1,7 +1,7 @@
 name = "QSymbolic"
 uuid = "51350ce6-7c10-437b-ae15-8948c6144b7d"
 authors = ["Author Name <email@example.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"

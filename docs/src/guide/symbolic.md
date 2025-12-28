@@ -256,21 +256,107 @@ evaluate(E_0_numeric)  # → π ≈ 3.14159...
 
 ```
 AbstractSymbolic <: Number
-├── Sym         # Symbolic variable
+├── Sym         # Symbolic variable (with optional assumptions)
 ├── SymNum{T}   # Wrapped numeric value
-└── SymExpr     # Expression tree (op + args)
+├── SymExpr     # Expression tree (op + args)
+└── KroneckerDelta  # δᵢⱼ (1 if i==j, 0 otherwise)
 ```
 
 All symbolic types are subtypes of `Number`, allowing them to participate in numeric operations.
+
+## Type Assumptions for Sym
+
+Symbolic variables can carry type assumptions that constrain their mathematical properties:
+
+```julia
+using QSymbolic
+
+# Create Sym with assumptions
+n = Sym(:n, :integer)           # n is an integer
+θ = Sym(:θ, :real)              # θ is real
+p = Sym(:p, :positive)          # p > 0
+E = Sym(:E, :nonnegative)       # E ≥ 0
+q = Sym(:q, :negative)          # q < 0
+z = Sym(:z, :complex)           # z is complex
+```
+
+### Querying Assumptions
+
+```julia
+n = Sym(:n, :integer)
+p = Sym(:p, :positive)
+
+is_integer(n)       # → true
+is_integer(p)       # → false
+
+is_positive(p)      # → true
+is_real(p)          # → true (positive implies real)
+is_nonnegative(p)   # → true (positive implies nonnegative)
+
+assumptions(n)      # → Set([:integer])
+assumptions(p)      # → Set([:positive])
+```
+
+### Implicit Assumptions
+
+Some assumptions imply others:
+- `:positive` implies `:real` and `:nonnegative`
+- `:negative` implies `:real`
+- `:integer` is independent (can be positive, negative, or zero)
+
+## KroneckerDelta
+
+The `KroneckerDelta` type represents the Kronecker delta function δᵢⱼ:
+
+```julia
+using QSymbolic
+
+n = Sym(:n)
+m = Sym(:m)
+
+# Create Kronecker delta
+δ = KroneckerDelta(n, m)
+δ  # → δ(n,m)
+
+# Evaluates when indices are equal
+δ_nn = KroneckerDelta(n, n)
+δ_nn  # → 1 (automatically simplifies)
+
+# With concrete values
+KroneckerDelta(1, 1)  # → 1
+KroneckerDelta(1, 2)  # → 0
+```
+
+Kronecker deltas arise naturally from inner products of basis states with symbolic indices:
+
+```julia
+F = FockSpace(:fock)
+Fb = Basis(F, :n)
+
+n = Sym(:n)
+m = Sym(:m)
+
+ket_n = BasisKet(Fb, n)
+bra_m = BasisBra(Fb, m)
+
+# Inner product gives Kronecker delta
+bra_m * ket_n  # → δ(m,n)
+```
 
 ## API Summary
 
 | Function | Description |
 |:---------|:------------|
 | `Sym(:name)` | Create symbolic variable |
+| `Sym(:name, :assumption)` | Create symbolic variable with assumption |
 | `SymNum(value)` | Wrap numeric value |
+| `KroneckerDelta(i, j)` | Create Kronecker delta δᵢⱼ |
 | `substitute(expr, pairs...)` | Replace symbols with values |
 | `evaluate(expr)` | Compute numeric result |
 | `simplify(expr)` | Apply algebraic simplifications |
 | `symbols(expr)` | Get set of symbol names |
 | `is_numeric(expr)` | Check if fully numeric |
+| `is_real(sym)` | Check if Sym has real assumption |
+| `is_positive(sym)` | Check if Sym has positive assumption |
+| `is_integer(sym)` | Check if Sym has integer assumption |
+| `assumptions(sym)` | Get set of assumptions |

@@ -7,9 +7,10 @@ The symbolic scalar system provides lazy arithmetic evaluation, enabling truly s
 | Type | Description |
 |:-----|:------------|
 | `AbstractSymbolic` | Abstract supertype for all symbolic scalars |
-| `Sym` | Symbolic variable |
+| `Sym` | Symbolic variable (with optional type assumptions) |
 | `SymNum` | Wrapped numeric value |
 | `SymExpr` | Expression tree |
+| `KroneckerDelta` | Symbolic Kronecker delta δᵢⱼ |
 
 ## Types
 
@@ -35,6 +36,12 @@ SymNum
 
 ```@docs
 SymExpr
+```
+
+### Kronecker Delta
+
+```@docs
+KroneckerDelta
 ```
 
 ## Evaluation Functions
@@ -69,6 +76,17 @@ symbols
 
 ```@docs
 is_numeric
+```
+
+### Type Assumptions
+
+```@docs
+is_real
+is_positive
+is_negative
+is_nonnegative
+is_integer
+assumptions
 ```
 
 ## Supported Operations
