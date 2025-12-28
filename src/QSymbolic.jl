@@ -15,6 +15,10 @@ export InnerProduct
 # Types - Operators
 export Operator, AdjointOperator, OpKet, OpBra, OperatorProduct
 
+# Types - Symbolic scalars
+export AbstractSymbolic, Sym, SymNum, SymExpr
+export substitute, evaluate, symbols, is_numeric, simplify
+
 # Functions - Spaces & Bases
 export ⊗, space, basis, basisname, basis1, basis2
 
@@ -27,6 +31,7 @@ export define_transform!, has_transform, transform, clear_transforms!
 
 # Include source files in dependency order
 include("abstract_types.jl")
+include("symbolic_scalar.jl")
 include("spaces.jl")
 include("basis.jl")
 include("states.jl")

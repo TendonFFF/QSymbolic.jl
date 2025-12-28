@@ -234,3 +234,74 @@ end
     
     clear_transforms!()
 end
+
+@testitem "Symbolic scalars" begin
+    using QSymbolic
+    
+    # Create symbolic variables
+    n = Sym(:n)
+    m = Sym(:m)
+    
+    @test n isa AbstractSymbolic
+    @test n == Sym(:n)
+    @test n != m
+    
+    # Arithmetic builds expressions
+    @test √n isa SymExpr
+    @test (n + 1) isa SymExpr
+    @test (n * m) isa SymExpr
+    @test (n / 2) isa SymExpr
+    @test (n^2) isa SymExpr
+    
+    # Symbol extraction
+    expr = n^2 + 2*n*m + m^2
+    @test :n in symbols(expr)
+    @test :m in symbols(expr)
+    @test length(symbols(expr)) == 2
+    
+    # Numeric check
+    @test !is_numeric(n)
+    @test is_numeric(SymNum(5))
+    @test !is_numeric(n + 1)
+    @test is_numeric(SymNum(2) + SymNum(3))
+end
+
+@testitem "Symbolic substitution and evaluation" begin
+    using QSymbolic
+    
+    n = Sym(:n)
+    
+    # Substitute
+    expr = √n + 1
+    result = substitute(expr, :n => 4)
+    @test is_numeric(result)
+    @test evaluate(result) ≈ 3.0
+    
+    # Multiple substitutions
+    m = Sym(:m)
+    expr2 = n * m
+    result2 = substitute(expr2, :n => 2, :m => 3)
+    @test evaluate(result2) == 6
+    
+    # Partial substitution
+    partial = substitute(expr2, :n => 2)
+    @test !is_numeric(partial)
+    @test :m in symbols(partial)
+end
+
+@testitem "Symbolic simplification" begin
+    using QSymbolic
+    
+    n = Sym(:n)
+    
+    # Identity simplifications
+    @test simplify(n * 1) == n
+    @test simplify(n * 0) == SymNum(0)
+    @test simplify(n + 0) == n
+    @test simplify(n^1) == n
+    @test simplify(n^0) == SymNum(1)
+    
+    # Numeric folding
+    @test simplify(SymNum(2) + SymNum(3)) == SymNum(5)
+    @test simplify(SymNum(2) * SymNum(3)) == SymNum(6)
+end
