@@ -266,6 +266,63 @@ end
     @test is_numeric(SymNum(2) + SymNum(3))
 end
 
+@testitem "Symbolic assumptions" begin
+    using QSymbolic
+    
+    # Generic symbol (no assumptions)
+    z = Sym(:z)
+    @test !is_real(z)
+    @test !is_positive(z)
+    @test !is_integer(z)
+    @test isempty(assumptions(z))
+    
+    # Real symbol using positional args
+    r = Sym(:r, :real)
+    @test is_real(r)
+    @test :real in assumptions(r)
+    
+    # Positive implies real and nonnegative
+    p = Sym(:p, :positive)
+    @test is_positive(p)
+    @test is_real(p)
+    @test is_nonnegative(p)
+    @test :positive in assumptions(p)
+    @test :real in assumptions(p)
+    @test :nonnegative in assumptions(p)
+    
+    # Integer implies real
+    k = Sym(:k, :integer)
+    @test is_integer(k)
+    @test is_real(k)
+    
+    # Using keyword syntax
+    m = Sym(:m, integer=true, positive=true)
+    @test is_integer(m)
+    @test is_positive(m)
+    @test is_real(m)
+    @test is_nonnegative(m)
+    
+    # Adjoint/conjugate respects assumptions
+    @test conj(z) isa SymExpr  # generic: conj is applied
+    @test conj(r) === r         # real: conj is identity
+    @test z' isa SymExpr        # adjoint goes through conj
+    @test r' === r              # real: adjoint is identity
+    
+    # Real part respects assumptions
+    @test real(z) isa SymExpr   # generic: real() applied symbolically
+    @test real(r) === r         # real: real() is identity
+    
+    # Imag part for real is zero
+    @test imag(r) == SymNum(0)
+    @test imag(z) isa SymExpr
+    
+    # Equality considers assumptions
+    @test Sym(:x) == Sym(:x)
+    @test Sym(:x) != Sym(:x, :real)
+    @test Sym(:x, :real) == Sym(:x, :real)
+    @test Sym(:x, :positive) != Sym(:x, :real)  # positive expands to real,nonnegative,positive
+end
+
 @testitem "Symbolic substitution and evaluation" begin
     using QSymbolic
     

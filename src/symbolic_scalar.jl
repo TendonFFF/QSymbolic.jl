@@ -9,19 +9,87 @@ abstract type AbstractSymbolic <: Number end
 
 """
     Sym(name::Symbol)
+    Sym(name::Symbol, assumptions...)
+    Sym(name::Symbol; real=false, positive=false, negative=false, integer=false, nonnegative=false, complex=false)
 
-A symbolic variable. Arithmetic operations build expression trees.
+A symbolic variable with optional assumptions. Arithmetic operations build expression trees.
+
+Supported assumptions:
+- `:real` - real number (conj(x) = x)
+- `:positive` - strictly positive real (implies :real, :nonnegative)
+- `:negative` - strictly negative real (implies :real)
+- `:nonnegative` - non-negative real (implies :real)
+- `:integer` - integer value (implies :real)
+- `:complex` - complex number (default if no real assumption)
 
 # Examples
 ```julia
-n = Sym(:n)
-expr = √n * 2        # √n · 2
-substitute(expr, :n => 4)  # → 4.0
+n = Sym(:n)                     # generic symbolic
+m = Sym(:m, :real, :positive)   # real positive
+k = Sym(:k, integer=true)       # integer (implies real)
+
+adjoint(n)  # → n*  (conjugate)
+adjoint(m)  # → m   (real, so no conjugate)
 ```
 """
 struct Sym <: AbstractSymbolic
     name::Symbol
+    assumptions::Set{Symbol}
 end
+
+# Helper to expand implied assumptions
+function _expand_assumptions(assumptions::Set{Symbol})
+    expanded = copy(assumptions)
+    if :positive in expanded
+        push!(expanded, :real, :nonnegative)
+    end
+    if :negative in expanded
+        push!(expanded, :real)
+    end
+    if :nonnegative in expanded
+        push!(expanded, :real)
+    end
+    if :integer in expanded
+        push!(expanded, :real)
+    end
+    expanded
+end
+
+# Constructors - use vararg with at least one Symbol to avoid method ambiguity
+# Basic constructor: Sym(:n) or Sym(:n, :real) or Sym(:n, :real, :positive)
+function Sym(name::Symbol, assumptions::Symbol...)
+    if isempty(assumptions)
+        Sym(name, Set{Symbol}())
+    else
+        Sym(name, _expand_assumptions(Set{Symbol}(assumptions)))
+    end
+end
+
+# Keyword constructor: Sym(:n, real=true, positive=true)
+function Sym(name::Symbol; 
+             real::Bool=false, 
+             positive::Bool=false, 
+             negative::Bool=false, 
+             integer::Bool=false, 
+             nonnegative::Bool=false,
+             complex::Bool=false)
+    assumptions = Set{Symbol}()
+    real && push!(assumptions, :real)
+    positive && push!(assumptions, :positive)
+    negative && push!(assumptions, :negative)
+    integer && push!(assumptions, :integer)
+    nonnegative && push!(assumptions, :nonnegative)
+    complex && push!(assumptions, :complex)
+    Sym(name, _expand_assumptions(assumptions))
+end
+
+"""Get assumptions of a symbolic variable"""
+assumptions(s::Sym) = s.assumptions
+assumptions(::AbstractSymbolic) = Set{Symbol}()
+
+# Equality for Sym - two Syms are equal if they have same name and assumptions
+Base.:(==)(a::Sym, b::Sym) = a.name == b.name && a.assumptions == b.assumptions
+Base.hash(s::Sym, h::UInt) = hash(s.name, hash(s.assumptions, h))
 
 """
     SymNum(value)
@@ -34,6 +102,28 @@ end
 
 # Auto-convert numbers in symbolic context
 SymNum(s::AbstractSymbolic) = s
+
+# Assumption query functions (must come after SymNum is defined)
+"""Check if symbolic is assumed to be real"""
+is_real(s::Sym) = :real in s.assumptions
+is_real(::SymNum{<:Real}) = true
+is_real(::SymNum) = false
+is_real(::AbstractSymbolic) = false  # SymExpr - could be improved
+
+"""Check if symbolic is assumed to be positive"""
+is_positive(s::Sym) = :positive in s.assumptions
+is_positive(s::SymNum{<:Real}) = s.value > 0
+is_positive(::AbstractSymbolic) = false
+
+"""Check if symbolic is assumed to be an integer"""
+is_integer(s::Sym) = :integer in s.assumptions
+is_integer(::SymNum{<:Integer}) = true
+is_integer(::AbstractSymbolic) = false
+
+"""Check if symbolic is assumed to be non-negative"""
+is_nonnegative(s::Sym) = :nonnegative in s.assumptions
+is_nonnegative(s::SymNum{<:Real}) = s.value >= 0
+is_nonnegative(::AbstractSymbolic) = false
 
 """
     SymExpr(op, args...)
@@ -53,7 +143,12 @@ struct SymExpr <: AbstractSymbolic
 end
 
 # Display
-Base.show(io::IO, s::Sym) = print(io, s.name)
+function Base.show(io::IO, s::Sym)
+    print(io, s.name)
+    if get(io, :show_assumptions, false) && !isempty(s.assumptions)
+        print(io, "{", join(sort(collect(s.assumptions)), ","), "}")
+    end
+end
 Base.show(io::IO, s::SymNum) = print(io, s.value)
 
 function Base.show(io::IO, e::SymExpr)
@@ -123,12 +218,22 @@ Base.:^(a::Number, b::AbstractSymbolic) = SymExpr(:^, SymNum(a), b)
 # Square root (√ is already an alias for sqrt in Julia)
 Base.sqrt(a::AbstractSymbolic) = SymExpr(:sqrt, a)
 
-# Complex conjugate
+# Complex conjugate - respects :real assumption
+Base.conj(a::Sym) = is_real(a) ? a : SymExpr(:conj, a)
+Base.conj(a::SymNum) = SymNum(conj(a.value))
 Base.conj(a::AbstractSymbolic) = SymExpr(:conj, a)
+
+Base.adjoint(a::Sym) = conj(a)
+Base.adjoint(a::SymNum) = conj(a)
 Base.adjoint(a::AbstractSymbolic) = conj(a)
 
-# Real/Imag parts (return symbolic expressions)
+# Real/Imag parts - respect assumptions
+Base.real(a::Sym) = is_real(a) ? a : SymExpr(:real, a)
+Base.real(a::SymNum) = SymNum(real(a.value))
 Base.real(a::AbstractSymbolic) = SymExpr(:real, a)
+
+Base.imag(a::Sym) = is_real(a) ? SymNum(0) : SymExpr(:imag, a)
+Base.imag(a::SymNum) = SymNum(imag(a.value))
 Base.imag(a::AbstractSymbolic) = SymExpr(:imag, a)
 
 # Absolute value
@@ -269,12 +374,7 @@ function simplify(e::SymExpr)
     args = map(simplify, e.args)
     op = e.op
     
-    # If all arguments are numeric, evaluate
-    if all(a -> a isa SymNum, args)
-        return SymNum(evaluate(SymExpr(op, args...)))
-    end
-    
-    # Identity simplifications
+    # Identity simplifications (before numeric evaluation)
     if op == :+ && length(args) == 2
         if args[1] isa SymNum && args[1].value == 0
             return args[2]
@@ -305,13 +405,18 @@ function simplify(e::SymExpr)
         end
     end
     
+    # If all arguments are purely numeric (SymNum only, not Sym or SymExpr), evaluate fully
+    if all(a -> a isa SymNum, args)
+        return SymNum(evaluate(SymExpr(op, args...)))
+    end
+    
     SymExpr(op, args...)
 end
 
 # ============== Comparison (for testing) ==============
 
-# Symbolic equality (structural)
-Base.:(==)(a::Sym, b::Sym) = a.name == b.name
+# Symbolic equality (structural) - defined earlier for Sym
+# Base.:(==)(a::Sym, b::Sym) already defined near struct definition
 Base.:(==)(a::SymNum, b::SymNum) = a.value == b.value
 Base.:(==)(a::SymNum, b::Number) = a.value == b
 Base.:(==)(a::Number, b::SymNum) = a == b.value
@@ -355,3 +460,129 @@ Base.one(::AbstractSymbolic) = SymNum(1)
 # Allow symbolic in numeric contexts where needed
 Base.promote_rule(::Type{<:AbstractSymbolic}, ::Type{T}) where {T<:Number} = AbstractSymbolic
 Base.convert(::Type{AbstractSymbolic}, x::Number) = SymNum(x)
+
+# ============== Kronecker Delta ==============
+
+"""
+    KroneckerDelta(i, j)
+
+Represents the Kronecker delta δᵢⱼ which equals 1 if i==j and 0 otherwise.
+Used for symbolic inner products where indices may be symbolic.
+
+# Examples
+```julia
+k, l = Sym(:k), Sym(:l)
+δ = KroneckerDelta(k, l)  # δₖₗ
+evaluate(δ, :k => 2, :l => 2)  # → 1
+evaluate(δ, :k => 2, :l => 3)  # → 0
+```
+"""
+struct KroneckerDelta <: AbstractSymbolic
+    i::Any  # Can be Symbol, AbstractSymbolic, or concrete value
+    j::Any
+end
+
+# Display
+function Base.show(io::IO, δ::KroneckerDelta)
+    print(io, "δ(", δ.i, ",", δ.j, ")")
+end
+
+# Simplify KroneckerDelta - try to evaluate if indices are concrete
+function simplify(δ::KroneckerDelta)
+    # Simplify indices first
+    i_new = δ.i isa SymExpr ? simplify(δ.i) : δ.i
+    j_new = δ.j isa SymExpr ? simplify(δ.j) : δ.j
+    new_δ = KroneckerDelta(i_new, j_new)
+    result = _try_evaluate_delta(new_δ)
+    result !== nothing ? SymNum(result) : new_δ
+end
+
+# Evaluate when both indices are concrete
+function _try_evaluate_delta(δ::KroneckerDelta)
+    i, j = δ.i, δ.j
+    # Try to simplify symbolic expressions first
+    i_simplified = i isa SymExpr ? simplify(i) : i
+    j_simplified = j isa SymExpr ? simplify(j) : j
+    
+    # If both are concrete (not symbolic or fully numeric), we can evaluate
+    i_concrete = !(i_simplified isa AbstractSymbolic) || (i_simplified isa SymNum)
+    j_concrete = !(j_simplified isa AbstractSymbolic) || (j_simplified isa SymNum)
+    
+    if i_concrete && j_concrete
+        i_val = _to_comparable_value(i_simplified)
+        j_val = _to_comparable_value(j_simplified)
+        return i_val == j_val ? 1 : 0
+    end
+    return nothing  # Cannot evaluate yet
+end
+
+# Helper to convert index to comparable value
+function _to_comparable_value(x)
+    if x isa AbstractSymbolic
+        return evaluate(x)
+    elseif x isa Symbol
+        # Try to parse symbol as number (e.g., :0 → 0, :42 → 42)
+        str = string(x)
+        parsed = tryparse(Int, str)
+        return parsed !== nothing ? parsed : x
+    else
+        return x
+    end
+end
+
+# Check if delta is numerically evaluable
+is_numeric(δ::KroneckerDelta) = _try_evaluate_delta(δ) !== nothing
+
+# Evaluate delta
+function evaluate(δ::KroneckerDelta)
+    result = _try_evaluate_delta(δ)
+    result !== nothing && return result
+    error("Cannot evaluate KroneckerDelta with symbolic indices: δ($(δ.i), $(δ.j))")
+end
+
+# Substitute in delta (Pair version)
+function substitute(δ::KroneckerDelta, replacements::Pair{Symbol}...)
+    i_new = δ.i isa AbstractSymbolic ? substitute(δ.i, replacements...) : δ.i
+    j_new = δ.j isa AbstractSymbolic ? substitute(δ.j, replacements...) : δ.j
+    
+    # Simplify after substitution
+    i_simplified = i_new isa SymExpr ? simplify(i_new) : i_new
+    j_simplified = j_new isa SymExpr ? simplify(j_new) : j_new
+    
+    # Try to evaluate delta
+    new_δ = KroneckerDelta(i_simplified, j_simplified)
+    result = _try_evaluate_delta(new_δ)
+    result !== nothing ? result : new_δ
+end
+
+# Substitute in delta (Dict version - called from SymExpr substitute)
+function substitute(δ::KroneckerDelta, subs::Dict{Symbol, <:Any})
+    i_new = δ.i isa AbstractSymbolic ? substitute(δ.i, subs) : δ.i
+    j_new = δ.j isa AbstractSymbolic ? substitute(δ.j, subs) : δ.j
+    
+    # Simplify after substitution
+    i_simplified = i_new isa SymExpr ? simplify(i_new) : i_new
+    j_simplified = j_new isa SymExpr ? simplify(j_new) : j_new
+    
+    # Try to evaluate delta
+    new_δ = KroneckerDelta(i_simplified, j_simplified)
+    result = _try_evaluate_delta(new_δ)
+    result !== nothing ? result : new_δ
+end
+
+# Arithmetic with KroneckerDelta
+Base.:*(a::Number, δ::KroneckerDelta) = iszero(a) ? 0 : SymExpr(:*, SymNum(a), δ)
+Base.:*(δ::KroneckerDelta, a::Number) = a * δ
+Base.:*(a::AbstractSymbolic, δ::KroneckerDelta) = SymExpr(:*, a, δ)
+Base.:*(δ::KroneckerDelta, a::AbstractSymbolic) = SymExpr(:*, δ, a)
+Base.:*(δ1::KroneckerDelta, δ2::KroneckerDelta) = SymExpr(:*, δ1, δ2)
+
+Base.:+(δ::KroneckerDelta, a::Number) = SymExpr(:+, δ, SymNum(a))
+Base.:+(a::Number, δ::KroneckerDelta) = SymExpr(:+, SymNum(a), δ)
+Base.:+(δ::KroneckerDelta, a::AbstractSymbolic) = SymExpr(:+, δ, a)
+Base.:+(a::AbstractSymbolic, δ::KroneckerDelta) = SymExpr(:+, a, δ)
+
+# Comparisons for delta
+Base.iszero(δ::KroneckerDelta) = _try_evaluate_delta(δ) == 0
+Base.isone(δ::KroneckerDelta) = _try_evaluate_delta(δ) == 1
+Base.:(==)(δ1::KroneckerDelta, δ2::KroneckerDelta) = δ1.i == δ2.i && δ1.j == δ2.j

@@ -103,6 +103,47 @@ n0' * n0  # → 1
 n0' * n1  # → 0
 ```
 
+## Symbolic Scalars with Assumptions
+
+QSymbolic.jl provides symbolic scalars that can carry type assumptions, which affects how operations like conjugation behave:
+
+```julia
+# Basic symbolic variable (no assumptions - treated as complex)
+z = Sym(:z)
+z'  # → z* (conjugate applied)
+
+# Real variable - conjugate is identity
+r = Sym(:r, :real)
+r'  # → r (no conjugate for real numbers)
+
+# Positive integer - implies real
+n = Sym(:n, :positive, :integer)
+is_real(n)       # → true
+is_positive(n)   # → true
+is_integer(n)    # → true
+n'               # → n (adjoint of real is itself)
+
+# Keyword syntax also supported
+k = Sym(:k, positive=true, integer=true)
+```
+
+Available assumptions:
+- `:real` - real number (conj(x) = x)
+- `:positive` - strictly positive (implies :real and :nonnegative)
+- `:negative` - strictly negative (implies :real)
+- `:nonnegative` - non-negative (implies :real)
+- `:integer` - integer value (implies :real)
+
+This is particularly useful when working with quantum number indices:
+
+```julia
+# Symbolic quantum number
+n = Sym(:n, :nonnegative, :integer)
+
+# Expression involving the quantum number
+expr = √(n + 1)  # √(n + 1) - properly real-valued
+```
+
 ## Next Steps
 
 - Learn about [Basis Transforms](@ref) for changing between different representations (e.g., position ↔ momentum)

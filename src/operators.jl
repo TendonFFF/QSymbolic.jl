@@ -624,14 +624,35 @@ end
 
 Base.show(io::IO, ob::OpBra) = print(io, ob.bra, ob.op)
 
+# Same-basis Bra * Operator
 function Base.:*(bra::AbstractBra{B}, op::AbstractOperator{B}) where B
     OpBra(bra, op)
 end
 
-# ⟨ψ|Ô|ϕ⟩ = ⟨ψ|(Ô|ϕ⟩)
+# Cross-basis Bra * Operator (same space, different bases)
+function Base.:*(bra::AbstractBra{B1}, op::AbstractOperator{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
+    space(B1) == space(B2) || 
+        throw(DimensionMismatch("Bra in $B1 and operator in $B2 are in different spaces"))
+    OpBra(bra, op)
+end
+
+# ⟨ψ|Ô|ϕ⟩ = ⟨ψ|(Ô|ϕ⟩) - same basis
 function Base.:*(ob::OpBra{B,B}, ket::AbstractKet{B}) where B
     result = ob.op * ket
     result isa Number ? result * (ob.bra * BasisKet{B}(nothing)) : ob.bra * result
+end
+
+# ⟨ψ|Ô|ϕ⟩ - cross-basis: apply operator to ket, then inner product
+function Base.:*(ob::OpBra{B1,B2}, ket::AbstractKet{B3}) where {B1,B2,B3}
+    # First apply operator to ket (may need basis transform)
+    result = ob.op * ket
+    # Then compute inner product with bra
+    result isa Number ? result : ob.bra * result
+end
+
+# ⟨ψ|Ô¹Ô² = ⟨ψ|(Ô¹Ô²) - operator chaining
+function Base.:*(ob::OpBra, op2::AbstractOperator)
+    OpBra(ob.bra, ob.op * op2)
 end
 
 """

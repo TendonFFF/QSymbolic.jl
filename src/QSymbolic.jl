@@ -20,8 +20,9 @@ export OpKet, OpBra, IdentityOp
 export create_ladder_operators
 
 # Types - Symbolic scalars
-export AbstractSymbolic, Sym, SymNum, SymExpr
+export AbstractSymbolic, Sym, SymNum, SymExpr, KroneckerDelta
 export substitute, evaluate, symbols, is_numeric, simplify
+export is_real, is_positive, is_integer, is_nonnegative, assumptions
 
 # Functions - Spaces & Bases
 export ⊗, space, basis, basisname, basis1, basis2
