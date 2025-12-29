@@ -12,6 +12,7 @@ Quantum operators transform states and are essential for describing observables 
 | `OperatorProduct` | Product of operators: ÂB̂ |
 | `FunctionOperator` | Operator defined by a function |
 | `IdentityOp` | Identity operator 𝕀 |
+| `TensorOperator` | Tensor product of operators: Â ⊗ B̂ |
 
 ## Abstract Type
 
@@ -60,6 +61,21 @@ AdjointFunctionOperator
 
 ```@docs
 IdentityOp
+```
+
+## Tensor Product Operator
+
+```@docs
+TensorOperator
+```
+
+### Tensor Product Utilities
+
+```@docs
+lift
+swap
+reorder
+partial_trace
 ```
 
 ## Symbolic Types
@@ -131,4 +147,36 @@ end
     n = parse(Int, string(ket.index))
     √(n + 1) * BasisKet(Fb, n + 1)
 end
+```
+
+### Tensor Product Operators
+
+```julia
+# Two-qubit system
+H1 = HilbertSpace(:qubit1, 2)
+H2 = HilbertSpace(:qubit2, 2)
+B1 = Basis(H1, :z)
+B2 = Basis(H2, :z)
+
+up1 = BasisKet(B1, :↑)
+down1 = BasisKet(B1, :↓)
+up2 = BasisKet(B2, :↑)
+down2 = BasisKet(B2, :↓)
+
+# Single-qubit operators
+σz1 = up1 * up1' - down1 * down1'
+σz2 = up2 * up2' - down2 * down2'
+
+# Tensor product
+σz1_σz2 = σz1 ⊗ σz2  # σz ⊗ σz
+
+# Lift operator to composite space with identity
+σz1_full = σz1 ⊗ IdentityOp(B2)  # σz ⊗ 𝕀
+
+# Using lift function
+σz1_lifted = lift(σz1, B2)  # equivalent to σz1 ⊗ 𝕀(B2)
+
+# Reorder tensor product to match target basis order
+T12 = σz1 ⊗ σz2
+T21 = reorder(T12, (B2, B1))  # reorder to B2⊗B1
 ```

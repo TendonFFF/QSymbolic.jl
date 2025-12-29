@@ -16,8 +16,10 @@ export SingleIndex, MultiIndex, KetIndex  # Index type aliases
 # Types - Operators
 export AbstractOperator, Operator, SumOperator, ScaledOperator, OperatorProduct
 export FunctionOperator, AdjointFunctionOperator
+export TensorOperator
 export OpKet, OpBra, IdentityOp
 export create_ladder_operators
+export lift, swap, reorder, partial_trace
 
 # Types - Symbolic scalars
 export AbstractSymbolic, Sym, SymNum, SymExpr, KroneckerDelta

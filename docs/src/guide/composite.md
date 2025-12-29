@@ -152,3 +152,60 @@ has_transform(typeof(Xa ⊗ Xb), typeof(Za ⊗ Zb))  # → true (if both subsyst
 
 # This works even without explicitly registering the composite transform!
 ```
+
+## Tensor Product Operators
+
+Operators on composite systems can be constructed as tensor products:
+
+```julia
+H_A = HilbertSpace(:A, 2)
+H_B = HilbertSpace(:B, 2)
+Za = Basis(H_A, :z)
+Zb = Basis(H_B, :z)
+
+up_a, down_a = BasisKet(Za, :↑), BasisKet(Za, :↓)
+up_b, down_b = BasisKet(Zb, :↑), BasisKet(Zb, :↓)
+
+# Single-qubit Pauli Z operators
+σz_a = up_a * up_a' - down_a * down_a'
+σz_b = up_b * up_b' - down_b * down_b'
+
+# Tensor product: σz_A ⊗ σz_B
+σz_ab = σz_a ⊗ σz_b
+
+# Apply to product state
+ψ = up_a ⊗ up_b
+σz_ab * ψ  # → |↑↑⟩ (eigenvalue +1)
+```
+
+### Lifting Single-System Operators
+
+Use `lift` to extend a single-system operator to a composite space with identity:
+
+```julia
+# Lift σz_a to act on joint system A⊗B
+σz_a_full = lift(σz_a, Zb)  # equivalent to σz_a ⊗ 𝕀_B
+
+# Using IdentityOp directly
+σz_a_full = σz_a ⊗ IdentityOp(Zb)
+σz_b_full = IdentityOp(Za) ⊗ σz_b
+```
+
+### Reordering Tensor Products
+
+Use `reorder` to reorder tensor products to match a target basis ordering:
+
+```julia
+# If we have operator in order A⊗B but need B⊗A:
+T_ab = σz_a ⊗ σz_b     # Acts on Za ⊗ Zb
+T_ba = reorder(T_ab, (Zb, Za))  # Reordered for Zb ⊗ Za
+```
+
+### Swapping Subsystems
+
+The `swap` function swaps two adjacent positions in a tensor product:
+
+```julia
+T = op1 ⊗ op2 ⊗ op3  # 3-system operator
+T_swapped = swap(T, 1)  # Swap positions 1 and 2: becomes op2 ⊗ op1 ⊗ op3
+```

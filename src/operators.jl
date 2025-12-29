@@ -683,6 +683,9 @@ struct IdentityOp{B<:AbstractBasis} <: AbstractOperator{B}
     end
 end
 
+# Constructor with explicit type parameter
+IdentityOp{B}() where {B<:AbstractBasis} = IdentityOp(B)
+
 # basis inherited from AbstractOperator
 
 Base.:*(::IdentityOp{B}, ket::AbstractKet{B}) where B = ket
@@ -699,6 +702,436 @@ Base.show(io::IO, ::IdentityOp{B}) where B = print(io, "𝕀")
 Base.iszero(x::Number) = x == 0
 Base.iszero(::AbstractKet) = false
 Base.iszero(::AbstractOperator) = false
+
+# ============== Tensor Product of Operators ==============
+
+@doc """
+    TensorOperator{B1,B2}(op1, op2)
+    op1 ⊗ op2
+
+Tensor product of two operators: Â ⊗ B̂. Acts on composite states as:
+(Â ⊗ B̂)(|ψ⟩ ⊗ |ϕ⟩) = (Â|ψ⟩) ⊗ (B̂|ϕ⟩)
+
+# Examples
+```julia
+H1, H2 = HilbertSpace(:A, 2), HilbertSpace(:B, 2)
+B1, B2 = Basis(H1, :z), Basis(H2, :z)
+
+# Create operators on each subsystem
+σz_1 = up1 * up1' - down1 * down1'
+σx_2 = up2 * down2' + down2 * up2'
+
+# Tensor product
+op = σz_1 ⊗ σx_2  # Acts on composite space
+
+# Apply to product state
+ket = up1 ⊗ up2
+op * ket  # → (σz|↑⟩) ⊗ (σx|↑⟩)
+```
+
+See also: [`Operator`](@ref), [`IdentityOp`](@ref)
+""" TensorOperator
+struct TensorOperator{B1<:AbstractBasis, B2<:AbstractBasis, O1<:AbstractOperator{B1}, O2<:AbstractOperator{B2}} <: AbstractOperator{CompositeBasis{B1,B2}}
+    op1::O1
+    op2::O2
+end
+
+# Constructors
+TensorOperator(op1::O1, op2::O2) where {B1, B2, O1<:AbstractOperator{B1}, O2<:AbstractOperator{B2}} = 
+    TensorOperator{B1, B2, O1, O2}(op1, op2)
+
+# Tensor product of operators
+⊗(op1::AbstractOperator{B1}, op2::AbstractOperator{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis} = 
+    TensorOperator(op1, op2)
+
+# Display
+function Base.show(io::IO, op::TensorOperator)
+    print(io, "(", op.op1, ")⊗(", op.op2, ")")
+end
+
+# Apply TensorOperator to ProductKet: (Â⊗B̂)(|ψ⟩⊗|ϕ⟩) = (Â|ψ⟩)⊗(B̂|ϕ⟩)
+function Base.:*(op::TensorOperator{B1,B2}, ket::ProductKet{B1,B2}) where {B1,B2}
+    result1 = op.op1 * ket.ket1
+    result2 = op.op2 * ket.ket2
+    
+    # Handle zero results
+    (iszero(result1) || iszero(result2)) && return 0
+    
+    # Combine results based on their types
+    _tensor_combine(result1, result2)
+end
+
+# Helper to combine tensor product results
+function _tensor_combine(r1::BasisKet{B1}, r2::BasisKet{B2}) where {B1,B2}
+    ProductKet(r1, r2)
+end
+
+function _tensor_combine(r1::weightedKet{B1}, r2::BasisKet{B2}) where {B1,B2}
+    r1.weight * ProductKet(r1.Ket, r2)
+end
+
+function _tensor_combine(r1::BasisKet{B1}, r2::weightedKet{B2}) where {B1,B2}
+    r2.weight * ProductKet(r1, r2.Ket)
+end
+
+function _tensor_combine(r1::weightedKet{B1}, r2::weightedKet{B2}) where {B1,B2}
+    (r1.weight * r2.weight) * ProductKet(r1.Ket, r2.Ket)
+end
+
+function _tensor_combine(r1::sumKet{B1,T1}, r2::BasisKet{B2}) where {B1,B2,T1}
+    kets = [ProductKet(k, r2) for k in r1.kets]
+    SumProductKet(kets, r1.weights)
+end
+
+function _tensor_combine(r1::BasisKet{B1}, r2::sumKet{B2,T2}) where {B1,B2,T2}
+    kets = [ProductKet(r1, k) for k in r2.kets]
+    SumProductKet(kets, r2.weights)
+end
+
+function _tensor_combine(r1::weightedKet{B1}, r2::sumKet{B2,T2}) where {B1,B2,T2}
+    kets = [ProductKet(r1.Ket, k) for k in r2.kets]
+    SumProductKet(kets, r1.weight .* r2.weights)
+end
+
+function _tensor_combine(r1::sumKet{B1,T1}, r2::weightedKet{B2}) where {B1,B2,T1}
+    kets = [ProductKet(k, r2.Ket) for k in r1.kets]
+    SumProductKet(kets, r2.weight .* r1.weights)
+end
+
+function _tensor_combine(r1::sumKet{B1,T1}, r2::sumKet{B2,T2}) where {B1,B2,T1,T2}
+    kets = ProductKet{B1,B2}[]
+    weights = promote_type(T1,T2)[]
+    for (k1, w1) in zip(r1.kets, r1.weights)
+        for (k2, w2) in zip(r2.kets, r2.weights)
+            push!(kets, ProductKet(k1, k2))
+            push!(weights, w1 * w2)
+        end
+    end
+    SumProductKet(kets, weights)
+end
+
+# Handle Number results from operator application
+function _tensor_combine(r1::Number, r2)
+    iszero(r1) ? 0 : r1 * _to_sum_ket(r2)
+end
+
+function _tensor_combine(r1, r2::Number)
+    iszero(r2) ? 0 : r2 * _to_sum_ket(r1)
+end
+
+function _tensor_combine(r1::Number, r2::Number)
+    r1 * r2
+end
+
+# Helper to convert various ket types to a consistent form
+_to_sum_ket(k::BasisKet) = sumKet(k)
+_to_sum_ket(k::weightedKet) = sumKet(k)
+_to_sum_ket(k::sumKet) = k
+
+# Apply TensorOperator to SumProductKet
+function Base.:*(op::TensorOperator{B1,B2}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
+    total = nothing
+    for (k, w) in zip(ket.kets, ket.weights)
+        result = op * k
+        iszero(result) && continue
+        term = result isa Number ? result * w : w * result
+        total = isnothing(total) ? term : total + term
+    end
+    isnothing(total) ? 0 : total
+end
+
+# Adjoint of TensorOperator: (Â⊗B̂)† = Â†⊗B̂†
+function Base.adjoint(op::TensorOperator{B1,B2}) where {B1,B2}
+    TensorOperator(adjoint(op.op1), adjoint(op.op2))
+end
+
+# Scalar multiplication
+function Base.:*(a::Number, op::TensorOperator{B1,B2}) where {B1,B2}
+    ScaledOperator{CompositeBasis{B1,B2}, typeof(a)}(a, op)
+end
+
+# Addition of TensorOperators
+function Base.:+(op1::TensorOperator{B1,B2}, op2::TensorOperator{B1,B2}) where {B1,B2}
+    SumOperator{CompositeBasis{B1,B2}}([op1, op2])
+end
+
+function Base.:+(op1::TensorOperator{B1,B2}, op2::AbstractOperator{CompositeBasis{B1,B2}}) where {B1,B2}
+    terms2 = op2 isa SumOperator ? op2.terms : [op2]
+    SumOperator{CompositeBasis{B1,B2}}(vcat([op1], terms2))
+end
+
+function Base.:+(op1::AbstractOperator{CompositeBasis{B1,B2}}, op2::TensorOperator{B1,B2}) where {B1,B2}
+    terms1 = op1 isa SumOperator ? op1.terms : [op1]
+    SumOperator{CompositeBasis{B1,B2}}(vcat(terms1, [op2]))
+end
+
+# Multiplication of TensorOperators: (Â⊗B̂)(Ĉ⊗D̂) = (ÂĈ)⊗(B̂D̂)
+function Base.:*(op1::TensorOperator{B1,B2}, op2::TensorOperator{B1,B2}) where {B1,B2}
+    TensorOperator(op1.op1 * op2.op1, op1.op2 * op2.op2)
+end
+
+# TensorOperator with other composite operators
+function Base.:*(op1::TensorOperator{B1,B2}, op2::AbstractOperator{CompositeBasis{B1,B2}}) where {B1,B2}
+    OperatorProduct{CompositeBasis{B1,B2}}([op1, op2])
+end
+
+function Base.:*(op1::AbstractOperator{CompositeBasis{B1,B2}}, op2::TensorOperator{B1,B2}) where {B1,B2}
+    OperatorProduct{CompositeBasis{B1,B2}}([op1, op2])
+end
+
+# Identity tensor products: 𝕀⊗Â and Â⊗𝕀
+⊗(::IdentityOp{B1}, op2::AbstractOperator{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis} = TensorOperator(IdentityOp{B1}(), op2)
+⊗(op1::AbstractOperator{B1}, ::IdentityOp{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis} = TensorOperator(op1, IdentityOp{B2}())
+⊗(::IdentityOp{B1}, ::IdentityOp{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis} = TensorOperator(IdentityOp{B1}(), IdentityOp{B2}())
+
+# IdentityOp on ProductKet
+function Base.:*(::IdentityOp{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B2}) where {B1,B2}
+    ket
+end
+
+function Base.:*(::IdentityOp{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
+    ket
+end
+
+# TensorOperator with IdentityOp simplification
+function Base.:*(op::TensorOperator{B1,B2,IdentityOp{B1},O2}, ket::ProductKet{B1,B2}) where {B1,B2,O2}
+    result2 = op.op2 * ket.ket2
+    iszero(result2) && return 0
+    _tensor_combine(ket.ket1, result2)
+end
+
+function Base.:*(op::TensorOperator{B1,B2,O1,IdentityOp{B2}}, ket::ProductKet{B1,B2}) where {B1,B2,O1}
+    result1 = op.op1 * ket.ket1
+    iszero(result1) && return 0
+    _tensor_combine(result1, ket.ket2)
+end
+
+# ============== Lifted Operators (single-system operator acting on composite) ==============
+
+@doc """
+    lift(op::AbstractOperator{B}, position::Int, target_basis::CompositeBasis)
+    lift(op, :first, B1 ⊗ B2)   # Â → Â ⊗ 𝕀
+    lift(op, :second, B1 ⊗ B2)  # B̂ → 𝕀 ⊗ B̂
+
+Lift a single-system operator to act on a composite system by tensoring with identity.
+
+# Examples
+```julia
+H1, H2 = HilbertSpace(:A, 2), HilbertSpace(:B, 2)
+B1, B2 = Basis(H1, :z), Basis(H2, :z)
+
+σz = up * up' - down * down'  # Operator on B1
+
+# Lift to composite: σz ⊗ 𝕀
+σz_lifted = lift(σz, :first, B1 ⊗ B2)
+# Or equivalently:
+σz_lifted = lift(σz, 1, CompositeBasis{typeof(B1), typeof(B2)})
+```
+""" lift
+function lift(op::AbstractOperator{B1}, position::Int, ::Type{CompositeBasis{BA,BB}}) where {B1,BA,BB}
+    if position == 1
+        B1 == BA || throw(ArgumentError("Operator basis $B1 doesn't match first component $BA"))
+        return TensorOperator(op, IdentityOp{BB}())
+    elseif position == 2
+        B1 == BB || throw(ArgumentError("Operator basis $B1 doesn't match second component $BB"))
+        return TensorOperator(IdentityOp{BA}(), op)
+    else
+        throw(ArgumentError("Position must be 1 or 2 for two-component composite basis"))
+    end
+end
+
+lift(op::AbstractOperator{B}, position::Symbol, cb::CompositeBasis{BA,BB}) where {B,BA,BB} = 
+    lift(op, position == :first ? 1 : 2, CompositeBasis{BA,BB})
+
+lift(op::AbstractOperator{B}, position::Int, cb::CompositeBasis{BA,BB}) where {B,BA,BB} = 
+    lift(op, position, CompositeBasis{BA,BB})
+
+# ============== Swap / Reorder Operations ==============
+
+@doc """
+    swap(ket::ProductKet)
+    swap(bra::ProductBra)
+    swap(op::TensorOperator)
+
+Swap the order of subsystems in a tensor product.
+|ψ⟩⊗|ϕ⟩ → |ϕ⟩⊗|ψ⟩
+Â⊗B̂ → B̂⊗Â
+
+# Examples
+```julia
+ket = up1 ⊗ down2
+swap(ket)  # → down2 ⊗ up1
+
+op = σz ⊗ σx
+swap(op)   # → σx ⊗ σz
+```
+""" swap
+function swap(ket::ProductKet{B1,B2}) where {B1,B2}
+    ProductKet(ket.ket2, ket.ket1)
+end
+
+function swap(bra::ProductBra{B1,B2}) where {B1,B2}
+    ProductBra(bra.bra2, bra.bra1)
+end
+
+function swap(sk::SumProductKet{B1,B2,T}) where {B1,B2,T}
+    swapped_kets = [ProductKet(k.ket2, k.ket1) for k in sk.kets]
+    SumProductKet(swapped_kets, sk.weights; name=sk.display_name)
+end
+
+function swap(sb::SumProductBra{B1,B2,T}) where {B1,B2,T}
+    swapped_bras = [ProductBra(b.bra2, b.bra1) for b in sb.bras]
+    SumProductBra(swapped_bras, sb.weights; name=sb.display_name)
+end
+
+function swap(op::TensorOperator{B1,B2}) where {B1,B2}
+    TensorOperator(op.op2, op.op1)
+end
+
+@doc """
+    reorder(obj, target_basis::CompositeBasis)
+    reorder(obj, basis1 ⊗ basis2)
+
+Reorder a tensor product (ket, bra, or operator) to match the given target basis order.
+If the object's basis order matches, returns as-is. If swapped, applies swap.
+
+# Examples
+```julia
+H1, H2 = HilbertSpace(:A, 2), HilbertSpace(:B, 2)
+B1, B2 = Basis(H1, :z), Basis(H2, :z)
+
+ket = BasisKet(B2, :↑) ⊗ BasisKet(B1, :↓)  # In B2⊗B1 order
+target = B1 ⊗ B2
+
+reorder(ket, target)  # → |↓⟩⊗|↑⟩ in B1⊗B2 order
+
+op = σx_B2 ⊗ σz_B1  # Operator in B2⊗B1
+reorder(op, target)  # → σz_B1 ⊗ σx_B2 in B1⊗B2 order
+```
+""" reorder
+function reorder(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
+    if A1 == B1 && A2 == B2
+        return ket
+    elseif A1 == B2 && A2 == B1
+        return swap(ket)
+    else
+        throw(ArgumentError("Cannot reorder: bases don't match. Got $A1⊗$A2, target $B1⊗$B2"))
+    end
+end
+
+function reorder(sk::SumProductKet{A1,A2,T}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,T,B1,B2}
+    if A1 == B1 && A2 == B2
+        return sk
+    elseif A1 == B2 && A2 == B1
+        return swap(sk)
+    else
+        throw(ArgumentError("Cannot reorder: bases don't match. Got $A1⊗$A2, target $B1⊗$B2"))
+    end
+end
+
+function reorder(bra::ProductBra{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
+    if A1 == B1 && A2 == B2
+        return bra
+    elseif A1 == B2 && A2 == B1
+        return swap(bra)
+    else
+        throw(ArgumentError("Cannot reorder: bases don't match. Got $A1⊗$A2, target $B1⊗$B2"))
+    end
+end
+
+function reorder(sb::SumProductBra{A1,A2,T}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,T,B1,B2}
+    if A1 == B1 && A2 == B2
+        return sb
+    elseif A1 == B2 && A2 == B1
+        return swap(sb)
+    else
+        throw(ArgumentError("Cannot reorder: bases don't match. Got $A1⊗$A2, target $B1⊗$B2"))
+    end
+end
+
+function reorder(op::TensorOperator{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
+    if A1 == B1 && A2 == B2
+        return op
+    elseif A1 == B2 && A2 == B1
+        return swap(op)
+    else
+        throw(ArgumentError("Cannot reorder: bases don't match. Got $A1⊗$A2, target $B1⊗$B2"))
+    end
+end
+
+# Convenience: reorder to a CompositeBasis instance
+reorder(obj, cb::CompositeBasis{B1,B2}) where {B1,B2} = reorder(obj, CompositeBasis{B1,B2})
+
+# ============== Partial Trace ==============
+
+@doc """
+    partial_trace(op::TensorOperator, subsystem::Int)
+
+Compute the partial trace over one subsystem of a tensor product operator.
+Returns an operator on the remaining subsystem.
+
+- `partial_trace(Â⊗B̂, 1)` traces over first subsystem → Tr(Â)·B̂
+- `partial_trace(Â⊗B̂, 2)` traces over second subsystem → Tr(B̂)·Â
+
+Note: For general operators, the trace is symbolic unless the operator is 
+in a form where trace can be computed (e.g., projectors |ψ⟩⟨ψ|).
+
+# Examples
+```julia
+# For projectors: Tr(|ψ⟩⟨ψ|) = 1
+P1 = up * up'
+P2 = down * down'
+op = P1 ⊗ P2
+
+partial_trace(op, 1)  # → Tr(P1)·P2 = P2
+partial_trace(op, 2)  # → Tr(P2)·P1 = P1
+```
+""" partial_trace
+function partial_trace(op::TensorOperator{B1,B2,Operator{B1,T1},O2}, subsystem::Int) where {B1,B2,T1,O2}
+    if subsystem == 1
+        # Trace over first: Tr(|ψ⟩⟨ϕ|) = ⟨ϕ|ψ⟩
+        inner = op.op1.bra * BasisKet{B1}(op.op1.ket.index)
+        coeff = op.op1.coeff * inner
+        return coeff * op.op2
+    elseif subsystem == 2
+        return partial_trace_second(op)
+    else
+        throw(ArgumentError("subsystem must be 1 or 2"))
+    end
+end
+
+function partial_trace(op::TensorOperator{B1,B2,O1,Operator{B2,T2}}, subsystem::Int) where {B1,B2,O1,T2}
+    if subsystem == 2
+        # Trace over second: Tr(|ψ⟩⟨ϕ|) = ⟨ϕ|ψ⟩
+        inner = op.op2.bra * BasisKet{B2}(op.op2.ket.index)
+        coeff = op.op2.coeff * inner
+        return coeff * op.op1
+    elseif subsystem == 1
+        return partial_trace_first(op)
+    else
+        throw(ArgumentError("subsystem must be 1 or 2"))
+    end
+end
+
+# Both are Operator type
+function partial_trace(op::TensorOperator{B1,B2,Operator{B1,T1},Operator{B2,T2}}, subsystem::Int) where {B1,B2,T1,T2}
+    if subsystem == 1
+        inner = op.op1.bra * BasisKet{B1}(op.op1.ket.index)
+        coeff = op.op1.coeff * inner
+        return coeff * op.op2
+    elseif subsystem == 2
+        inner = op.op2.bra * BasisKet{B2}(op.op2.ket.index)
+        coeff = op.op2.coeff * inner
+        return coeff * op.op1
+    else
+        throw(ArgumentError("subsystem must be 1 or 2"))
+    end
+end
+
+# Fallback for general operators - returns symbolic
+function partial_trace(op::TensorOperator{B1,B2}, subsystem::Int) where {B1,B2}
+    throw(ArgumentError("Partial trace not implemented for general operator types. Use Operator (outer product) form."))
+end
 
 # ============== Automatic basis transformation ==============
 #

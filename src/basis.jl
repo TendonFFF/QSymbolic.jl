@@ -78,7 +78,7 @@ end
     ⊗(basis1::AbstractBasis, basis2::AbstractBasis)
 
 Tensor product of two bases.
-""" ⊗
+"""
 ⊗(::B1, ::B2) where {B1<:AbstractBasis, B2<:AbstractBasis} = CompositeBasis{B1,B2}()
 
 @doc """
