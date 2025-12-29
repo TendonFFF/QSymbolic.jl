@@ -9,7 +9,7 @@ const MultiIndex = Tuple{Vararg{SingleIndex}}
 # Combined index type - single or multi-index
 const KetIndex = Union{SingleIndex, MultiIndex}
 
-"""
+@doc """
     BasisKet(basis, index)
     BasisKet(space, index)  # uses DefaultBasis
 
@@ -47,7 +47,7 @@ ket = BasisKet(composite_basis, (Sym(:n), Sym(:m)))  # |n,m⟩
 ```
 
 See also: [`BasisBra`](@ref), [`weightedKet`](@ref), [`sumKet`](@ref)
-"""
+""" BasisKet
 struct BasisKet{B<:AbstractBasis} <: AbstractKet{B}
     index::KetIndex
 
@@ -89,7 +89,7 @@ struct BasisKet{B<:AbstractBasis} <: AbstractKet{B}
     end
 end
 
-"""
+@doc """
     weightedKet{B,T}
 
 Ket multiplied by scalar weight. Created via `weight * ket`.
@@ -103,13 +103,13 @@ julia> ψ = BasisKet(H, :ψ);
 julia> 2 * ψ
 2·|ψ⟩
 ```
-"""
+""" weightedKet
 struct weightedKet{B<:AbstractBasis, T} <: AbstractKet{B}
     Ket::BasisKet{B}
     weight::T
 end
 
-"""
+@doc """
     sumKet{B,T}
 
 Linear combination of basis kets. Created via ket addition.
@@ -123,7 +123,7 @@ julia> ψ, ϕ = BasisKet(H, :ψ), BasisKet(H, :ϕ);
 julia> ψ + ϕ
 |ψ⟩ + |ϕ⟩
 ```
-"""
+""" sumKet
 struct sumKet{B<:AbstractBasis, T} <: AbstractKet{B}
     display_name::Union{Symbol,Nothing}
     kets::Vector{BasisKet{B}}
@@ -140,7 +140,7 @@ struct sumKet{B<:AbstractBasis, T} <: AbstractKet{B}
     end
 end
 
-"""
+@doc """
     BasisBra(basis, index)
     BasisBra(space, index)  # uses DefaultBasis
 
@@ -161,7 +161,7 @@ julia> ψ = BasisKet(H, :ψ);
 julia> ψ'
 ⟨ψ|
 ```
-"""
+""" BasisBra
 struct BasisBra{B<:AbstractBasis} <: AbstractBra{B}
     index::KetIndex
 
@@ -203,21 +203,21 @@ struct BasisBra{B<:AbstractBasis} <: AbstractBra{B}
     end
 end
 
-"""
+@doc """
     weightedBra{B,T}
 
 Bra multiplied by scalar weight. Created via `weight * bra`.
-"""
+""" weightedBra
 struct weightedBra{B<:AbstractBasis, T} <: AbstractBra{B}
     Bra::BasisBra{B}
     weight::T
 end
 
-"""
+@doc """
     sumBra{B,T}
 
 Linear combination of basis bras. Created via bra addition.
-"""
+""" sumBra
 struct sumBra{B<:AbstractBasis, T} <: AbstractBra{B}
     display_name::Union{Symbol,Nothing}
     bras::Vector{BasisBra{B}}
@@ -236,7 +236,7 @@ end
 
 # Product states for composite systems
 
-"""
+@doc """
     ProductKet{B1,B2}(ket1, ket2)
 
 Tensor product of two kets: |ψ⟩⊗|ϕ⟩. Lives in `CompositeBasis{B1,B2}`.
@@ -250,23 +250,23 @@ julia> ψ, ϕ = BasisKet(H1, :ψ), BasisKet(H2, :ϕ);
 julia> ψ ⊗ ϕ
 |ψ⟩⊗|ϕ⟩
 ```
-"""
+""" ProductKet
 struct ProductKet{B1<:AbstractBasis, B2<:AbstractBasis} <: AbstractKet{CompositeBasis{B1,B2}}
     ket1::BasisKet{B1}
     ket2::BasisKet{B2}
 end
 
-"""
+@doc """
     ProductBra{B1,B2}(bra1, bra2)
 
 Tensor product of two bras: ⟨ψ|⊗⟨ϕ|. Lives in `CompositeBasis{B1,B2}`.
-"""
+""" ProductBra
 struct ProductBra{B1<:AbstractBasis, B2<:AbstractBasis} <: AbstractBra{CompositeBasis{B1,B2}}
     bra1::BasisBra{B1}
     bra2::BasisBra{B2}
 end
 
-"""
+@doc """
     SumProductKet{B1,B2,T}
 
 Linear combination of product kets. Used for entangled states and 
@@ -277,7 +277,7 @@ transformed composite states.
 # Bell state |Φ⁺⟩ = (|00⟩ + |11⟩)/√2
 bell = (zero_zero + one_one) / √2
 ```
-"""
+""" SumProductKet
 struct SumProductKet{B1<:AbstractBasis, B2<:AbstractBasis, T} <: AbstractKet{CompositeBasis{B1,B2}}
     display_name::Union{Symbol,Nothing}
     kets::Vector{ProductKet{B1,B2}}
@@ -288,11 +288,11 @@ struct SumProductKet{B1<:AbstractBasis, B2<:AbstractBasis, T} <: AbstractKet{Com
     end
 end
 
-"""
+@doc """
     SumProductBra{B1,B2,T}
 
 Linear combination of product bras.
-"""
+""" SumProductBra
 struct SumProductBra{B1<:AbstractBasis, B2<:AbstractBasis, T} <: AbstractBra{CompositeBasis{B1,B2}}
     display_name::Union{Symbol,Nothing}
     bras::Vector{ProductBra{B1,B2}}
@@ -303,14 +303,14 @@ struct SumProductBra{B1<:AbstractBasis, B2<:AbstractBasis, T} <: AbstractBra{Com
     end
 end
 
-"""
+@doc """
     InnerProduct{B1,B2}(bra, ket)
 
 Symbolic inner product ⟨bra|ket⟩ for cross-basis when no transform is defined.
 Returned when computing inner products between different bases without a registered transform.
 
 See also: [`define_transform!`](@ref)
-"""
+""" InnerProduct
 struct InnerProduct{B1<:AbstractBasis, B2<:AbstractBasis}
     bra::BasisBra{B1}
     ket::BasisKet{B2}
@@ -318,20 +318,20 @@ end
 
 # Utility functions
 
-"""
+@doc """
     basis(ket_or_bra)
 
 Get the basis type of a ket or bra.
-"""
+""" basis
 basis(::AbstractKet{B}) where B = B
 basis(::AbstractBra{B}) where B = B
 basis(::Type{<:AbstractKet{B}}) where B = B
 basis(::Type{<:AbstractBra{B}}) where B = B
 
-"""
+@doc """
     space(ket_or_bra)
 
 Get the underlying Hilbert space of a ket or bra.
-"""
+""" space
 space(::AbstractKet{B}) where B = space(B)
 space(::AbstractBra{B}) where B = space(B)

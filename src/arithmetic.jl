@@ -1,10 +1,10 @@
-"Check that two kets/bras are in the same basis."
+@doc "Check that two kets/bras are in the same basis." check_basis
 check_basis(::AbstractKet{B1}, ::AbstractKet{B2}) where {B1,B2} =
     B1 == B2 || throw(DimensionMismatch("Kets are in different bases"))
 check_basis(::AbstractBra{B1}, ::AbstractBra{B2}) where {B1,B2} =
     B1 == B2 || throw(DimensionMismatch("Bras are in different bases"))
 
-"Check that kets/bras are in the same underlying space."
+@doc "Check that kets/bras are in the same underlying space." check_space
 check_space(k1::AbstractKet, k2::AbstractKet) = 
     space(k1) == space(k2) || throw(DimensionMismatch("Kets are in different spaces"))
 check_space(b1::AbstractBra, b2::AbstractBra) = 
@@ -74,7 +74,7 @@ end
     Base.$(:(/))(bra::AbstractBra, W::Number) = bra * (1 / W)
 end
 
-"""
+@doc """
     FockKet(space::HilbertSpace, n::Int)
 
 Create a Fock state |n⟩ in the given infinite-dimensional Hilbert space.
@@ -90,13 +90,13 @@ julia> n0 = FockKet(F, 0)  # ground state
 julia> n1 = FockKet(F, 1)  # first excited
 |1⟩
 ```
-"""
+""" FockKet
 function FockKet(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
     dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
     BasisKet(space, n)
 end
 
-"""
+@doc """
     FockBra(space::HilbertSpace, n::Int)
 
 Create a Fock bra ⟨n| in the given infinite-dimensional Hilbert space.
@@ -108,7 +108,7 @@ julia> F = FockSpace(:F);
 julia> FockBra(F, 0)
 ⟨0|
 ```
-"""
+""" FockBra
 function FockBra(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
     dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
     BasisBra(space, n)

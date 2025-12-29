@@ -1,6 +1,6 @@
 # Basis types for Hilbert spaces
 
-"""
+@doc """
     Basis(space, name::Symbol)
 
 A named orthonormal basis for a Hilbert space. Kets in same basis
@@ -18,7 +18,7 @@ Basis{x}
 ```
 
 See also: [`define_transform!`](@ref), [`DefaultBasis`](@ref), [`CompositeBasis`](@ref)
-"""
+""" Basis
 struct Basis{S<:AbstractSpace, name} <: AbstractBasis{S}
     function Basis(space::S, name::Symbol) where S<:AbstractSpace
         new{S, name}()
@@ -28,25 +28,25 @@ struct Basis{S<:AbstractSpace, name} <: AbstractBasis{S}
     end
 end
 
-"""
+@doc """
     space(basis)
 
 Get the underlying Hilbert space of a basis.
-"""
+""" space
 space(::Type{Basis{S,name}}) where {S,name} = S
 space(::Basis{S,name}) where {S,name} = S
 
-"""
+@doc """
     basisname(basis)
 
 Get the symbolic name of a basis.
-"""
+""" basisname
 basisname(::Type{Basis{S,name}}) where {S,name} = name
 basisname(::Basis{S,name}) where {S,name} = name
 
 @eval Base.$(:(==))(::Basis{S1,n1}, ::Basis{S2,n2}) where {S1,S2,n1,n2} = S1 == S2 && n1 == n2
 
-"""
+@doc """
     CompositeBasis{B1,B2}
 
 Tensor product of two bases. Created via `basis1 ⊗ basis2`.
@@ -65,33 +65,33 @@ Basis{z}⊗Basis{z}
 ```
 
 See also: [`Basis`](@ref), [`define_transform!`](@ref)
-"""
+""" CompositeBasis
 struct CompositeBasis{B1<:AbstractBasis, B2<:AbstractBasis} <: AbstractBasis{CompositeSpace}
     function CompositeBasis{B1,B2}() where {B1<:AbstractBasis, B2<:AbstractBasis}
         new{B1,B2}()
     end
 end
 
-"""
+@doc """
     ⊗(basis1::AbstractBasis, basis2::AbstractBasis)
 
 Tensor product of two bases.
-"""
+""" ⊗
 ⊗(::B1, ::B2) where {B1<:AbstractBasis, B2<:AbstractBasis} = CompositeBasis{B1,B2}()
 
-"""
+@doc """
     basis1(cb::CompositeBasis)
 
 Get the first component basis of a composite basis.
-"""
+""" basis1
 basis1(::Type{CompositeBasis{B1,B2}}) where {B1,B2} = B1
 basis1(::CompositeBasis{B1,B2}) where {B1,B2} = B1
 
-"""
+@doc """
     basis2(cb::CompositeBasis)
 
 Get the second component basis of a composite basis.
-"""
+""" basis2
 basis2(::Type{CompositeBasis{B1,B2}}) where {B1,B2} = B2
 basis2(::CompositeBasis{B1,B2}) where {B1,B2} = B2
 
@@ -118,7 +118,7 @@ space(::CompositeBasis{B1,B2}) where {B1,B2} = _composite_space_type(B1, B2)
 
 @eval Base.$(:(==))(::CompositeBasis{A1,A2}, ::CompositeBasis{B1,B2}) where {A1,A2,B1,B2} = A1 == B1 && A2 == B2
 
-"""
+@doc """
     DefaultBasis{S}
 
 Implicit basis when no explicit basis is specified. Provides backward compatibility
@@ -131,7 +131,7 @@ julia> H = HilbertSpace(:H, 2);
 julia> ψ = BasisKet(H, :ψ)  # uses DefaultBasis internally
 |ψ⟩
 ```
-"""
+""" DefaultBasis
 struct DefaultBasis{S<:AbstractSpace} <: AbstractBasis{S} end
 
 space(::Type{DefaultBasis{S}}) where S = S

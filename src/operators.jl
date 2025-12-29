@@ -2,16 +2,16 @@
 
 # ============== Abstract Operator Type ==============
 
-"""
+@doc """
     AbstractOperator{B}
 
 Abstract supertype for all quantum operators in basis `B`.
-"""
+""" AbstractOperator
 abstract type AbstractOperator{B<:AbstractBasis} end
 
 # ============== Outer Product Operator |ψ⟩⟨ϕ| ==============
 
-"""
+@doc """
     Operator{B}(ket, bra)
     ket * bra'  (automatically creates Operator)
 
@@ -40,7 +40,7 @@ P_up * down # → 0
 ```
 
 See also: [`SumOperator`](@ref), [`ScaledOperator`](@ref), [`FunctionOperator`](@ref)
-"""
+""" Operator
 struct Operator{B<:AbstractBasis, T} <: AbstractOperator{B}
     ket::AbstractKet{B}
     bra::AbstractBra{B}
@@ -51,18 +51,18 @@ struct Operator{B<:AbstractBasis, T} <: AbstractOperator{B}
     end
 end
 
-"""
+@doc """
     basis(op::AbstractOperator)
 
 Get the basis type that an operator is defined in.
-"""
+""" basis
 basis(::AbstractOperator{B}) where B = B
 
-"""
+@doc """
     space(op::AbstractOperator)
 
 Get the space type that an operator acts on.
-"""
+""" space
 space(::AbstractOperator{B}) where B = space(B)
 
 # Create operator from ket * bra
@@ -132,11 +132,11 @@ end
 
 # ============== Sum of Operators ==============
 
-"""
+@doc """
     SumOperator{B}
 
 Sum of operators: Â + B̂. Created via operator addition.
-"""
+""" SumOperator
 struct SumOperator{B<:AbstractBasis} <: AbstractOperator{B}
     terms::Vector{<:AbstractOperator{B}}
 end
@@ -224,11 +224,11 @@ end
 
 # ============== Scaled Operator ==============
 
-"""
+@doc """
     ScaledOperator{B,T}
 
 Operator multiplied by a scalar. Created via `scalar * operator`.
-"""
+""" ScaledOperator
 struct ScaledOperator{B<:AbstractBasis, T} <: AbstractOperator{B}
     coeff::T
     op::AbstractOperator{B}
@@ -290,11 +290,11 @@ end
 
 # ============== Operator Product ==============
 
-"""
+@doc """
     OperatorProduct{B}
 
 Product of operators: ÂB̂. Created via operator multiplication.
-"""
+""" OperatorProduct
 struct OperatorProduct{B<:AbstractBasis} <: AbstractOperator{B}
     ops::Vector{<:AbstractOperator{B}}
 end
@@ -367,7 +367,7 @@ end
 
 # ============== Function-based Operator ==============
 
-"""
+@doc """
     FunctionOperator{B}(name, basis, action; adjoint_action=nothing)
 
 A quantum operator defined by a function. Created via `FunctionOperator(name, basis) do ket ... end`.
@@ -406,7 +406,7 @@ end
 ```
 
 See also: [`Operator`](@ref), [`create_ladder_operators`](@ref)
-"""
+""" FunctionOperator
 struct FunctionOperator{B<:AbstractBasis} <: AbstractOperator{B}
     name::Symbol
     basis::B
@@ -480,11 +480,11 @@ end
 Base.show(io::IO, op::FunctionOperator) = print(io, op.name)
 
 # Adjoint (wrapper)
-"""
+@doc """
     AdjointFunctionOperator{B}
 
 The Hermitian conjugate of a FunctionOperator. Created via `op'`.
-"""
+""" AdjointFunctionOperator
 struct AdjointFunctionOperator{B<:AbstractBasis} <: AbstractOperator{B}
     parent::FunctionOperator{B}
 end
@@ -575,7 +575,7 @@ end
 
 # ============== Convenience constructors ==============
 
-"""
+@doc """
     create_ladder_operators(basis; name=:a)
 
 Create bosonic annihilation and creation operators for a Fock space basis.
@@ -595,7 +595,7 @@ n1 = BasisKet(Fb, 1)
 â * n1   # → √1 |0⟩
 â† * n0  # → √1 |1⟩
 ```
-"""
+""" create_ladder_operators
 function create_ladder_operators(basis::B; name::Symbol=:a) where B<:AbstractBasis
     â = FunctionOperator(name, basis; 
         adjoint_action = ket -> begin
@@ -612,11 +612,11 @@ end
 
 # ============== Symbolic representations ==============
 
-"""
+@doc """
     OpBra{B1, B2}
 
 Symbolic representation of a bra with an operator applied: ⟨ψ|Ô
-"""
+""" OpBra
 struct OpBra{B1<:AbstractBasis, B2<:AbstractBasis}
     bra::AbstractBra{B1}
     op::AbstractOperator{B2}
@@ -655,12 +655,12 @@ function Base.:*(ob::OpBra, op2::AbstractOperator)
     OpBra(ob.bra, ob.op * op2)
 end
 
-"""
+@doc """
     OpKet{B1, B2}
 
 Symbolic representation of an operator applied to a ket: Ô|ψ⟩
 Used when the result cannot be simplified.
-"""
+""" OpKet
 struct OpKet{B1<:AbstractBasis, B2<:AbstractBasis}
     op::AbstractOperator{B1}
     ket::AbstractKet{B2}
@@ -677,11 +677,11 @@ end
 
 # ============== Identity operator ==============
 
-"""
+@doc """
     IdentityOp{B}
 
 The identity operator on basis B. Created via `IdentityOp(basis)`.
-"""
+""" IdentityOp
 struct IdentityOp{B<:AbstractBasis} <: AbstractOperator{B}
     function IdentityOp(::Type{B}) where B<:AbstractBasis
         new{B}()

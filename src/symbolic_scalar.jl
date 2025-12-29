@@ -1,13 +1,13 @@
 # Symbolic scalar arithmetic - lazy evaluation
 
-"""
+@doc """
     AbstractSymbolic
 
 Abstract supertype for all symbolic scalar types.
-"""
+""" AbstractSymbolic
 abstract type AbstractSymbolic <: Number end
 
-"""
+@doc """
     Sym(name::Symbol)
     Sym(name::Symbol, assumptions...)
     Sym(name::Symbol; real=false, positive=false, negative=false, integer=false, nonnegative=false, complex=false)
@@ -31,7 +31,7 @@ k = Sym(:k, integer=true)       # integer (implies real)
 adjoint(n)  # → n*  (conjugate)
 adjoint(m)  # → m   (real, so no conjugate)
 ```
-"""
+""" Sym
 struct Sym <: AbstractSymbolic
     name::Symbol
     assumptions::Set{Symbol}
@@ -83,7 +83,7 @@ function Sym(name::Symbol;
     Sym(name, _expand_assumptions(assumptions))
 end
 
-"""Get assumptions of a symbolic variable"""
+@doc """Get assumptions of a symbolic variable""" assumptions
 assumptions(s::Sym) = s.assumptions
 assumptions(::AbstractSymbolic) = Set{Symbol}()
 
@@ -91,11 +91,11 @@ assumptions(::AbstractSymbolic) = Set{Symbol}()
 Base.:(==)(a::Sym, b::Sym) = a.name == b.name && a.assumptions == b.assumptions
 Base.hash(s::Sym, h::UInt) = hash(s.name, hash(s.assumptions, h))
 
-"""
+@doc """
     SymNum(value)
 
 Wraps a numeric value in the symbolic system.
-"""
+""" SymNum
 struct SymNum{T<:Number} <: AbstractSymbolic
     value::T
 end
@@ -104,33 +104,33 @@ end
 SymNum(s::AbstractSymbolic) = s
 
 # Assumption query functions (must come after SymNum is defined)
-"""Check if symbolic is assumed to be real"""
+@doc """Check if symbolic is assumed to be real""" is_real
 is_real(s::Sym) = :real in s.assumptions
 is_real(::SymNum{<:Real}) = true
 is_real(::SymNum) = false
 is_real(::AbstractSymbolic) = false  # SymExpr - could be improved
 
-"""Check if symbolic is assumed to be positive"""
+@doc """Check if symbolic is assumed to be positive""" is_positive
 is_positive(s::Sym) = :positive in s.assumptions
 is_positive(s::SymNum{<:Real}) = s.value > 0
 is_positive(::AbstractSymbolic) = false
 
-"""Check if symbolic is assumed to be an integer"""
+@doc """Check if symbolic is assumed to be an integer""" is_integer
 is_integer(s::Sym) = :integer in s.assumptions
 is_integer(::SymNum{<:Integer}) = true
 is_integer(::AbstractSymbolic) = false
 
-"""Check if symbolic is assumed to be non-negative"""
+@doc """Check if symbolic is assumed to be non-negative""" is_nonnegative
 is_nonnegative(s::Sym) = :nonnegative in s.assumptions
 is_nonnegative(s::SymNum{<:Real}) = s.value >= 0
 is_nonnegative(::AbstractSymbolic) = false
 
-"""
+@doc """
     SymExpr(op, args...)
 
 A symbolic expression representing `op(args...)`.
 Operations are stored as symbols: :+, :-, :*, :/, :^, :sqrt, :conj, etc.
-"""
+""" SymExpr
 struct SymExpr <: AbstractSymbolic
     op::Symbol
     args::Tuple{Vararg{AbstractSymbolic}}
@@ -249,7 +249,7 @@ Base.log(a::AbstractSymbolic) = SymExpr(:log, a)
 
 # ============== Evaluation ==============
 
-"""
+@doc """
     substitute(expr, pairs...)
     substitute(expr, dict)
 
@@ -261,7 +261,7 @@ n = Sym(:n)
 expr = √n + 1
 substitute(expr, :n => 4)  # → √4 + 1 (still symbolic with SymNum)
 ```
-"""
+""" substitute
 function substitute(s::Sym, subs::Dict{Symbol, <:Any})
     haskey(subs, s.name) ? _wrap(subs[s.name]) : s
 end
@@ -281,7 +281,7 @@ substitute(expr, pairs::Pair{Symbol}...) = substitute(expr, Dict(pairs...))
 _wrap(x::AbstractSymbolic) = x
 _wrap(x::Number) = SymNum(x)
 
-"""
+@doc """
     evaluate(expr)
 
 Evaluate a symbolic expression to a numeric value.
@@ -294,7 +294,7 @@ expr = √n + 1
 result = substitute(expr, :n => 4)
 evaluate(result)  # → 3.0
 ```
-"""
+""" evaluate
 evaluate(s::Sym) = error("Cannot evaluate: unsubstituted symbol $(s.name)")
 evaluate(s::SymNum) = s.value
 evaluate(x::Number) = x
@@ -338,21 +338,21 @@ function evaluate(e::SymExpr)
     end
 end
 
-"""
+@doc """
     symbols(expr)
 
 Get all symbolic variables in an expression.
-"""
+""" symbols
 symbols(s::Sym) = Set([s.name])
 symbols(::SymNum) = Set{Symbol}()
 symbols(e::SymExpr) = union(map(symbols, e.args)...)
 symbols(::Number) = Set{Symbol}()
 
-"""
+@doc """
     is_numeric(expr)
 
 Check if expression contains no symbolic variables.
-"""
+""" is_numeric
 is_numeric(s::Sym) = false
 is_numeric(::SymNum) = true
 is_numeric(e::SymExpr) = all(is_numeric, e.args)
@@ -360,11 +360,11 @@ is_numeric(::Number) = true
 
 # ============== Simplification (basic) ==============
 
-"""
+@doc """
     simplify(expr)
 
 Apply basic algebraic simplifications.
-"""
+""" simplify
 simplify(s::Sym) = s
 simplify(s::SymNum) = s
 simplify(x::Number) = SymNum(x)
@@ -463,7 +463,7 @@ Base.convert(::Type{AbstractSymbolic}, x::Number) = SymNum(x)
 
 # ============== Kronecker Delta ==============
 
-"""
+@doc """
     KroneckerDelta(i, j)
 
 Represents the Kronecker delta δᵢⱼ which equals 1 if i==j and 0 otherwise.
@@ -476,7 +476,7 @@ k, l = Sym(:k), Sym(:l)
 evaluate(δ, :k => 2, :l => 2)  # → 1
 evaluate(δ, :k => 2, :l => 3)  # → 0
 ```
-"""
+""" KroneckerDelta
 struct KroneckerDelta <: AbstractSymbolic
     i::Any  # Can be Symbol, AbstractSymbolic, or concrete value
     j::Any
