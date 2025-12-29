@@ -1,15 +1,14 @@
 # Symbolic Scalars
 
-The symbolic scalar system provides lazy arithmetic evaluation, enabling truly symbolic quantum computations.
+The symbolic scalar system is powered by [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl), providing powerful automatic algebraic simplification and symbolic computation capabilities.
 
 ## Overview
 
 | Type | Description |
 |:-----|:------------|
-| `AbstractSymbolic` | Abstract supertype for all symbolic scalars |
-| `Sym` | Symbolic variable (with optional type assumptions) |
-| `SymNum` | Wrapped numeric value |
-| `SymExpr` | Expression tree |
+| `AbstractSymbolic` | Type alias for `Union{Symbolics.Num, Complex{Symbolics.Num}}` |
+| `Sym` | Function to create symbolic variables (returns `Symbolics.Num`) |
+| `SymNum` | Wrapper for numeric values (identity function for compatibility) |
 | `KroneckerDelta` | Symbolic Kronecker delta δᵢⱼ |
 
 ## Types
@@ -30,12 +29,6 @@ Sym
 
 ```@docs
 SymNum
-```
-
-### Expression Tree
-
-```@docs
-SymExpr
 ```
 
 ### Kronecker Delta
@@ -91,7 +84,7 @@ assumptions
 
 ## Supported Operations
 
-The following operations are defined for `AbstractSymbolic` types and build expression trees:
+Thanks to Symbolics.jl, the following operations are supported with **automatic algebraic simplification**:
 
 ### Arithmetic
 - `+`, `-` (binary and unary)
@@ -105,6 +98,22 @@ The following operations are defined for `AbstractSymbolic` types and build expr
 - `sin`, `cos`, `tan`
 - `exp`, `log`
 
+## Automatic Simplification
+
+One of the key benefits of the Symbolics.jl backend is automatic simplification:
+
+```julia
+using QSymbolic
+
+n = Sym(:n, integer=true)
+
+# These simplify automatically:
+sqrt(n) * sqrt(n)  # → n
+(n - 1) + 1        # → n
+n * 1              # → n
+n + 0              # → n
+```
+
 ## Examples
 
 ### Basic Usage
@@ -113,16 +122,14 @@ The following operations are defined for `AbstractSymbolic` types and build expr
 using QSymbolic
 
 # Create symbolic variables
-n = Sym(:n)
-θ = Sym(:θ)
+n = Sym(:n, integer=true)
+θ = Sym(:θ, real=true)
 
-# Build expressions
+# Build expressions (auto-simplified by Symbolics.jl)
 expr = √n + 1
-trig = sin(θ)^2 + cos(θ)^2
 
-# Substitute and evaluate
+# Substitute values
 result = substitute(expr, :n => 4)
-evaluate(result)  # → 3.0
 ```
 
 ### Introspection
@@ -131,18 +138,24 @@ evaluate(result)  # → 3.0
 a, b = Sym(:a), Sym(:b)
 expr = a^2 + 2*a*b + b^2
 
-symbols(expr)        # → Set([:a, :b])
+symbols(expr)        # → [:a, :b]
 is_numeric(expr)     # → false
-is_numeric(substitute(expr, :a => 1, :b => 2))  # → true
 ```
 
-### Simplification
+### Using Symbolics.jl Directly
+
+You can also use Symbolics.jl macros directly:
 
 ```julia
-n = Sym(:n)
+using QSymbolic
 
-simplify(n * 1)  # → n
-simplify(n * 0)  # → 0
-simplify(n + 0)  # → n
-simplify(n^0)    # → 1
+# Using @variables macro (re-exported from Symbolics.jl)
+@variables x y::Integer
+
+expr = x^2 + y
 ```
+
+## See Also
+
+- [Symbolics.jl Documentation](https://docs.sciml.ai/Symbolics/stable/)
+- [Guide: Symbolic Scalars](../guide/symbolic.md)

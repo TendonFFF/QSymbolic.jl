@@ -1,13 +1,13 @@
 # Symbolic Scalars
 
-QSymbolic.jl includes a symbolic scalar system for lazy arithmetic evaluation. This enables truly symbolic quantum computations where numerical values are substituted only when needed.
+QSymbolic.jl uses [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl) as its backend for symbolic scalars, providing powerful automatic algebraic simplification. This enables truly symbolic quantum computations where numerical values are substituted only when needed.
 
 ## Why Symbolic Scalars?
 
 In many quantum mechanical calculations, you want to keep expressions symbolic:
 - Derive general formulas with parameters like `n`, `θ`, `ω`
 - Substitute specific values later
-- Avoid floating-point errors in intermediate steps
+- **Automatic simplification** of algebraic expressions
 - Generate readable analytical expressions
 
 ## Creating Symbolic Variables
@@ -25,27 +25,41 @@ n = Sym(:n)
 n  # → n
 ```
 
-## Building Expressions
-
-Arithmetic operations on symbolic variables build expression trees (no evaluation happens):
+You can also use the `@variables` macro from Symbolics.jl (re-exported):
 
 ```julia
-n = Sym(:n)
+using QSymbolic
 
-# Basic arithmetic
-n + 1        # → (n + 1)
-n - 2        # → (n - 2)
-n * 3        # → n·3
-n / 4        # → (n/4)
+@variables x y::Integer z::Real
+
+# x is a general symbolic variable
+# y has integer constraint
+# z has real constraint
+```
+
+## Building Expressions
+
+Arithmetic operations on symbolic variables build expressions with **automatic simplification**:
+
+```julia
+n = Sym(:n, integer=true)
+
+# Basic arithmetic (auto-simplified)
+n + 1        # → 1 + n
+n - 2        # → n - 2
+n * 3        # → 3n
+n / 4        # → n / 4
 n^2          # → n^2
 
 # Square root
-√n           # → √(n)
-sqrt(n)      # → √(n)
+√n           # → √n
+sqrt(n)      # → √n
 
-# Combinations
-√n + 1       # → (√(n) + 1)
-n^2 + 2*n    # → ((n^2) + (2·n))
+# Automatic simplifications
+√n * √n      # → n (not √n·√n)
+n * 1        # → n
+n + 0        # → n
+(n - 1) + 1  # → n
 ```
 
 ## Supported Operations
@@ -74,7 +88,7 @@ expr = √n + 1
 
 # Substitute n → 4
 result = substitute(expr, :n => 4)
-result  # → (√(4) + 1)  (still symbolic, but with numeric value)
+result  # → 3 (automatically simplified!)
 ```
 
 Multiple substitutions:
@@ -83,13 +97,13 @@ a = Sym(:a)
 b = Sym(:b)
 expr = a^2 + b^2
 
-substitute(expr, :a => 3, :b => 4)  # → ((3^2) + (4^2))
+substitute(expr, :a => 3, :b => 4)  # → 25
 ```
 
 Partial substitution:
 ```julia
 expr = a * b + a
-substitute(expr, :a => 2)  # → ((2·b) + 2)  (b remains symbolic)
+substitute(expr, :a => 2)  # → 2 + 2b (b remains symbolic)
 ```
 
 ## Evaluation
@@ -104,15 +118,13 @@ expr = √n + 1
 result = substitute(expr, :n => 4)
 evaluate(result)  # → 3.0
 
-# Chained
-substitute(expr, :n => 9) |> evaluate  # → 4.0
+# With Symbolics.jl, many expressions auto-simplify to numbers
+# so evaluate may be unnecessary in simple cases
 ```
 
-!!! warning "All Symbols Must Be Substituted"
-    `evaluate` throws an error if any symbolic variables remain:
-    ```julia
-    evaluate(Sym(:n))  # Error: Cannot evaluate: unsubstituted symbol n
-    ```
+!!! note "Automatic Simplification"
+    Unlike the previous implementation, Symbolics.jl automatically simplifies many expressions.
+    For example, `substitute(√n + 1, :n => 4)` directly gives `3`, not `√4 + 1`.
 
 ## Introspection
 
@@ -123,7 +135,7 @@ n = Sym(:n)
 m = Sym(:m)
 expr = n^2 + 2*n*m + m^2
 
-symbols(expr)  # → Set([:n, :m])
+symbols(expr)  # → [:n, :m]
 ```
 
 ### Check if Numeric
@@ -133,28 +145,34 @@ n = Sym(:n)
 expr = √n + 1
 
 is_numeric(n)                    # → false
-is_numeric(SymNum(5))            # → true
+is_numeric(5)                    # → true
 is_numeric(expr)                 # → false (contains n)
-is_numeric(substitute(expr, :n => 4))  # → true (all substituted)
+is_numeric(substitute(expr, :n => 4))  # → true (simplified to 3)
 ```
 
-## Simplification
+## Automatic Simplification
 
-Apply basic algebraic simplifications with `simplify`:
+Thanks to Symbolics.jl, algebraic simplifications happen automatically:
 
 ```julia
-n = Sym(:n)
+n = Sym(:n, integer=true)
 
-# Identity simplifications
-simplify(n * 1)   # → n
-simplify(n * 0)   # → 0
-simplify(n + 0)   # → n
-simplify(n^1)     # → n
-simplify(n^0)     # → 1
+# These simplify automatically (no need to call simplify())
+n * 1        # → n
+n * 0        # → 0
+n + 0        # → n
+n^1          # → n
+n^0          # → 1
+√n * √n      # → n
 
-# Numeric folding
-simplify(SymNum(2) + SymNum(3))  # → 5
-simplify(SymNum(2) * SymNum(3))  # → 6
+# Numeric folding is automatic
+2 + 3        # → 5 (regular Julia)
+```
+
+For more complex simplifications, you can still call `simplify()`:
+
+```julia
+simplify(sin(θ)^2 + cos(θ)^2)  # Symbolics.jl simplification
 ```
 
 ## Use with Quantum States
@@ -252,57 +270,39 @@ E_0_numeric = substitute(E_0, :ω => 2π)
 evaluate(E_0_numeric)  # → π ≈ 3.14159...
 ```
 
-## Type Hierarchy
+## Type System
 
 ```
-AbstractSymbolic <: Number
-├── Sym         # Symbolic variable (with optional assumptions)
-├── SymNum{T}   # Wrapped numeric value
-├── SymExpr     # Expression tree (op + args)
-└── KroneckerDelta  # δᵢⱼ (1 if i==j, 0 otherwise)
+AbstractSymbolic = Union{Symbolics.Num, Complex{Symbolics.Num}}
 ```
 
-All symbolic types are subtypes of `Number`, allowing them to participate in numeric operations.
+The symbolic scalar system is now powered by Symbolics.jl:
+- `Sym(:name)` returns a `Symbolics.Num` type
+- All symbolic expressions are `Symbolics.Num` types  
+- Complex symbolic expressions are `Complex{Symbolics.Num}`
+- `KroneckerDelta` is a special type that simplifies to 0 or 1 when possible
+
+This allows full integration with the Symbolics.jl ecosystem for advanced symbolic computation.
 
 ## Type Assumptions for Sym
 
-Symbolic variables can carry type assumptions that constrain their mathematical properties:
+Symbolic variables can carry type assumptions using keyword arguments:
 
 ```julia
 using QSymbolic
 
-# Create Sym with assumptions
-n = Sym(:n, :integer)           # n is an integer
-θ = Sym(:θ, :real)              # θ is real
-p = Sym(:p, :positive)          # p > 0
-E = Sym(:E, :nonnegative)       # E ≥ 0
-q = Sym(:q, :negative)          # q < 0
-z = Sym(:z, :complex)           # z is complex
+# Create Sym with assumptions (keyword syntax)
+n = Sym(:n, integer=true)       # n is an integer
+θ = Sym(:θ, real=true)          # θ is real
+p = Sym(:p, positive=true)      # p > 0
+E = Sym(:E, nonnegative=true)   # E ≥ 0
 ```
 
-### Querying Assumptions
+Or use `@variables` macro directly:
 
 ```julia
-n = Sym(:n, :integer)
-p = Sym(:p, :positive)
-
-is_integer(n)       # → true
-is_integer(p)       # → false
-
-is_positive(p)      # → true
-is_real(p)          # → true (positive implies real)
-is_nonnegative(p)   # → true (positive implies nonnegative)
-
-assumptions(n)      # → Set([:integer])
-assumptions(p)      # → Set([:positive])
+@variables n::Integer θ::Real
 ```
-
-### Implicit Assumptions
-
-Some assumptions imply others:
-- `:positive` implies `:real` and `:nonnegative`
-- `:negative` implies `:real`
-- `:integer` is independent (can be positive, negative, or zero)
 
 ## KroneckerDelta
 
@@ -348,15 +348,16 @@ bra_m * ket_n  # → δ(m,n)
 | Function | Description |
 |:---------|:------------|
 | `Sym(:name)` | Create symbolic variable |
-| `Sym(:name, :assumption)` | Create symbolic variable with assumption |
-| `SymNum(value)` | Wrap numeric value |
+| `Sym(:name, integer=true)` | Create symbolic variable with assumption |
+| `@variables x y` | Create symbolic variables (Symbolics.jl macro) |
 | `KroneckerDelta(i, j)` | Create Kronecker delta δᵢⱼ |
 | `substitute(expr, pairs...)` | Replace symbols with values |
 | `evaluate(expr)` | Compute numeric result |
-| `simplify(expr)` | Apply algebraic simplifications |
-| `symbols(expr)` | Get set of symbol names |
+| `simplify(expr)` | Apply additional simplifications |
+| `symbols(expr)` | Get list of symbol names |
 | `is_numeric(expr)` | Check if fully numeric |
-| `is_real(sym)` | Check if Sym has real assumption |
-| `is_positive(sym)` | Check if Sym has positive assumption |
-| `is_integer(sym)` | Check if Sym has integer assumption |
-| `assumptions(sym)` | Get set of assumptions |
+
+## See Also
+
+- [Symbolics.jl Documentation](https://docs.sciml.ai/Symbolics/stable/)
+- [API Reference: Symbolic Scalars](../api/symbolic.md)
