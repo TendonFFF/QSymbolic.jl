@@ -51,18 +51,10 @@ struct Operator{B<:AbstractBasis, T} <: AbstractOperator{B}
     end
 end
 
-@doc """
-    basis(op::AbstractOperator)
-
-Get the basis type that an operator is defined in.
-""" basis
+# basis() - documented in basis.jl (additional method for operators)
 basis(::AbstractOperator{B}) where B = B
 
-@doc """
-    space(op::AbstractOperator)
-
-Get the space type that an operator acts on.
-""" space
+# space() - documented in basis.jl (additional method for operators)
 space(::AbstractOperator{B}) where B = space(B)
 
 # Create operator from ket * bra

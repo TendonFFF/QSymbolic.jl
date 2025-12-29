@@ -30,8 +30,10 @@ end
 
 @doc """
     space(basis)
+    space(ket_or_bra)
+    space(operator)
 
-Get the underlying Hilbert space of a basis.
+Get the underlying Hilbert space of a basis, ket, bra, or operator.
 """ space
 space(::Type{Basis{S,name}}) where {S,name} = S
 space(::Basis{S,name}) where {S,name} = S
@@ -78,6 +80,13 @@ end
 Tensor product of two bases.
 """ ⊗
 ⊗(::B1, ::B2) where {B1<:AbstractBasis, B2<:AbstractBasis} = CompositeBasis{B1,B2}()
+
+@doc """
+    basis(ket_or_bra)
+    basis(operator)
+
+Get the basis type of a ket, bra, or operator.
+""" basis
 
 @doc """
     basis1(cb::CompositeBasis)

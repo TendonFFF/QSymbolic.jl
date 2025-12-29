@@ -70,10 +70,14 @@ get_transform(::Type{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasi
     BASIS_TRANSFORMS[(B1, B2)]
 
 @doc """
-    transform(ket::BasisKet{B1}, ::Type{B2}) -> AbstractKet{B2}
+    transform(ket, target_basis)
 
-Transform a ket from basis B1 to basis B2.
-For single-system bases, returns sumKet. For composite systems, may return SumProductKet.
+Transform a ket from its current basis to the target basis.
+Works for:
+- `BasisKet{B1}` → `B2` (single-system bases, returns sumKet)
+- `ProductKet{A1,A2}` → `CompositeBasis{B1,B2}` (factorized transforms)
+- `ProductKet{A1,A2}` → `Basis` (composite to eigenbasis)
+- `SumProductKet`, `sumKet`, `weightedKet` (applies to each component)
 """ transform
 function transform(ket::BasisKet{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
     has_transform(B1, B2) || throw(ArgumentError("No transform registered from $B1 to $B2"))
@@ -91,11 +95,7 @@ function transform(ket::BasisKet{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:
     end
 end
 
-@doc """
-    transform(ket::ProductKet, ::Type{CompositeBasis{B1,B2}})
-
-Transform a product ket to a different composite basis using factorized transforms.
-""" transform
+# transform(ProductKet, CompositeBasis) - additional method
 function transform(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
     # Identity transform - already in target basis
     if A1 == B1 && A2 == B2
@@ -126,12 +126,7 @@ function transform(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where 
     return SumProductKet(result_kets, result_weights)
 end
 
-@doc """
-    transform(ket::ProductKet, ::Type{B}) where {B<:Basis}
-
-Transform a product ket to a single basis on the composite space (e.g., eigenbasis).
-Requires an explicit transform from the composite basis to the target basis.
-""" transform
+# transform(ProductKet, Basis) - additional method
 function transform(ket::ProductKet{A1,A2}, ::Type{B}) where {A1,A2,B<:Basis}
     CB = CompositeBasis{A1,A2}
     has_transform(CB, B) || throw(ArgumentError("No transform registered from $CB to $B"))

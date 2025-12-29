@@ -318,20 +318,12 @@ end
 
 # Utility functions
 
-@doc """
-    basis(ket_or_bra)
-
-Get the basis type of a ket or bra.
-""" basis
+# basis() - documented in operators.jl
 basis(::AbstractKet{B}) where B = B
 basis(::AbstractBra{B}) where B = B
 basis(::Type{<:AbstractKet{B}}) where B = B
 basis(::Type{<:AbstractBra{B}}) where B = B
 
-@doc """
-    space(ket_or_bra)
-
-Get the underlying Hilbert space of a ket or bra.
-""" space
+# space() - documented in basis.jl
 space(::AbstractKet{B}) where B = space(B)
 space(::AbstractBra{B}) where B = space(B)

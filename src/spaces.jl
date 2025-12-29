@@ -61,7 +61,7 @@ FockSpace(A::Symbol) = HilbertSpace(A, nothing)
     ⊗(space1::AbstractSpace, space2::AbstractSpace)
 
 Tensor product of two Hilbert spaces.
-""" ⊗
+"""
 ⊗(space1::AbstractSpace, space2::AbstractSpace) = CompositeSpace(space1, space2)
 
 @eval begin
