@@ -1,6 +1,6 @@
 name = "QSymbolic"
 uuid = "51350ce6-7c10-437b-ae15-8948c6144b7d"
-authors = ["Author Name <email@example.com>"]
+authors = ["Li-Xun Cai <cailixun23@gmail.com>"]
 version = "0.3.0"
 
 [deps]

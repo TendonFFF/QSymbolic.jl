@@ -136,8 +136,9 @@ Base.adjoint(bra::sumBra{B}) where B = sumKet(adjoint.(bra.bras), adjoint.(bra.w
         i, j = bra.index, ket.index
         # If either index is symbolic, return Kronecker delta
         if i isa AbstractSymbolic || j isa AbstractSymbolic
-            # Try to simplify if indices are equal symbols
-            if i == j
+            # Try to simplify if indices are symbolically equal
+            # Use isequal for structural equality (works with Symbolics.jl)
+            if isequal(i, j)
                 return 1
             else
                 return KroneckerDelta(i, j)
@@ -281,17 +282,19 @@ function Base.show(io::IO, sk::SumProductKet)
         for (i, (k, w)) in enumerate(zip(sk.kets, sk.weights))
             if i > 1
                 # For symbolic weights, always use +
-                if w isa Number && !(w isa AbstractSymbolic) && real(w) < 0
+                if !(w isa AbstractSymbolic) && w isa Number && real(w) < 0
                     print(io, " - ")
                     w = -w
                 else
                     print(io, " + ")
                 end
-            elseif w isa Number && !(w isa AbstractSymbolic) && real(w) < 0
+            elseif !(w isa AbstractSymbolic) && w isa Number && real(w) < 0
                 print(io, "-")
                 w = -w
             end
-            if w != 1
+            if !(w isa AbstractSymbolic) && !isequal(w, 1)
+                print(io, "(", w, ")·")
+            elseif w isa AbstractSymbolic
                 print(io, "(", w, ")·")
             end
             print(io, k)
@@ -306,17 +309,19 @@ function Base.show(io::IO, sb::SumProductBra)
         for (i, (b, w)) in enumerate(zip(sb.bras, sb.weights))
             if i > 1
                 # For symbolic weights, always use +
-                if w isa Number && !(w isa AbstractSymbolic) && real(w) < 0
+                if !(w isa AbstractSymbolic) && w isa Number && real(w) < 0
                     print(io, " - ")
                     w = -w
                 else
                     print(io, " + ")
                 end
-            elseif w isa Number && !(w isa AbstractSymbolic) && real(w) < 0
+            elseif !(w isa AbstractSymbolic) && w isa Number && real(w) < 0
                 print(io, "-")
                 w = -w
             end
-            if w != 1
+            if !(w isa AbstractSymbolic) && !isequal(w, 1)
+                print(io, "(", w, ")·")
+            elseif w isa AbstractSymbolic
                 print(io, "(", w, ")·")
             end
             print(io, b)
@@ -579,6 +584,14 @@ end
     end
     function Base.$(:(-))(sk1::SumProductKet{B1,B2}, sk2::SumProductKet{B1,B2}) where {B1,B2}
         SumProductKet(vcat(sk1.kets, sk2.kets), vcat(sk1.weights, -sk2.weights))
+    end
+    
+    # SumProductKet + scalar (for handling zero results from operators)
+    function Base.$(:(+))(sk::SumProductKet, n::Union{Number, AbstractSymbolic})
+        iszero(n) ? sk : error("Cannot add non-zero scalar $n to ket")
+    end
+    function Base.$(:(+))(n::Union{Number, AbstractSymbolic}, sk::SumProductKet)
+        iszero(n) ? sk : error("Cannot add non-zero scalar $n to ket")
     end
     
     # ProductBra + ProductBra -> SumProductBra

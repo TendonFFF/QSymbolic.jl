@@ -76,7 +76,7 @@ end
 
 # Display
 function Base.show(io::IO, op::Operator)
-    if op.coeff == 1
+    if !(op.coeff isa AbstractSymbolic) && isequal(op.coeff, 1)
         print(io, _ket_str(op.ket), _bra_str(op.bra))
     else
         print(io, op.coeff, "·", _ket_str(op.ket), _bra_str(op.bra))
@@ -90,7 +90,7 @@ _bra_str(b::BasisBra) = "⟨$(b.index)|"
 # Apply operator to ket: (|ψ⟩⟨ϕ|)|χ⟩ = ⟨ϕ|χ⟩ |ψ⟩
 function Base.:*(op::Operator{B}, ket::BasisKet{B}) where B
     inner = BasisBra{B}(op.bra.index) * ket
-    if inner == 0
+    if !(inner isa AbstractSymbolic) && isequal(inner, 0)
         return 0
     else
         op.coeff * inner * op.ket
@@ -692,6 +692,7 @@ Base.:*(::IdentityOp{B}, ket::AbstractKet{B}) where B = ket
 Base.:*(op::AbstractOperator{B}, ::IdentityOp{B}) where B = op
 Base.:*(::IdentityOp{B}, op::AbstractOperator{B}) where B = op
 Base.:*(::IdentityOp{B}, ::IdentityOp{B}) where B = IdentityOp{B}()
+Base.:*(op::AdjointFunctionOperator{B}, ::IdentityOp{B}) where B = op
 
 Base.adjoint(id::IdentityOp) = id
 
@@ -699,7 +700,7 @@ Base.show(io::IO, ::IdentityOp{B}) where B = print(io, "𝕀")
 
 # ============== Zero checking ==============
 
-Base.iszero(x::Number) = x == 0
+Base.iszero(x::Number) = !(x isa AbstractSymbolic) && x == 0
 Base.iszero(::AbstractKet) = false
 Base.iszero(::AbstractOperator) = false
 

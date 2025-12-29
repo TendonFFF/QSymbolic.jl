@@ -228,20 +228,33 @@ substitute(x::Number, args...) = x
 substitute(x::Number, ::Dict) = x
 
 function substitute(x::Symbolics.Num, pairs::Pair{Symbol}...)
-    subs_dict = Dict{Symbolics.Num, Any}()
+    # Get the actual symbolic variables from the expression
+    vars = Symbolics.get_variables(x)
+    subs_dict = Dict{Any, Any}()
     for (name, val) in pairs
-        # Find the variable with this name
-        var = Sym(name)
-        subs_dict[var] = val
+        # Find the variable with this name in the expression
+        for var in vars
+            if Symbol(var) == name
+                subs_dict[var] = val
+                break
+            end
+        end
     end
     return Symbolics.substitute(x, subs_dict)
 end
 
 function substitute(x::Symbolics.Num, d::Dict{Symbol, <:Any})
-    subs_dict = Dict{Symbolics.Num, Any}()
+    # Get the actual symbolic variables from the expression
+    vars = Symbolics.get_variables(x)
+    subs_dict = Dict{Any, Any}()
     for (name, val) in d
-        var = Sym(name)
-        subs_dict[var] = val
+        # Find the variable with this name in the expression
+        for var in vars
+            if Symbol(var) == name
+                subs_dict[var] = val
+                break
+            end
+        end
     end
     return Symbolics.substitute(x, subs_dict)
 end
