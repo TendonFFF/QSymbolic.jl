@@ -100,7 +100,7 @@ I * ψ  # → |ψ⟩
 ```
 
 See also: [`Operator`](@ref), [`Outer`](@ref)
-""" Identity
+"""
 struct Identity{S<:AbstractSpace} <: AbstractOperator{S}
     space::S
     
@@ -177,7 +177,7 @@ end
 ```
 
 See also: [`Operator`](@ref), [`Outer`](@ref), [`define_transform!`](@ref)
-""" FunctionOperator
+"""
 struct FunctionOperator{S<:AbstractSpace, B<:AbstractBasis} <: AbstractOperator{S}
     space::S
     basis::B

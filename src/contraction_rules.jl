@@ -57,7 +57,7 @@ end
 ```
 
 See also: [`has_contraction_rule`](@ref), [`clear_contraction_rules!`](@ref)
-""" define_contraction_rule!
+"""
 function define_contraction_rule!(basis::Type{<:AbstractBasis}, rule::Function)
     CONTRACTION_RULES[basis] = rule
     return nothing
@@ -88,7 +88,7 @@ has_contraction_rule(typeof(Zb))  # true
 ```
 
 See also: [`define_contraction_rule!`](@ref)
-""" has_contraction_rule
+"""
 function has_contraction_rule(basis::Type{<:AbstractBasis})
     return haskey(CONTRACTION_RULES, basis)
 end
@@ -99,7 +99,7 @@ end
 Get the custom contraction rule for a basis, or return nothing if not defined.
 
 See also: [`define_contraction_rule!`](@ref), [`has_contraction_rule`](@ref)
-""" get_contraction_rule
+"""
 function get_contraction_rule(basis::Type{<:AbstractBasis})
     return get(CONTRACTION_RULES, basis, nothing)
 end
@@ -110,7 +110,7 @@ end
 Clear all custom contraction rules, reverting to default index-based checking.
 
 See also: [`define_contraction_rule!`](@ref)
-""" clear_contraction_rules!
+"""
 function clear_contraction_rules!()
     empty!(CONTRACTION_RULES)
     return nothing
@@ -142,7 +142,7 @@ apply_contraction_rule(typeof(Zb), n, :↑)  # KroneckerDelta(n, :↑)
 ```
 
 See also: [`define_contraction_rule!`](@ref)
-""" apply_contraction_rule
+"""
 function apply_contraction_rule(basis::Type{<:AbstractBasis}, bra_idx, ket_idx)
     # Check if custom rule exists
     if has_contraction_rule(basis)

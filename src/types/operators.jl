@@ -1,18 +1,6 @@
 # Operator types: Outer, Operator, Identity, FunctionOperator
 
-# Operator types: Outer, Operator, Identity, FunctionOperator
-
 # Quantum operators - Restructured to work with bra-ket arithmetic
-
-# ============== Abstract Operator Type ==============
-
-@doc """
-    AbstractOperator{S<:AbstractSpace}
-
-Abstract supertype for all quantum operators acting on space `S`.
-Operators use bra-ket arithmetic for contraction.
-""" AbstractOperator
-abstract type AbstractOperator{S<:AbstractSpace} end
 
 # space() - get the space an operator acts on
 space(::AbstractOperator{S}) where S = S
@@ -49,7 +37,7 @@ P_up * down # → 0
 ```
 
 See also: [`Operator`](@ref), [`Identity`](@ref), [`FunctionOperator`](@ref)
-""" Outer
+"""
 struct Outer{S<:AbstractSpace} <: AbstractOperator{S}
     ket::AbstractKet
     bra::AbstractBra

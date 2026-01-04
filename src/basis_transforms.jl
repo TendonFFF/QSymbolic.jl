@@ -1,6 +1,6 @@
 @doc """
 Basis transformation registry and functions.
-""" QSymbolic
+"""
 
 # Global registry: (from_basis, to_basis) => transform_function
 const BASIS_TRANSFORMS = Dict{Tuple{Type,Type}, Function}()
@@ -36,7 +36,7 @@ define_transform!(eigenbasis, product_basis) do idx
     ...
 end
 ```
-""" define_transform!
+"""
 function define_transform!(f::Function, from::B1, to::B2) where {B1<:AbstractBasis, B2<:AbstractBasis}
     space(B1) == space(B2) || throw(ArgumentError("Bases must be on the same space: $(space(B1)) vs $(space(B2))"))
     BASIS_TRANSFORMS[(typeof(from), typeof(to))] = f
@@ -47,7 +47,7 @@ end
     has_transform(B1, B2) -> Bool
 
 Check if a transform from basis B1 to B2 exists (explicit or factorizable).
-""" has_transform
+"""
 has_transform(::Type{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis} = 
     haskey(BASIS_TRANSFORMS, (B1, B2))
 
@@ -65,7 +65,7 @@ end
     get_transform(B1, B2) -> Function
 
 Get the registered transform function from B1 to B2.
-""" get_transform
+"""
 get_transform(::Type{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis} = 
     BASIS_TRANSFORMS[(B1, B2)]
 
@@ -78,7 +78,7 @@ Works for:
 - `ProductKet{A1,A2}` → `CompositeBasis{B1,B2}` (factorized transforms)
 - `ProductKet{A1,A2}` → `Basis` (composite to eigenbasis)
 - `SumKet`, `SumKet`, `WeightedKet` (applies to each component)
-""" transform
+"""
 function transform(ket::Ket{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
     has_transform(B1, B2) || throw(ArgumentError("No transform registered from $B1 to $B2"))
     f = get_transform(B1, B2)
@@ -180,5 +180,5 @@ end
     clear_transforms!()
 
 Clear all registered basis transforms.
-""" clear_transforms!
+"""
 clear_transforms!() = empty!(BASIS_TRANSFORMS)

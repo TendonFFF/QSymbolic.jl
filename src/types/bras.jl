@@ -13,7 +13,7 @@ Usually created via adjoint: `ket'`.
 **Note**: A basis is **required**. You must explicitly provide a basis object.
 
 See also: [`Ket`](@ref), [`Basis`](@ref)
-""" Bra
+"""
 struct Bra{B<:AbstractBasis} <: AbstractBra{B}
     index::KetIndex
 
@@ -48,7 +48,7 @@ Created via adjoint of ProductKet.
 matching the behavior of ProductKet.
 
 See also: [`ProductKet`](@ref), [`Bra`](@ref)
-""" ProductBra
+"""
 struct ProductBra{Bs<:Tuple} <: AbstractBra{CompositeBasis{Bs}}
     bras::Vector{Bra}
     
@@ -80,7 +80,7 @@ A bra multiplied by a scalar weight.
 Created via adjoint of WeightedKet (with complex conjugate weight).
 
 See also: [`WeightedKet`](@ref)
-""" WeightedBra
+"""
 struct WeightedBra{B<:AbstractBasis, T} <: AbstractBra{B}
     bra::Union{Bra{B}, ProductBra}
     weight::T
@@ -101,7 +101,7 @@ Linear combination of bras with weights.
 Created via adjoint of SumKet (with complex conjugate weights).
 
 See also: [`SumKet`](@ref)
-""" SumBra
+"""
 struct SumBra{B<:AbstractBasis, T} <: AbstractBra{B}
     display_name::Union{Symbol,Nothing}
     bras::Vector{Union{Bra{B}, ProductBra}}

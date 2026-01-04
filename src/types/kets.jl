@@ -42,7 +42,7 @@ julia> ψ = Ket(Xb, :ψ)     # |ψ⟩ in x-basis
 ```
 
 See also: [`Bra`](@ref), [`Basis`](@ref), [`WeightedKet`](@ref), [`SumKet`](@ref), [`ProductKet`](@ref)
-""" Ket
+"""
 struct Ket{B<:AbstractBasis} <: AbstractKet{B}
     index::KetIndex
 
@@ -103,7 +103,7 @@ julia> ψ ⊗ ϕ ⊗ χ  # Three kets
 ```
 
 See also: [`Ket`](@ref), [`⊗`](@ref)
-""" ProductKet
+"""
 struct ProductKet{Bs<:Tuple} <: AbstractKet{CompositeBasis{Bs}}
     kets::Vector{Ket}  # Vector of basic kets (canonically ordered)
     
@@ -147,7 +147,7 @@ julia> 2 * ψ
 ```
 
 See also: [`Ket`](@ref), [`SumKet`](@ref)
-""" WeightedKet
+"""
 struct WeightedKet{B<:AbstractBasis, T} <: AbstractKet{B}
     ket::Union{Ket{B}, ProductKet}  # Can wrap either basic type
     weight::T
@@ -184,7 +184,7 @@ julia> (ψ + ϕ) / √2
 ```
 
 See also: [`Ket`](@ref), [`WeightedKet`](@ref)
-""" SumKet
+"""
 struct SumKet{B<:AbstractBasis, T} <: AbstractKet{B}
     display_name::Union{Symbol,Nothing}
     kets::Vector{Union{Ket{B}, ProductKet}}  # Vector of basic kets
@@ -356,7 +356,7 @@ end
 Create a Fock state |n⟩ in the given infinite-dimensional Hilbert space.
 
 See also: [`Ket`](@ref), [`FockBra`](@ref)
-""" FockKet
+"""
 function FockKet(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
     dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
     Ket(space, n)
@@ -368,7 +368,7 @@ end
 Create a Fock bra ⟨n| in the given infinite-dimensional Hilbert space.
 
 See also: [`Bra`](@ref), [`FockKet`](@ref)
-""" FockBra
+"""
 function FockBra(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
     dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
     Bra(space, n)

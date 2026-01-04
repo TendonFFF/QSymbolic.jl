@@ -18,7 +18,7 @@ Basis{x}
 ```
 
 See also: [`define_transform!`](@ref), [`DefaultBasis`](@ref), [`CompositeBasis`](@ref)
-""" Basis
+"""
 struct Basis{S<:AbstractSpace, name} <: AbstractBasis{S}
     function Basis(space::S, name::Symbol) where S<:AbstractSpace
         new{S, name}()
@@ -34,7 +34,7 @@ end
     space(operator)
 
 Get the underlying Hilbert space of a basis, ket, bra, or operator.
-""" space
+"""
 space(::Type{Basis{S,name}}) where {S,name} = S
 space(::Basis{S,name}) where {S,name} = S
 
@@ -42,7 +42,7 @@ space(::Basis{S,name}) where {S,name} = S
     basisname(basis)
 
 Get the symbolic name of a basis.
-""" basisname
+"""
 basisname(::Type{Basis{S,name}}) where {S,name} = name
 basisname(::Basis{S,name}) where {S,name} = name
 
@@ -76,7 +76,7 @@ Basis{z}⊗Basis{z}⊗Basis{z}
 ```
 
 See also: [`Basis`](@ref), [`define_transform!`](@ref)
-""" CompositeBasis
+"""
 struct CompositeBasis{Bs<:Tuple} <: AbstractBasis{CompositeSpace}
     function CompositeBasis{Bs}() where {Bs<:Tuple}
         # Validate all elements are AbstractBasis types
@@ -125,13 +125,13 @@ end
     basis(operator)
 
 Get the basis type of a ket, bra, or operator.
-""" basis
+"""
 
 @doc """
     basis1(cb::CompositeBasis)
 
 Get the first component basis of a composite basis.
-""" basis1
+"""
 basis1(::Type{CompositeBasis{Bs}}) where {Bs} = Bs.parameters[1]
 basis1(::CompositeBasis{Bs}) where {Bs} = Bs.parameters[1]
 
@@ -139,7 +139,7 @@ basis1(::CompositeBasis{Bs}) where {Bs} = Bs.parameters[1]
     basis2(cb::CompositeBasis)
 
 Get the second component basis of a composite basis.
-""" basis2
+"""
 basis2(::Type{CompositeBasis{Bs}}) where {Bs} = Bs.parameters[2]
 basis2(::CompositeBasis{Bs}) where {Bs} = Bs.parameters[2]
 
@@ -147,7 +147,7 @@ basis2(::CompositeBasis{Bs}) where {Bs} = Bs.parameters[2]
     bases(cb::CompositeBasis)
 
 Get all component bases of a composite basis as a tuple.
-""" bases
+"""
 bases(::Type{CompositeBasis{Bs}}) where {Bs} = Bs.parameters
 bases(::CompositeBasis{Bs}) where {Bs} = Bs.parameters
 
@@ -184,7 +184,7 @@ julia> H = HilbertSpace(:H, 2);
 julia> ψ = BasisKet(H, :ψ)  # uses DefaultBasis internally
 |ψ⟩
 ```
-""" DefaultBasis
+"""
 struct DefaultBasis{S<:AbstractSpace} <: AbstractBasis{S} end
 
 space(::Type{DefaultBasis{S}}) where S = S
@@ -223,7 +223,7 @@ julia> H, Hb = HilbertSpace(:H, 2)  # Space and default basis
 
 The first iteration returns the space itself, and the second returns a default basis.
 This allows for convenient syntax where you can get both the space and a default basis in one line.
-""" Base.iterate
+"""
 function Base.iterate(space::HilbertSpace)
     # First iteration: return the space itself, with state=1
     return (space, 1)

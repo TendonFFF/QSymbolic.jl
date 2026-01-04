@@ -41,7 +41,7 @@ down = Ket(Hb, :↓)
 ```
 
 See also: [`Outer`](@ref), [`Identity`](@ref)
-""" Operator
+"""
 struct Operator{S<:AbstractSpace} <: AbstractOperator{S}
     outers::Vector{Outer{S}}
     weights::Vector

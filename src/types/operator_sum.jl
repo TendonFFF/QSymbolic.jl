@@ -28,7 +28,7 @@ H_shifted * ψ  # → σ_z|↑⟩ + 2|↑⟩ = 3|↑⟩
 ```
 
 See also: [`Operator`](@ref), [`Identity`](@ref), [`Outer`](@ref)
-""" OperatorSum
+"""
 struct OperatorSum{S<:AbstractSpace} <: AbstractOperator{S}
     operators::Vector{AbstractOperator{S}}
     weights::Vector{Number}
