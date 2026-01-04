@@ -244,6 +244,8 @@ function FunctionOperator(basis::B, action::F; adjoint_action::Union{Function, N
     FunctionOperator{S,B}(basis, action, adjoint_action, name)
 end
 
+Base.adjoint(op::FunctionOperator) = isnothing(op.adjoint_action) ? throw(ErrorException("Adjoint action not defined for this FunctionOperator")) : FunctionOperator(op.basis, op.adjoint_action, adjoint_action=op.action, name=Symbol(string(op.name), "'"))
+
 # Display
 Base.show(io::IO, op::FunctionOperator) = print(io, op.name)
 
