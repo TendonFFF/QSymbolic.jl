@@ -42,6 +42,7 @@ Use `⊗` to combine bases:
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 
 # Create named bases
 Zb = Basis(H, :z)

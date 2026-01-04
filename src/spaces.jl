@@ -1,5 +1,9 @@
 # Hilbert spaces and composite spaces
 
+# Exports
+export HilbertSpace, CompositeSpace, FockSpace
+export ⊗  # Tensor product operator
+
 @doc """
     HilbertSpace(name::Symbol, dim=nothing)
 
@@ -13,7 +17,7 @@ julia> H = HilbertSpace(:H, 2)  # qubit
 julia> F = HilbertSpace(:F)     # infinite-dim
 ℋ(F)
 ```
-""" HilbertSpace
+"""
 struct HilbertSpace{name, dim} <: AbstractSpace{name, dim}
     function HilbertSpace(A::Symbol, dim::Union{Int,Nothing}=nothing)
         new{(A,), (dim,)}()
@@ -34,7 +38,7 @@ julia> H2 = HilbertSpace(:B, 3);
 julia> H1 ⊗ H2
 ℋ(A) ⊗ ℋ(B)
 ```
-""" CompositeSpace
+"""
 struct CompositeSpace{name, dim} <: AbstractSpace{name, dim}
     function CompositeSpace(space1::AbstractSpace{name1,dim1}, space2::AbstractSpace{name2,dim2}) where {name1, name2, dim1, dim2}
         name12 = tuple(name1..., name2...)
@@ -54,7 +58,7 @@ Equivalent to `HilbertSpace(name, nothing)`.
 julia> F = FockSpace(:F)
 ℋ(F)
 ```
-""" FockSpace
+"""
 FockSpace(A::Symbol) = HilbertSpace(A, nothing)
 
 @doc """
@@ -69,3 +73,5 @@ Tensor product of two Hilbert spaces.
         nameA == nameB && dimA == dimB
     end
 end
+
+# Note: Iteration protocol for HilbertSpace is defined in basis.jl after Basis type is available

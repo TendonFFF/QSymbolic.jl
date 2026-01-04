@@ -22,8 +22,8 @@ The resulting `CompositeSpace` represents the joint system.
 Create tensor products of kets for separable (non-entangled) states:
 
 ```julia
-ψ_A = BasisKet(H_A, :ψ)
-ϕ_B = BasisKet(H_B, :ϕ)
+ψ_A = Ket(H_A, :ψ)
+ϕ_B = Ket(H_B, :ϕ)
 
 product = ψ_A ⊗ ϕ_B  # |ψ⟩_A ⊗ |ϕ⟩_B (ProductKet)
 ```
@@ -42,7 +42,7 @@ Inner products of product states **factorize** according to:
 product' * product  # → 1 × 1 = 1
 
 # Different states
-χ_A = BasisKet(H_A, :χ)
+χ_A = Ket(H_A, :χ)
 other = χ_A ⊗ ϕ_B
 
 product' * other    # → ⟨ψ|χ⟩ × ⟨ϕ|ϕ⟩ = 0 × 1 = 0
@@ -74,15 +74,17 @@ Then the composite transform `Xa⊗Xb → Za⊗Zb` is derived automatically, wit
 ```julia
 # Setup two qubits
 H_A = HilbertSpace(:A, 2)
+H_Ab = Basis(H_A, :default)
 H_B = HilbertSpace(:B, 2)
+H_Bb = Basis(H_B, :default)
 
 # Define bases for each
 Za, Xa = Basis(H_A, :z), Basis(H_A, :x)
 Zb, Xb = Basis(H_B, :z), Basis(H_B, :x)
 
 # Create states
-up_a, down_a = BasisKet(Za, :↑), BasisKet(Za, :↓)
-up_b, down_b = BasisKet(Zb, :↑), BasisKet(Zb, :↓)
+up_a, down_a = Ket(Za, :↑), Ket(Za, :↓)
+up_b, down_b = Ket(Zb, :↑), Ket(Zb, :↓)
 
 # Define subsystem transforms
 define_transform!(Xa, Za) do idx
@@ -93,8 +95,8 @@ define_transform!(Xb, Zb) do idx
 end
 
 # Now create a product state in x⊗x basis
-up_x_a = BasisKet(Xa, :↑)
-up_x_b = BasisKet(Xb, :↑)
+up_x_a = Ket(Xa, :↑)
+up_x_b = Ket(Xb, :↑)
 state_xx = up_x_a ⊗ up_x_b  # |↑_x⟩_A ⊗ |↑_x⟩_B
 
 # Transform to z⊗z basis - automatically factorized!
@@ -114,21 +116,22 @@ Entangled states are **superpositions** of product states that cannot be factore
 
 ```julia
 H = HilbertSpace(:qubit, 2)
+Hb = Basis(H, :default)
 Z = Basis(H, :z)
 
-up = BasisKet(Z, :0)
-down = BasisKet(Z, :1)
+up = Ket(Z, :0)
+down = Ket(Z, :1)
 
 # Bell state |Φ⁺⟩ = (|00⟩ + |11⟩)/√2
 zero_zero = up ⊗ up      # |0⟩|0⟩
 one_one = down ⊗ down    # |1⟩|1⟩
 
-# Bell state as SumProductKet
+# Bell state as SumKet
 bell_plus = (zero_zero + one_one) / √2
 ```
 
 !!! warning "Entangled State Arithmetic"
-    Arithmetic with `SumProductKet` (sums of product states) is partially supported. Inner products between `SumProductKet` states work correctly.
+    Arithmetic with `SumKet` (sums of product states) is partially supported. Inner products between `SumKet` states work correctly.
 
 ## Explicit Composite Transforms
 
@@ -159,12 +162,14 @@ Operators on composite systems can be constructed as tensor products:
 
 ```julia
 H_A = HilbertSpace(:A, 2)
+H_Ab = Basis(H_A, :default)
 H_B = HilbertSpace(:B, 2)
+H_Bb = Basis(H_B, :default)
 Za = Basis(H_A, :z)
 Zb = Basis(H_B, :z)
 
-up_a, down_a = BasisKet(Za, :↑), BasisKet(Za, :↓)
-up_b, down_b = BasisKet(Zb, :↑), BasisKet(Zb, :↓)
+up_a, down_a = Ket(Za, :↑), Ket(Za, :↓)
+up_b, down_b = Ket(Zb, :↑), Ket(Zb, :↓)
 
 # Single-qubit Pauli Z operators
 σz_a = up_a * up_a' - down_a * down_a'

@@ -1,6 +1,11 @@
 # Symbolic scalar arithmetic using Symbolics.jl
 # This module provides a thin wrapper around Symbolics.jl for scalar symbolic computation
 
+# Exports
+export AbstractSymbolic, Sym, SymNum, SymExpr, KroneckerDelta, ScaledDelta
+export substitute, evaluate, symbols, is_numeric, simplify
+export is_real, is_positive, is_integer, is_nonnegative, assumptions
+
 import Symbolics
 import Symbolics: @variables
 

@@ -26,13 +26,14 @@ using QSymbolic
 
 # Create a 2-dimensional Hilbert space
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 
 # Define spin-z basis
 Zb = Basis(H, :z)
 
 # Create kets in the z-basis
-up = BasisKet(Zb, :↑)
-down = BasisKet(Zb, :↓)
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
 
 # Orthonormality
 up' * up    # → 1

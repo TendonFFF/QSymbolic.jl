@@ -54,7 +54,6 @@ For operators with procedural definitions:
 
 ```@docs
 FunctionOperator
-AdjointFunctionOperator
 ```
 
 ## Identity Operator
@@ -101,9 +100,10 @@ basis(::Operator)
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 Zb = Basis(H, :z)
-up = BasisKet(Zb, :↑)
-down = BasisKet(Zb, :↓)
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
 
 # Projector
 P_up = up * up'         # |↑⟩⟨↑|
@@ -139,13 +139,13 @@ Fb = Basis(F, :n)
 # Annihilation operator
 â = FunctionOperator(:â, Fb) do ket
     n = parse(Int, string(ket.index))
-    n == 0 ? 0 : √n * BasisKet(Fb, n - 1)
+    n == 0 ? 0 : √n * Ket(Fb, n - 1)
 end
 
 # Creation operator  
 â† = FunctionOperator(:â†, Fb) do ket
     n = parse(Int, string(ket.index))
-    √(n + 1) * BasisKet(Fb, n + 1)
+    √(n + 1) * Ket(Fb, n + 1)
 end
 ```
 
@@ -154,14 +154,16 @@ end
 ```julia
 # Two-qubit system
 H1 = HilbertSpace(:qubit1, 2)
+H1b = Basis(H1, :default)
 H2 = HilbertSpace(:qubit2, 2)
+H2b = Basis(H2, :default)
 B1 = Basis(H1, :z)
 B2 = Basis(H2, :z)
 
-up1 = BasisKet(B1, :↑)
-down1 = BasisKet(B1, :↓)
-up2 = BasisKet(B2, :↑)
-down2 = BasisKet(B2, :↓)
+up1 = Ket(B1, :↑)
+down1 = Ket(B1, :↓)
+up2 = Ket(B2, :↑)
+down2 = Ket(B2, :↓)
 
 # Single-qubit operators
 σz1 = up1 * up1' - down1 * down1'
