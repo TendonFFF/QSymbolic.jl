@@ -182,6 +182,7 @@ Base.show(io::IO, sd::ScaledDelta) = print(io, sd.coeff, "·", sd.delta)
 Simplify a symbolic expression using Symbolics.jl's simplification engine.
 """
 simplify(x::Number) = x
+simplify(x::Symbol) = x  # Julia Symbols pass through unchanged
 simplify(x::Symbolics.Num) = Symbolics.simplify(x)
 simplify(x::Complex{Symbolics.Num}) = Complex(Symbolics.simplify(real(x)), Symbolics.simplify(imag(x)))
 
@@ -189,20 +190,35 @@ function simplify(δ::KroneckerDelta)
     i_simp = simplify(δ.i)
     j_simp = simplify(δ.j)
     
-    # Try to evaluate if both are concrete
-    if i_simp isa Number && j_simp isa Number
+    # If both are identical (same object), return 1
+    # This handles Sym(:a) vs Sym(:a) via isequal
+    if isequal(i_simp, j_simp)
+        return 1
+    end
+    
+    # Try to evaluate if both are concrete (non-symbolic) numbers
+    i_is_concrete = i_simp isa Number && !(i_simp isa Symbolics.Num)
+    j_is_concrete = j_simp isa Number && !(j_simp isa Symbolics.Num)
+    if i_is_concrete && j_is_concrete
         return i_simp == j_simp ? 1 : 0
     end
     
-    # Check symbolic equality using Symbolics
+    # If both are literal Symbols (not symbolic variables), we can compare them directly
+    # Different literal symbols are definitely not equal
+    if i_simp isa Symbol && j_simp isa Symbol
+        return i_simp == j_simp ? 1 : 0
+    end
+    
+    # Check symbolic equality using Symbolics - only if we can prove they're equal
     if i_simp isa Symbolics.Num && j_simp isa Symbolics.Num
         diff = Symbolics.simplify(i_simp - j_simp)
-        if Symbolics.iszero(diff)
+        # Check if diff simplifies to literal 0 (not symbolic zero)
+        if isequal(diff, 0) || isequal(Symbolics.value(diff), 0)
             return 1
         end
     end
     
-    # Can't simplify further
+    # Can't simplify further (e.g., Sym(:a) vs Sym(:b) could be equal after substitution)
     return KroneckerDelta(i_simp, j_simp)
 end
 
