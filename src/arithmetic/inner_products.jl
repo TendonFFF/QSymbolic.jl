@@ -85,6 +85,9 @@ end
     # Mixed cases: promote to Sum types
     Base.$(:(*))(bra::Bra, sk::SumKet) = SumBra([bra], [1]) * sk
     Base.$(:(*))(sb::SumBra, ket::Ket) = sb * SumKet([ket], [1])
+    Base.$(:(*))(bra::ProductBra, sk::SumKet) = SumBra([bra], [1]) * sk
+    Base.$(:(*))(sb::SumBra, ket::ProductKet) = sb * SumKet([ket], [1])
+    
     Base.$(:(*))(bra::Bra, wk::WeightedKet) = bra * wk.ket * wk.weight
     Base.$(:(*))(wb::WeightedBra, ket::Ket) = wb.bra * ket * wb.weight
     Base.$(:(*))(wb::WeightedBra, sk::SumKet) = SumBra([wb.bra], [wb.weight]) * sk

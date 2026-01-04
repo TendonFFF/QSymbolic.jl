@@ -560,7 +560,7 @@ end
     # Weighted ket with symbolic index
     weighted = 2 * ket_n
     @test weighted isa WeightedKet
-    @test isequal(weighted.Ket.index, n)
+    @test isequal(weighted.ket.index, n)
     
     # Symbolic weights
     α = Sym(:α)
