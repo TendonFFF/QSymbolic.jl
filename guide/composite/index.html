@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Composite Systems · QSymbolic.jl</title><meta name="title" content="Composite Systems · QSymbolic.jl"/><meta property="og:title" content="Composite Systems · QSymbolic.jl"/><meta property="twitter:title" content="Composite Systems · QSymbolic.jl"/><meta name="description" content="Documentation for QSymbolic.jl."/><meta property="og:description" content="Documentation for QSymbolic.jl."/><meta property="twitter:description" content="Documentation for QSymbolic.jl."/><meta property="og:url" content="https://TendonFFF.github.io/QSymbolic.jl/guide/composite/"/><meta property="twitter:url" content="https://TendonFFF.github.io/QSymbolic.jl/guide/composite/"/><link rel="canonical" href="https://TendonFFF.github.io/QSymbolic.jl/guide/composite/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">QSymbolic.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../getting_started/">Getting Started</a></li><li><a class="tocitem" href="../transforms/">Basis Transforms</a></li><li class="is-active"><a class="tocitem" href>Composite Systems</a><ul class="internal"><li><a class="tocitem" href="#Tensor-Product-of-Spaces"><span>Tensor Product of Spaces</span></a></li><li><a class="tocitem" href="#Product-States"><span>Product States</span></a></li><li><a class="tocitem" href="#Order-Independent-(Bosonic)-Behavior"><span>Order-Independent (Bosonic) Behavior</span></a></li><li><a class="tocitem" href="#Inner-Products-of-Product-States"><span>Inner Products of Product States</span></a></li><li><a class="tocitem" href="#Multi-Index-Kets"><span>Multi-Index Kets</span></a></li><li><a class="tocitem" href="#Composite-Bases"><span>Composite Bases</span></a></li><li><a class="tocitem" href="#Factorized-Transforms"><span>Factorized Transforms</span></a></li><li><a class="tocitem" href="#Entangled-States"><span>Entangled States</span></a></li><li><a class="tocitem" href="#Operators-on-Composite-Systems"><span>Operators on Composite Systems</span></a></li><li><a class="tocitem" href="#See-Also"><span>See Also</span></a></li></ul></li><li><a class="tocitem" href="../operators/">Operators</a></li><li><a class="tocitem" href="../symbolic/">Symbolic Scalars</a></li><li><a class="tocitem" href="../contraction_rules/">Custom Contraction Rules</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../api/api/">Full API</a></li><li><a class="tocitem" href="../../api/spaces/">Spaces</a></li><li><a class="tocitem" href="../../api/bases/">Bases</a></li><li><a class="tocitem" href="../../api/states/">States</a></li><li><a class="tocitem" href="../../api/transforms/">Transforms</a></li><li><a class="tocitem" href="../../api/operators/">Operators</a></li><li><a class="tocitem" href="../../api/symbolic/">Symbolic Scalars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Guide</a></li><li class="is-active"><a href>Composite Systems</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Composite Systems</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/TendonFFF/QSymbolic.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/TendonFFF/QSymbolic.jl/blob/main/docs/src/guide/composite.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Composite-Systems"><a class="docs-heading-anchor" href="#Composite-Systems">Composite Systems</a><a id="Composite-Systems-1"></a><a class="docs-heading-anchor-permalink" href="#Composite-Systems" title="Permalink"></a></h1><p>QSymbolic.jl supports tensor products for multi-particle quantum systems, with automatic factorization of basis transforms.</p><h2 id="Tensor-Product-of-Spaces"><a class="docs-heading-anchor" href="#Tensor-Product-of-Spaces">Tensor Product of Spaces</a><a id="Tensor-Product-of-Spaces-1"></a><a class="docs-heading-anchor-permalink" href="#Tensor-Product-of-Spaces" title="Permalink"></a></h2><p>Combine Hilbert spaces with the tensor product operator <code>⊗</code>:</p><pre><code class="language-julia hljs">using QSymbolic
+
+H_A = HilbertSpace(:A, 2)  # First qubit
+H_B = HilbertSpace(:B, 2)  # Second qubit
+
+H_AB = H_A ⊗ H_B  # 4-dimensional composite space</code></pre><p>The resulting <code>CompositeSpace</code> represents the joint system.</p><h2 id="Product-States"><a class="docs-heading-anchor" href="#Product-States">Product States</a><a id="Product-States-1"></a><a class="docs-heading-anchor-permalink" href="#Product-States" title="Permalink"></a></h2><p>Create tensor products of kets for separable (non-entangled) states:</p><pre><code class="language-julia hljs">H_A, Ba = HilbertSpace(:A, 2)
+H_B, Bb = HilbertSpace(:B, 2)
+
+ψ_A = Ket(Ba, :ψ)
+ϕ_B = Ket(Bb, :ϕ)
+
+product = ψ_A ⊗ ϕ_B  # |ψ⟩_A ⊗ |ϕ⟩_B (ProductKet)</code></pre><p>This represents a state where subsystem A is in state |ψ⟩ and subsystem B is in state |ϕ⟩, with no correlations between them.</p><h2 id="Order-Independent-(Bosonic)-Behavior"><a class="docs-heading-anchor" href="#Order-Independent-(Bosonic)-Behavior">Order-Independent (Bosonic) Behavior</a><a id="Order-Independent-(Bosonic)-Behavior-1"></a><a class="docs-heading-anchor-permalink" href="#Order-Independent-(Bosonic)-Behavior" title="Permalink"></a></h2><div class="admonition is-info" id="ProductKet-Ordering-d797905c13f7f58d"><header class="admonition-header">ProductKet Ordering<a class="admonition-anchor" href="#ProductKet-Ordering-d797905c13f7f58d" title="Permalink"></a></header><div class="admonition-body"><p><code>ProductKet</code>s are <strong>order-independent</strong> (bosonic/symmetric). The kets are canonically ordered by basis, so <code>ψ_A ⊗ ϕ_B == ϕ_B ⊗ ψ_A</code> when they have different bases. This is the default behavior.</p></div></div><pre><code class="language-julia hljs">H_A, Ba = HilbertSpace(:A, 2)
+H_B, Bb = HilbertSpace(:B, 2)
+
+ψ = Ket(Ba, :ψ)
+ϕ = Ket(Bb, :ϕ)
+
+# Order doesn&#39;t matter for different bases
+ψ ⊗ ϕ == ϕ ⊗ ψ  # → true
+
+# Three-way tensor products also canonicalize
+H_C, Bc = HilbertSpace(:C, 2)
+χ = Ket(Bc, :χ)
+
+ψ ⊗ ϕ ⊗ χ == χ ⊗ ψ ⊗ ϕ  # → true</code></pre><div class="admonition is-warning" id="Future-Feature-f40bbd1871493f30"><header class="admonition-header">Future Feature<a class="admonition-anchor" href="#Future-Feature-f40bbd1871493f30" title="Permalink"></a></header><div class="admonition-body"><p>Fermionic (anti-symmetric) tensor products will be added in a future update.</p></div></div><h2 id="Inner-Products-of-Product-States"><a class="docs-heading-anchor" href="#Inner-Products-of-Product-States">Inner Products of Product States</a><a id="Inner-Products-of-Product-States-1"></a><a class="docs-heading-anchor-permalink" href="#Inner-Products-of-Product-States" title="Permalink"></a></h2><p>Inner products of product states <strong>factorize</strong>:</p><p class="math-container">\[(⟨ψ_A| ⊗ ⟨ϕ_B|)(|ψ&#39;_A⟩ ⊗ |ϕ&#39;_B⟩) = ⟨ψ_A|ψ&#39;_A⟩ \cdot ⟨ϕ_B|ϕ&#39;_B⟩\]</p><pre><code class="language-julia hljs">product&#39; * product  # → 1 × 1 = 1
+
+# Different states
+χ_A = Ket(Ba, :χ)
+other = χ_A ⊗ ϕ_B
+
+product&#39; * other    # → ⟨ψ|χ⟩ × ⟨ϕ|ϕ⟩ = 0 × 1 = 0</code></pre><h2 id="Multi-Index-Kets"><a class="docs-heading-anchor" href="#Multi-Index-Kets">Multi-Index Kets</a><a id="Multi-Index-Kets-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-Index-Kets" title="Permalink"></a></h2><p>For composite systems, you can also use <strong>multi-index kets</strong> with a composite basis:</p><pre><code class="language-julia hljs">S_cavity, B_cavity = FockSpace(:cavity)
+S_dot, B_dot = HilbertSpace(:dot, 3)
+
+# Create composite space and basis
+S_system = S_cavity ⊗ S_dot
+B_composite = Basis(S_system, :dressed)
+
+# Multi-index ket: |n, σ⟩
+ket = Ket(B_composite, (Sym(:n), Sym(:σ)))
+
+# Inner products check all indices
+ket&#39; * ket  # → 1</code></pre><p>This is useful for dressed states like Jaynes-Cummings eigenstates. See <a href="../contraction_rules/#Custom-Contraction-Rules">Custom Contraction Rules</a> for defining custom inner product behavior.</p><h2 id="Composite-Bases"><a class="docs-heading-anchor" href="#Composite-Bases">Composite Bases</a><a id="Composite-Bases-1"></a><a class="docs-heading-anchor-permalink" href="#Composite-Bases" title="Permalink"></a></h2><p>Combine bases into a composite basis:</p><pre><code class="language-julia hljs">H_A = HilbertSpace(:A, 2)
+H_B = HilbertSpace(:B, 2)
+
+Za = Basis(H_A, :z)
+Zb = Basis(H_B, :z)
+
+ZaZb = Za ⊗ Zb  # CompositeBasis for the joint system</code></pre><h2 id="Factorized-Transforms"><a class="docs-heading-anchor" href="#Factorized-Transforms">Factorized Transforms</a><a id="Factorized-Transforms-1"></a><a class="docs-heading-anchor-permalink" href="#Factorized-Transforms" title="Permalink"></a></h2><p><strong>Transforms factorize automatically</strong>. If you define:</p><ul><li>Transform from <code>Xa → Za</code> (for subsystem A)</li><li>Transform from <code>Xb → Zb</code> (for subsystem B)</li></ul><p>Then the composite transform <code>Xa⊗Xb → Za⊗Zb</code> is derived automatically!</p><pre><code class="language-julia hljs">H_A = HilbertSpace(:A, 2)
+H_B = HilbertSpace(:B, 2)
+
+# Define bases
+Za, Xa = Basis(H_A, :z), Basis(H_A, :x)
+Zb, Xb = Basis(H_B, :z), Basis(H_B, :x)
+
+# Create states
+up_a, down_a = Ket(Za, :↑), Ket(Za, :↓)
+up_b, down_b = Ket(Zb, :↑), Ket(Zb, :↓)
+
+# Define subsystem transforms
+define_transform!(Xa, Za) do idx
+    idx == :↑ ? (up_a + down_a)/√2 : (up_a - down_a)/√2
+end
+define_transform!(Xb, Zb) do idx
+    idx == :↑ ? (up_b + down_b)/√2 : (up_b - down_b)/√2
+end
+
+# Product state in x⊗x basis
+up_x_a = Ket(Xa, :↑)
+up_x_b = Ket(Xb, :↑)
+state_xx = up_x_a ⊗ up_x_b
+
+# Transform to z⊗z - automatically factorized!
+target_basis = typeof(Za ⊗ Zb)
+state_zz = transform(state_xx, target_basis)
+# Result: (|↑↑⟩ + |↑↓⟩ + |↓↑⟩ + |↓↓⟩)/2</code></pre><h2 id="Entangled-States"><a class="docs-heading-anchor" href="#Entangled-States">Entangled States</a><a id="Entangled-States-1"></a><a class="docs-heading-anchor-permalink" href="#Entangled-States" title="Permalink"></a></h2><p>Entangled states are <strong>superpositions</strong> of product states:</p><pre><code class="language-julia hljs">H = HilbertSpace(:qubit, 2)
+Z = Basis(H, :z)
+
+up = Ket(Z, :0)
+down = Ket(Z, :1)
+
+# Bell state |Φ⁺⟩ = (|00⟩ + |11⟩)/√2
+zero_zero = up ⊗ up
+one_one = down ⊗ down
+
+bell_plus = (zero_zero + one_one) / √2</code></pre><h2 id="Operators-on-Composite-Systems"><a class="docs-heading-anchor" href="#Operators-on-Composite-Systems">Operators on Composite Systems</a><a id="Operators-on-Composite-Systems-1"></a><a class="docs-heading-anchor-permalink" href="#Operators-on-Composite-Systems" title="Permalink"></a></h2><h3 id="Tensor-Product-of-Operators"><a class="docs-heading-anchor" href="#Tensor-Product-of-Operators">Tensor Product of Operators</a><a id="Tensor-Product-of-Operators-1"></a><a class="docs-heading-anchor-permalink" href="#Tensor-Product-of-Operators" title="Permalink"></a></h3><pre><code class="language-julia hljs">H_A, Ba = HilbertSpace(:A, 2)
+H_B, Bb = HilbertSpace(:B, 2)
+Za = Basis(H_A, :z)
+Zb = Basis(H_B, :z)
+
+up_a, down_a = Ket(Za, :↑), Ket(Za, :↓)
+up_b, down_b = Ket(Zb, :↑), Ket(Zb, :↓)
+
+# Single-qubit operators
+σz_a = up_a * up_a&#39; - down_a * down_a&#39;
+σz_b = up_b * up_b&#39; - down_b * down_b&#39;
+
+# Tensor product: σz_A ⊗ σz_B
+σz_ab = σz_a ⊗ σz_b
+
+# Apply to product state
+ψ = up_a ⊗ up_b
+σz_ab * ψ  # → |↑↑⟩ (eigenvalue +1)</code></pre><h3 id="Single-System-Operators-on-Product-States"><a class="docs-heading-anchor" href="#Single-System-Operators-on-Product-States">Single-System Operators on Product States</a><a id="Single-System-Operators-on-Product-States-1"></a><a class="docs-heading-anchor-permalink" href="#Single-System-Operators-on-Product-States" title="Permalink"></a></h3><p>Operators automatically act on their matching subsystem:</p><pre><code class="language-julia hljs">S_cavity, B_cavity = FockSpace(:cavity)
+S_dot, B_dot = HilbertSpace(:dot, 3)
+
+# Annihilation operator on cavity
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+a = FunctionOperator(annihilate, B_cavity, name=:a)
+
+# Apply to product state
+d = Sym(:d)
+product_state = Ket(B_cavity, d) ⊗ Ket(B_dot, :g)
+
+a * product_state  # → √d |d-1⟩ ⊗ |g⟩</code></pre><h2 id="See-Also"><a class="docs-heading-anchor" href="#See-Also">See Also</a><a id="See-Also-1"></a><a class="docs-heading-anchor-permalink" href="#See-Also" title="Permalink"></a></h2><ul><li><a href="../transforms/">Basis Transforms</a> - Cross-basis computations</li><li><a href="../operators/">Operators</a> - Operator algebra</li><li><a href="../contraction_rules/#Custom-Contraction-Rules">Custom Contraction Rules</a> - Multi-index inner products</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../transforms/">« Basis Transforms</a><a class="docs-footer-nextpage" href="../operators/">Operators »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Sunday 4 January 2026 18:03">Sunday 4 January 2026</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

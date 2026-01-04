@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Operators · QSymbolic.jl</title><meta name="title" content="Operators · QSymbolic.jl"/><meta property="og:title" content="Operators · QSymbolic.jl"/><meta property="twitter:title" content="Operators · QSymbolic.jl"/><meta name="description" content="Documentation for QSymbolic.jl."/><meta property="og:description" content="Documentation for QSymbolic.jl."/><meta property="twitter:description" content="Documentation for QSymbolic.jl."/><meta property="og:url" content="https://TendonFFF.github.io/QSymbolic.jl/guide/operators/"/><meta property="twitter:url" content="https://TendonFFF.github.io/QSymbolic.jl/guide/operators/"/><link rel="canonical" href="https://TendonFFF.github.io/QSymbolic.jl/guide/operators/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">QSymbolic.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../getting_started/">Getting Started</a></li><li><a class="tocitem" href="../transforms/">Basis Transforms</a></li><li><a class="tocitem" href="../composite/">Composite Systems</a></li><li class="is-active"><a class="tocitem" href>Operators</a><ul class="internal"><li><a class="tocitem" href="#Outer-Product-Operators"><span>Outer Product Operators</span></a></li><li><a class="tocitem" href="#Projectors"><span>Projectors</span></a></li><li><a class="tocitem" href="#Ladder-(Raising/Lowering)-Operators"><span>Ladder (Raising/Lowering) Operators</span></a></li><li><a class="tocitem" href="#Operator-Algebra"><span>Operator Algebra</span></a></li><li><a class="tocitem" href="#Adjoint-(Hermitian-Conjugate)"><span>Adjoint (Hermitian Conjugate)</span></a></li><li><a class="tocitem" href="#Applying-Operators-to-Superpositions"><span>Applying Operators to Superpositions</span></a></li><li><a class="tocitem" href="#Function-Based-Operators"><span>Function-Based Operators</span></a></li><li><a class="tocitem" href="#Identity-Operator"><span>Identity Operator</span></a></li><li><a class="tocitem" href="#Operator-Types-Summary"><span>Operator Types Summary</span></a></li><li><a class="tocitem" href="#Complete-Example:-Pauli-Matrices"><span>Complete Example: Pauli Matrices</span></a></li><li><a class="tocitem" href="#Complete-Example:-Fock-Space-Ladder-Operators"><span>Complete Example: Fock Space Ladder Operators</span></a></li><li><a class="tocitem" href="#See-Also"><span>See Also</span></a></li></ul></li><li><a class="tocitem" href="../symbolic/">Symbolic Scalars</a></li><li><a class="tocitem" href="../contraction_rules/">Custom Contraction Rules</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../api/api/">Full API</a></li><li><a class="tocitem" href="../../api/spaces/">Spaces</a></li><li><a class="tocitem" href="../../api/bases/">Bases</a></li><li><a class="tocitem" href="../../api/states/">States</a></li><li><a class="tocitem" href="../../api/transforms/">Transforms</a></li><li><a class="tocitem" href="../../api/operators/">Operators</a></li><li><a class="tocitem" href="../../api/symbolic/">Symbolic Scalars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Guide</a></li><li class="is-active"><a href>Operators</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Operators</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/TendonFFF/QSymbolic.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/TendonFFF/QSymbolic.jl/blob/main/docs/src/guide/operators.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Operators"><a class="docs-heading-anchor" href="#Operators">Operators</a><a id="Operators-1"></a><a class="docs-heading-anchor-permalink" href="#Operators" title="Permalink"></a></h1><p>QSymbolic.jl provides a comprehensive system for quantum operators, including outer product operators, operator algebra, and function-defined operators.</p><h2 id="Outer-Product-Operators"><a class="docs-heading-anchor" href="#Outer-Product-Operators">Outer Product Operators</a><a id="Outer-Product-Operators-1"></a><a class="docs-heading-anchor-permalink" href="#Outer-Product-Operators" title="Permalink"></a></h2><p>The most natural way to build quantum operators is via outer products <code>|ψ⟩⟨ϕ|</code>. When applied to a state:</p><p class="math-container">\[(|ψ⟩⟨ϕ|)|χ⟩ = ⟨ϕ|χ⟩ |ψ⟩\]</p><pre><code class="language-julia hljs">using QSymbolic
+
+H = HilbertSpace(:spin, 2)
+Zb = Basis(H, :z)
+
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
+
+# Create operator via outer product
+P_up = up * up&#39;      # |↑⟩⟨↑|
+
+# Display shows Dirac notation
+P_up  # → |↑⟩⟨↑|
+
+# Apply to states
+P_up * up    # → |↑⟩ (eigenstate)
+P_up * down  # → 0   (orthogonal)</code></pre><h2 id="Projectors"><a class="docs-heading-anchor" href="#Projectors">Projectors</a><a id="Projectors-1"></a><a class="docs-heading-anchor-permalink" href="#Projectors" title="Permalink"></a></h2><p>A <strong>projector</strong> onto state <code>|ψ⟩</code> is <code>P = |ψ⟩⟨ψ|</code>. It satisfies:</p><ul><li><code>P|ψ⟩ = |ψ⟩</code> (leaves the state unchanged)</li><li><code>P|ϕ⟩ = 0</code> for orthogonal states</li><li><code>P² = P</code> (idempotent)</li></ul><pre><code class="language-julia hljs"># Projector onto |↑⟩
+P_up = up * up&#39;
+
+P_up * up                # → |↑⟩
+P_up * down              # → 0
+(P_up * P_up) * up       # → |↑⟩ (P² = P)</code></pre><h2 id="Ladder-(Raising/Lowering)-Operators"><a class="docs-heading-anchor" href="#Ladder-(Raising/Lowering)-Operators">Ladder (Raising/Lowering) Operators</a><a id="Ladder-(Raising/Lowering)-Operators-1"></a><a class="docs-heading-anchor-permalink" href="#Ladder-(Raising/Lowering)-Operators" title="Permalink"></a></h2><p>Operators like <code>|↑⟩⟨↓|</code> raise or lower states:</p><pre><code class="language-julia hljs"># Raising operator σ₊ = |↑⟩⟨↓|
+σ_plus = up * down&#39;
+
+σ_plus * down  # → |↑⟩ (raises |↓⟩ to |↑⟩)
+σ_plus * up    # → 0   (can&#39;t raise |↑⟩ further)
+
+# Lowering operator σ₋ = |↓⟩⟨↑| = (σ₊)†
+σ_minus = σ_plus&#39;
+
+σ_minus * up    # → |↓⟩
+σ_minus * down  # → 0</code></pre><h2 id="Operator-Algebra"><a class="docs-heading-anchor" href="#Operator-Algebra">Operator Algebra</a><a id="Operator-Algebra-1"></a><a class="docs-heading-anchor-permalink" href="#Operator-Algebra" title="Permalink"></a></h2><p>Operators can be combined using standard arithmetic:</p><h3 id="Addition-and-Subtraction"><a class="docs-heading-anchor" href="#Addition-and-Subtraction">Addition and Subtraction</a><a id="Addition-and-Subtraction-1"></a><a class="docs-heading-anchor-permalink" href="#Addition-and-Subtraction" title="Permalink"></a></h3><pre><code class="language-julia hljs">P_up = up * up&#39;
+P_down = down * down&#39;
+
+# Identity operator: 𝕀 = |↑⟩⟨↑| + |↓⟩⟨↓|
+I = P_up + P_down
+
+I * up    # → |↑⟩
+I * down  # → |↓⟩
+
+# Pauli Z: σz = |↑⟩⟨↑| - |↓⟩⟨↓|
+σz = P_up - P_down
+
+σz * up    # → |↑⟩  (eigenvalue +1)
+σz * down  # → -|↓⟩ (eigenvalue -1)</code></pre><h3 id="Scalar-Multiplication"><a class="docs-heading-anchor" href="#Scalar-Multiplication">Scalar Multiplication</a><a id="Scalar-Multiplication-1"></a><a class="docs-heading-anchor-permalink" href="#Scalar-Multiplication" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Scale an operator
+half_σz = (1/2) * σz
+
+half_σz * up  # → 0.5|↑⟩</code></pre><h3 id="Operator-Products"><a class="docs-heading-anchor" href="#Operator-Products">Operator Products</a><a id="Operator-Products-1"></a><a class="docs-heading-anchor-permalink" href="#Operator-Products" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Product of operators: (ÂB̂)|ψ⟩ = Â(B̂|ψ⟩)
+σ_plus = up * down&#39;
+σ_minus = down * up&#39;
+
+# σ₊σ₋ = |↑⟩⟨↓|↓⟩⟨↑| = |↑⟩⟨↑|
+product = σ_plus * σ_minus
+
+product * up    # → |↑⟩
+product * down  # → 0</code></pre><h2 id="Adjoint-(Hermitian-Conjugate)"><a class="docs-heading-anchor" href="#Adjoint-(Hermitian-Conjugate)">Adjoint (Hermitian Conjugate)</a><a id="Adjoint-(Hermitian-Conjugate)-1"></a><a class="docs-heading-anchor-permalink" href="#Adjoint-(Hermitian-Conjugate)" title="Permalink"></a></h2><p>The adjoint of <code>|ψ⟩⟨ϕ|</code> is <code>|ϕ⟩⟨ψ|</code>:</p><pre><code class="language-julia hljs">A = up * down&#39;   # |↑⟩⟨↓|
+A&#39;               # → |↓⟩⟨↑|</code></pre><p>For sum operators, the adjoint distributes:</p><pre><code class="language-julia hljs">σz = P_up - P_down
+σz&#39;  # → |↑⟩⟨↑| - |↓⟩⟨↓| (σz is Hermitian)</code></pre><h2 id="Applying-Operators-to-Superpositions"><a class="docs-heading-anchor" href="#Applying-Operators-to-Superpositions">Applying Operators to Superpositions</a><a id="Applying-Operators-to-Superpositions-1"></a><a class="docs-heading-anchor-permalink" href="#Applying-Operators-to-Superpositions" title="Permalink"></a></h2><p>Operators act linearly on superpositions:</p><pre><code class="language-julia hljs"># Superposition |ψ⟩ = (|↑⟩ + |↓⟩)/√2
+ψ = (up + down) / √2
+
+# σz|ψ⟩ = (|↑⟩ - |↓⟩)/√2
+σz * ψ  # → 0.707|↑⟩ - 0.707|↓⟩</code></pre><h2 id="Function-Based-Operators"><a class="docs-heading-anchor" href="#Function-Based-Operators">Function-Based Operators</a><a id="Function-Based-Operators-1"></a><a class="docs-heading-anchor-permalink" href="#Function-Based-Operators" title="Permalink"></a></h2><p>For operators with complex or infinite-dimensional action (like ladder operators in Fock space), use <code>FunctionOperator</code>. This is particularly useful when:</p><ul><li>The action depends on the state label (like Fock space number)</li><li>The space is infinite-dimensional</li><li>The transformation is more naturally expressed procedurally</li></ul><h3 id="Basic-Syntax"><a class="docs-heading-anchor" href="#Basic-Syntax">Basic Syntax</a><a id="Basic-Syntax-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Syntax" title="Permalink"></a></h3><pre><code class="language-julia hljs">F, Fb = FockSpace(:mode)
+
+# Define action function
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+
+# Create function operator
+â = FunctionOperator(annihilate, Fb, name=:â)
+
+# Apply to Fock states
+n3 = Ket(Fb, 3)
+â * n3  # → √3 |2⟩
+
+n0 = Ket(Fb, 0)
+â * n0  # → 0 (vacuum annihilated)</code></pre><h3 id="With-Do-Block-Syntax"><a class="docs-heading-anchor" href="#With-Do-Block-Syntax">With Do-Block Syntax</a><a id="With-Do-Block-Syntax-1"></a><a class="docs-heading-anchor-permalink" href="#With-Do-Block-Syntax" title="Permalink"></a></h3><pre><code class="language-julia hljs">F, Fb = FockSpace(:mode)
+
+# Using do-block
+â = FunctionOperator(Fb, name=:â) do ket
+    n = ket.index
+    n == 0 ? 0 : √n * Ket{typeof(Fb)}(n - 1)
+end</code></pre><h3 id="With-Adjoint-Action"><a class="docs-heading-anchor" href="#With-Adjoint-Action">With Adjoint Action</a><a id="With-Adjoint-Action-1"></a><a class="docs-heading-anchor-permalink" href="#With-Adjoint-Action" title="Permalink"></a></h3><p>For operators where you also need the adjoint (like creation operator for annihilation):</p><pre><code class="language-julia hljs">F, Fb = FockSpace(:mode)
+
+# Define both actions
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+create(ket::Ket{B}) where B = √(ket.index + 1) * Ket{B}(ket.index + 1)
+
+# Create with adjoint
+â = FunctionOperator(annihilate, Fb, adjoint_action=create, name=:â)
+
+# Now adjoint works
+â&#39;  # Creation operator â†
+
+# Verify â†â|n⟩ = n|n⟩ (number operator)
+n = Sym(:n, :nonnegative, :integer)
+ket_n = Ket(Fb, n)
+â&#39; * (â * ket_n)  # → n|n⟩</code></pre><h3 id="Working-with-Symbolic-Indices"><a class="docs-heading-anchor" href="#Working-with-Symbolic-Indices">Working with Symbolic Indices</a><a id="Working-with-Symbolic-Indices-1"></a><a class="docs-heading-anchor-permalink" href="#Working-with-Symbolic-Indices" title="Permalink"></a></h3><p>Function operators work seamlessly with symbolic indices:</p><pre><code class="language-julia hljs">F, Fb = FockSpace(:mode)
+
+# Action handles symbolic indices
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+â = FunctionOperator(annihilate, Fb, name=:â)
+
+# Symbolic index
+d = Sym(:d, :nonnegative, :integer)
+ket_d = Ket(Fb, d)
+
+â * ket_d  # → √d |d-1⟩</code></pre><h3 id="Operators-on-Composite-States"><a class="docs-heading-anchor" href="#Operators-on-Composite-States">Operators on Composite States</a><a id="Operators-on-Composite-States-1"></a><a class="docs-heading-anchor-permalink" href="#Operators-on-Composite-States" title="Permalink"></a></h3><p>Function operators automatically handle tensor products:</p><pre><code class="language-julia hljs">S_cavity, B_cavity = FockSpace(:cavity)
+S_dot, B_dot = HilbertSpace(:dot, 3)
+
+# Annihilation operator on cavity
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+a = FunctionOperator(annihilate, B_cavity, name=:a)
+
+# Apply to product state |d⟩ ⊗ |g⟩
+d = Sym(:d)
+product_state = Ket(B_cavity, d) ⊗ Ket(B_dot, :g)
+
+a * product_state  # → √d |d-1⟩ ⊗ |g⟩</code></pre><h2 id="Identity-Operator"><a class="docs-heading-anchor" href="#Identity-Operator">Identity Operator</a><a id="Identity-Operator-1"></a><a class="docs-heading-anchor-permalink" href="#Identity-Operator" title="Permalink"></a></h2><pre><code class="language-julia hljs">H = HilbertSpace(:H, 2)
+
+# Create identity on a space
+I = Identity(H)
+
+H, Hb = HilbertSpace(:H, 2)
+ψ = Ket(Hb, :ψ)
+I * ψ  # → |ψ⟩</code></pre><h2 id="Operator-Types-Summary"><a class="docs-heading-anchor" href="#Operator-Types-Summary">Operator Types Summary</a><a id="Operator-Types-Summary-1"></a><a class="docs-heading-anchor-permalink" href="#Operator-Types-Summary" title="Permalink"></a></h2><table><tr><th style="text-align: left">Type</th><th style="text-align: left">Description</th><th style="text-align: left">Example</th></tr><tr><td style="text-align: left"><code>Outer</code></td><td style="text-align: left">Single outer product <code>|ψ⟩⟨ϕ|</code></td><td style="text-align: left"><code>up * down&#39;</code></td></tr><tr><td style="text-align: left"><code>Operator</code></td><td style="text-align: left">Sum of weighted outers</td><td style="text-align: left"><code>σz = P_up - P_down</code></td></tr><tr><td style="text-align: left"><code>Identity</code></td><td style="text-align: left">Identity on space</td><td style="text-align: left"><code>Identity(H)</code></td></tr><tr><td style="text-align: left"><code>FunctionOperator</code></td><td style="text-align: left">User-defined action</td><td style="text-align: left"><code>FunctionOperator(action, basis)</code></td></tr></table><h2 id="Complete-Example:-Pauli-Matrices"><a class="docs-heading-anchor" href="#Complete-Example:-Pauli-Matrices">Complete Example: Pauli Matrices</a><a id="Complete-Example:-Pauli-Matrices-1"></a><a class="docs-heading-anchor-permalink" href="#Complete-Example:-Pauli-Matrices" title="Permalink"></a></h2><pre><code class="language-julia hljs">using QSymbolic
+
+H = HilbertSpace(:spin, 2)
+Zb = Basis(H, :z)
+
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
+
+# Build Pauli matrices from outer products
+σx = up * down&#39; + down * up&#39;         # |↑⟩⟨↓| + |↓⟩⟨↑|
+σy = -im * up * down&#39; + im * down * up&#39;  # -i|↑⟩⟨↓| + i|↓⟩⟨↑|
+σz = up * up&#39; - down * down&#39;         # |↑⟩⟨↑| - |↓⟩⟨↓|
+
+# Verify eigenvalues
+σz * up    # → |↑⟩   (eigenvalue +1)
+σz * down  # → -|↓⟩  (eigenvalue -1)
+
+σx * up    # → |↓⟩
+σx * down  # → |↑⟩
+
+# Apply to superposition
+ψ = (up + down) / √2
+σz * ψ     # → (|↑⟩ - |↓⟩)/√2</code></pre><h2 id="Complete-Example:-Fock-Space-Ladder-Operators"><a class="docs-heading-anchor" href="#Complete-Example:-Fock-Space-Ladder-Operators">Complete Example: Fock Space Ladder Operators</a><a id="Complete-Example:-Fock-Space-Ladder-Operators-1"></a><a class="docs-heading-anchor-permalink" href="#Complete-Example:-Fock-Space-Ladder-Operators" title="Permalink"></a></h2><pre><code class="language-julia hljs">using QSymbolic
+
+F, Fb = FockSpace(:mode)
+
+# Define annihilation and creation
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+create(ket::Ket{B}) where B = √(ket.index + 1) * Ket{B}(ket.index + 1)
+
+â = FunctionOperator(annihilate, Fb, adjoint_action=create, name=:â)
+â† = â&#39;
+
+# Number operator N̂ = â†â
+# Apply to |n⟩
+n = Sym(:n, :nonnegative, :integer)
+ket_n = Ket(Fb, n)
+
+â * ket_n       # → √n |n-1⟩
+â† * ket_n      # → √(n+1) |n+1⟩
+â† * (â * ket_n)  # → n|n⟩ (eigenvalue equation)</code></pre><h2 id="See-Also"><a class="docs-heading-anchor" href="#See-Also">See Also</a><a id="See-Also-1"></a><a class="docs-heading-anchor-permalink" href="#See-Also" title="Permalink"></a></h2><ul><li><a href="../getting_started/#Getting-Started">Getting Started</a> - Basic quantum state operations</li><li><a href="../composite/#Composite-Systems">Composite Systems</a> - Operators on tensor products</li><li><a href="../transforms/">Basis Transforms</a> - Cross-basis operator application</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../composite/">« Composite Systems</a><a class="docs-footer-nextpage" href="../symbolic/">Symbolic Scalars »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Sunday 4 January 2026 18:03">Sunday 4 January 2026</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

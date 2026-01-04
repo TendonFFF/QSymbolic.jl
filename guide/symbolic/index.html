@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Symbolic Scalars · QSymbolic.jl</title><meta name="title" content="Symbolic Scalars · QSymbolic.jl"/><meta property="og:title" content="Symbolic Scalars · QSymbolic.jl"/><meta property="twitter:title" content="Symbolic Scalars · QSymbolic.jl"/><meta name="description" content="Documentation for QSymbolic.jl."/><meta property="og:description" content="Documentation for QSymbolic.jl."/><meta property="twitter:description" content="Documentation for QSymbolic.jl."/><meta property="og:url" content="https://TendonFFF.github.io/QSymbolic.jl/guide/symbolic/"/><meta property="twitter:url" content="https://TendonFFF.github.io/QSymbolic.jl/guide/symbolic/"/><link rel="canonical" href="https://TendonFFF.github.io/QSymbolic.jl/guide/symbolic/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">QSymbolic.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../getting_started/">Getting Started</a></li><li><a class="tocitem" href="../transforms/">Basis Transforms</a></li><li><a class="tocitem" href="../composite/">Composite Systems</a></li><li><a class="tocitem" href="../operators/">Operators</a></li><li class="is-active"><a class="tocitem" href>Symbolic Scalars</a><ul class="internal"><li><a class="tocitem" href="#Why-Symbolic-Scalars?"><span>Why Symbolic Scalars?</span></a></li><li><a class="tocitem" href="#Creating-Symbolic-Variables"><span>Creating Symbolic Variables</span></a></li><li><a class="tocitem" href="#Type-Assumptions"><span>Type Assumptions</span></a></li><li><a class="tocitem" href="#Building-Expressions"><span>Building Expressions</span></a></li><li><a class="tocitem" href="#Supported-Operations"><span>Supported Operations</span></a></li><li><a class="tocitem" href="#Substitution"><span>Substitution</span></a></li><li><a class="tocitem" href="#Evaluation"><span>Evaluation</span></a></li><li><a class="tocitem" href="#Simplification"><span>Simplification</span></a></li><li><a class="tocitem" href="#Introspection"><span>Introspection</span></a></li><li><a class="tocitem" href="#KroneckerDelta"><span>KroneckerDelta</span></a></li><li><a class="tocitem" href="#Use-with-Quantum-States"><span>Use with Quantum States</span></a></li><li><a class="tocitem" href="#Type-System"><span>Type System</span></a></li><li><a class="tocitem" href="#API-Summary"><span>API Summary</span></a></li><li><a class="tocitem" href="#See-Also"><span>See Also</span></a></li></ul></li><li><a class="tocitem" href="../contraction_rules/">Custom Contraction Rules</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../api/api/">Full API</a></li><li><a class="tocitem" href="../../api/spaces/">Spaces</a></li><li><a class="tocitem" href="../../api/bases/">Bases</a></li><li><a class="tocitem" href="../../api/states/">States</a></li><li><a class="tocitem" href="../../api/transforms/">Transforms</a></li><li><a class="tocitem" href="../../api/operators/">Operators</a></li><li><a class="tocitem" href="../../api/symbolic/">Symbolic Scalars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Guide</a></li><li class="is-active"><a href>Symbolic Scalars</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Symbolic Scalars</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/TendonFFF/QSymbolic.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/TendonFFF/QSymbolic.jl/blob/main/docs/src/guide/symbolic.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Symbolic-Scalars"><a class="docs-heading-anchor" href="#Symbolic-Scalars">Symbolic Scalars</a><a id="Symbolic-Scalars-1"></a><a class="docs-heading-anchor-permalink" href="#Symbolic-Scalars" title="Permalink"></a></h1><p>QSymbolic.jl uses <a href="https://github.com/JuliaSymbolics/Symbolics.jl">Symbolics.jl</a> as its backend for symbolic computation. A thin compatibility layer provides a familiar API while leveraging Symbolics.jl&#39;s powerful computer algebra system.</p><h2 id="Why-Symbolic-Scalars?"><a class="docs-heading-anchor" href="#Why-Symbolic-Scalars?">Why Symbolic Scalars?</a><a id="Why-Symbolic-Scalars?-1"></a><a class="docs-heading-anchor-permalink" href="#Why-Symbolic-Scalars?" title="Permalink"></a></h2><p>In quantum mechanical calculations, you often want to keep expressions symbolic:</p><ul><li>Derive general formulas with parameters like <code>n</code>, <code>θ</code>, <code>ω</code></li><li>Substitute specific values later</li><li>Avoid floating-point errors in intermediate steps</li><li>Generate readable analytical expressions</li></ul><h2 id="Creating-Symbolic-Variables"><a class="docs-heading-anchor" href="#Creating-Symbolic-Variables">Creating Symbolic Variables</a><a id="Creating-Symbolic-Variables-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-Symbolic-Variables" title="Permalink"></a></h2><h3 id="Using-Sym-(QSymbolic-API)"><a class="docs-heading-anchor" href="#Using-Sym-(QSymbolic-API)">Using <code>Sym</code> (QSymbolic API)</a><a id="Using-Sym-(QSymbolic-API)-1"></a><a class="docs-heading-anchor-permalink" href="#Using-Sym-(QSymbolic-API)" title="Permalink"></a></h3><p>The <code>Sym</code> constructor creates symbolic variables with optional type assumptions:</p><pre><code class="language-julia hljs">using QSymbolic
+
+n = Sym(:n)           # Generic symbolic variable
+θ = Sym(:θ)           # Greek letters work too
+ω = Sym(:ω, :real)    # Real-valued
+
+# Display shows the symbol name
+n  # → n</code></pre><h3 id="Using-Symbolics.jl-Macros-(Re-exported)"><a class="docs-heading-anchor" href="#Using-Symbolics.jl-Macros-(Re-exported)">Using Symbolics.jl Macros (Re-exported)</a><a id="Using-Symbolics.jl-Macros-(Re-exported)-1"></a><a class="docs-heading-anchor-permalink" href="#Using-Symbolics.jl-Macros-(Re-exported)" title="Permalink"></a></h3><p>QSymbolic re-exports <code>@variables</code> and <code>@syms</code> from Symbolics.jl:</p><pre><code class="language-julia hljs">using QSymbolic
+
+# Create multiple variables at once
+@variables x y z
+@syms a b c
+
+# With type annotations
+@variables t::Real
+@variables n::Integer</code></pre><h2 id="Type-Assumptions"><a class="docs-heading-anchor" href="#Type-Assumptions">Type Assumptions</a><a id="Type-Assumptions-1"></a><a class="docs-heading-anchor-permalink" href="#Type-Assumptions" title="Permalink"></a></h2><p>Symbolic variables can carry assumptions that affect simplification and conjugation:</p><pre><code class="language-julia hljs"># Positional syntax
+n = Sym(:n, :integer)           # n is an integer
+θ = Sym(:θ, :real)              # θ is real
+p = Sym(:p, :positive)          # p &gt; 0 (implies real)
+E = Sym(:E, :nonnegative)       # E ≥ 0
+
+# Keyword syntax
+k = Sym(:k, integer=true)
+r = Sym(:r, real=true, positive=true)
+
+# Multiple assumptions
+m = Sym(:m, :real, :positive, :integer)</code></pre><h3 id="Querying-Assumptions"><a class="docs-heading-anchor" href="#Querying-Assumptions">Querying Assumptions</a><a id="Querying-Assumptions-1"></a><a class="docs-heading-anchor-permalink" href="#Querying-Assumptions" title="Permalink"></a></h3><pre><code class="language-julia hljs">n = Sym(:n, :integer)
+p = Sym(:p, :positive)
+
+is_integer(n)       # → true
+is_positive(p)      # → true
+is_real(p)          # → true (positive implies real)
+is_nonnegative(p)   # → true (positive implies nonnegative)
+
+assumptions(n)      # → Set([:integer])</code></pre><h3 id="Effect-on-Conjugation"><a class="docs-heading-anchor" href="#Effect-on-Conjugation">Effect on Conjugation</a><a id="Effect-on-Conjugation-1"></a><a class="docs-heading-anchor-permalink" href="#Effect-on-Conjugation" title="Permalink"></a></h3><p>Assumptions affect how the adjoint (complex conjugate) behaves:</p><pre><code class="language-julia hljs">z = Sym(:z)                    # Complex by default
+z&#39;                             # → conj(z)
+
+r = Sym(:r, :real)
+r&#39;                             # → r (real variables self-conjugate)</code></pre><h2 id="Building-Expressions"><a class="docs-heading-anchor" href="#Building-Expressions">Building Expressions</a><a id="Building-Expressions-1"></a><a class="docs-heading-anchor-permalink" href="#Building-Expressions" title="Permalink"></a></h2><p>Arithmetic operations build expression trees automatically:</p><pre><code class="language-julia hljs">n = Sym(:n)
+
+# Basic arithmetic
+n + 1        # → n + 1
+n - 2        # → n - 2
+n * 3        # → 3n
+n / 4        # → n/4
+n^2          # → n²
+
+# Square root
+√n           # → √n
+sqrt(n)      # → √n
+
+# Combinations
+√n + 1       # → 1 + √n
+n^2 + 2n     # → n² + 2n</code></pre><h2 id="Supported-Operations"><a class="docs-heading-anchor" href="#Supported-Operations">Supported Operations</a><a id="Supported-Operations-1"></a><a class="docs-heading-anchor-permalink" href="#Supported-Operations" title="Permalink"></a></h2><table><tr><th style="text-align: left">Operation</th><th style="text-align: left">Syntax</th><th style="text-align: left">Example</th></tr><tr><td style="text-align: left">Addition</td><td style="text-align: left"><code>+</code></td><td style="text-align: left"><code>n + 1</code></td></tr><tr><td style="text-align: left">Subtraction</td><td style="text-align: left"><code>-</code></td><td style="text-align: left"><code>n - 1</code></td></tr><tr><td style="text-align: left">Negation</td><td style="text-align: left"><code>-</code></td><td style="text-align: left"><code>-n</code></td></tr><tr><td style="text-align: left">Multiplication</td><td style="text-align: left"><code>*</code></td><td style="text-align: left"><code>n * 2</code></td></tr><tr><td style="text-align: left">Division</td><td style="text-align: left"><code>/</code>, <code>//</code></td><td style="text-align: left"><code>n / 2</code></td></tr><tr><td style="text-align: left">Power</td><td style="text-align: left"><code>^</code></td><td style="text-align: left"><code>n^2</code></td></tr><tr><td style="text-align: left">Square root</td><td style="text-align: left"><code>√</code>, <code>sqrt</code></td><td style="text-align: left"><code>√n</code></td></tr><tr><td style="text-align: left">Conjugate</td><td style="text-align: left"><code>conj</code></td><td style="text-align: left"><code>conj(z)</code></td></tr><tr><td style="text-align: left">Absolute value</td><td style="text-align: left"><code>abs</code>, <code>abs2</code></td><td style="text-align: left"><code>abs(z)</code></td></tr><tr><td style="text-align: left">Trigonometric</td><td style="text-align: left"><code>sin</code>, <code>cos</code>, <code>tan</code></td><td style="text-align: left"><code>sin(θ)</code></td></tr><tr><td style="text-align: left">Exponential</td><td style="text-align: left"><code>exp</code>, <code>log</code></td><td style="text-align: left"><code>exp(x)</code></td></tr></table><h2 id="Substitution"><a class="docs-heading-anchor" href="#Substitution">Substitution</a><a id="Substitution-1"></a><a class="docs-heading-anchor-permalink" href="#Substitution" title="Permalink"></a></h2><p>Replace symbolic variables with values using <code>substitute</code>:</p><pre><code class="language-julia hljs">n = Sym(:n)
+expr = √n + 1
+
+# Substitute n → 4
+result = substitute(expr, :n =&gt; 4)
+result  # → 1 + √4 = 3
+
+# Multiple substitutions
+@syms a b
+expr = a^2 + b^2
+substitute(expr, :a =&gt; 3, :b =&gt; 4)  # → 25
+
+# Partial substitution
+expr = a * b + a
+substitute(expr, :a =&gt; 2)  # → 2b + 2 (b remains symbolic)</code></pre><h2 id="Evaluation"><a class="docs-heading-anchor" href="#Evaluation">Evaluation</a><a id="Evaluation-1"></a><a class="docs-heading-anchor-permalink" href="#Evaluation" title="Permalink"></a></h2><p>Convert expressions to numeric values with <code>evaluate</code>:</p><pre><code class="language-julia hljs">n = Sym(:n)
+expr = √n + 1
+
+# Substitute then evaluate
+result = substitute(expr, :n =&gt; 4)
+evaluate(result)  # → 3.0
+
+# Chained
+substitute(expr, :n =&gt; 9) |&gt; evaluate  # → 4.0</code></pre><div class="admonition is-warning" id="All-Symbols-Must-Be-Substituted-bdf70029453691f3"><header class="admonition-header">All Symbols Must Be Substituted<a class="admonition-anchor" href="#All-Symbols-Must-Be-Substituted-bdf70029453691f3" title="Permalink"></a></header><div class="admonition-body"><p><code>evaluate</code> throws an error if symbolic variables remain:</p><pre><code class="language-julia hljs">evaluate(Sym(:n))  # Error: Cannot evaluate expression with free symbols</code></pre></div></div><h2 id="Simplification"><a class="docs-heading-anchor" href="#Simplification">Simplification</a><a id="Simplification-1"></a><a class="docs-heading-anchor-permalink" href="#Simplification" title="Permalink"></a></h2><p>Apply algebraic simplifications with <code>simplify</code>:</p><pre><code class="language-julia hljs">n = Sym(:n)
+
+# Identity simplifications
+simplify(n * 1)   # → n
+simplify(n * 0)   # → 0
+simplify(n + 0)   # → n
+simplify(n^1)     # → n
+simplify(n^0)     # → 1
+
+# Numeric folding
+simplify(2 + 3)   # → 5
+
+# Expression simplification
+simplify(n + n)   # → 2n</code></pre><h2 id="Introspection"><a class="docs-heading-anchor" href="#Introspection">Introspection</a><a id="Introspection-1"></a><a class="docs-heading-anchor-permalink" href="#Introspection" title="Permalink"></a></h2><h3 id="List-Symbols-in-Expression"><a class="docs-heading-anchor" href="#List-Symbols-in-Expression">List Symbols in Expression</a><a id="List-Symbols-in-Expression-1"></a><a class="docs-heading-anchor-permalink" href="#List-Symbols-in-Expression" title="Permalink"></a></h3><pre><code class="language-julia hljs">@syms n m
+expr = n^2 + 2*n*m + m^2
+
+symbols(expr)  # → Set([:n, :m])</code></pre><h3 id="Check-if-Numeric"><a class="docs-heading-anchor" href="#Check-if-Numeric">Check if Numeric</a><a id="Check-if-Numeric-1"></a><a class="docs-heading-anchor-permalink" href="#Check-if-Numeric" title="Permalink"></a></h3><pre><code class="language-julia hljs">n = Sym(:n)
+expr = √n + 1
+
+is_numeric(n)                        # → false
+is_numeric(5)                        # → true
+is_numeric(expr)                     # → false (contains n)
+is_numeric(substitute(expr, :n =&gt; 4))  # → true</code></pre><h2 id="KroneckerDelta"><a class="docs-heading-anchor" href="#KroneckerDelta">KroneckerDelta</a><a id="KroneckerDelta-1"></a><a class="docs-heading-anchor-permalink" href="#KroneckerDelta" title="Permalink"></a></h2><p>The <code>KroneckerDelta</code> type represents the Kronecker delta function δᵢⱼ:</p><p class="math-container">\[\delta_{ij} = \begin{cases} 1 &amp; \text{if } i = j \\ 0 &amp; \text{if } i \neq j \end{cases}\]</p><pre><code class="language-julia hljs">using QSymbolic
+
+n = Sym(:n)
+m = Sym(:m)
+
+# Create Kronecker delta
+δ = KroneckerDelta(n, m)
+δ  # → δ(n,m)
+
+# Same variable simplifies to 1
+KroneckerDelta(n, n) |&gt; simplify  # → 1
+
+# Concrete values evaluate immediately
+KroneckerDelta(1, 1)  # → 1
+KroneckerDelta(1, 2)  # → 0
+
+# Literal Symbols (not Sym) compare directly
+KroneckerDelta(:a, :a) |&gt; simplify  # → 1
+KroneckerDelta(:a, :b) |&gt; simplify  # → 0
+
+# Different symbolic variables remain symbolic
+a = Sym(:a)
+b = Sym(:b)
+KroneckerDelta(a, b) |&gt; simplify  # → δ(a,b) (could be equal after substitution)</code></pre><h3 id="KroneckerDelta-in-Inner-Products"><a class="docs-heading-anchor" href="#KroneckerDelta-in-Inner-Products">KroneckerDelta in Inner Products</a><a id="KroneckerDelta-in-Inner-Products-1"></a><a class="docs-heading-anchor-permalink" href="#KroneckerDelta-in-Inner-Products" title="Permalink"></a></h3><p>Kronecker deltas arise naturally from inner products with symbolic indices:</p><pre><code class="language-julia hljs">H, Hb = HilbertSpace(:H, 2)
+
+n = Sym(:n)
+m = Sym(:m)
+
+ket_n = Ket(Hb, n)
+ket_m = Ket(Hb, m)
+
+# Inner product gives Kronecker delta
+ket_m&#39; * ket_n  # → δ(m,n)
+ket_n&#39; * ket_n  # → 1 (same index)</code></pre><h3 id="Multi-Index-Kronecker-Deltas"><a class="docs-heading-anchor" href="#Multi-Index-Kronecker-Deltas">Multi-Index Kronecker Deltas</a><a id="Multi-Index-Kronecker-Deltas-1"></a><a class="docs-heading-anchor-permalink" href="#Multi-Index-Kronecker-Deltas" title="Permalink"></a></h3><p>For composite indices, KroneckerDelta products merge:</p><pre><code class="language-julia hljs">n, m = Sym(:n), Sym(:m)
+σ, ξ = Sym(:σ), Sym(:ξ)
+
+# Product of deltas
+δ1 = KroneckerDelta(n, m)
+δ2 = KroneckerDelta(σ, ξ)
+
+δ1 * δ2  # → δ(n,m)·δ(σ,ξ)</code></pre><h2 id="Use-with-Quantum-States"><a class="docs-heading-anchor" href="#Use-with-Quantum-States">Use with Quantum States</a><a id="Use-with-Quantum-States-1"></a><a class="docs-heading-anchor-permalink" href="#Use-with-Quantum-States" title="Permalink"></a></h2><h3 id="Symbolic-Indices"><a class="docs-heading-anchor" href="#Symbolic-Indices">Symbolic Indices</a><a id="Symbolic-Indices-1"></a><a class="docs-heading-anchor-permalink" href="#Symbolic-Indices" title="Permalink"></a></h3><p>Kets accept symbolic indices for general representations:</p><pre><code class="language-julia hljs">using QSymbolic
+
+S, B = FockSpace(:fock)
+
+# Create symbolic index
+n = Sym(:n)
+
+# Ket with symbolic index |n⟩
+ket_n = Ket(B, n)
+ket_n  # → |n⟩
+
+# Adjoint preserves symbolic index
+ket_n&#39;  # → ⟨n|
+
+# Inner products
+ket_n&#39; * ket_n  # → 1
+m = Sym(:m)
+Ket(B, m)&#39; * ket_n  # → δ(m,n)</code></pre><h3 id="Symbolic-Weights"><a class="docs-heading-anchor" href="#Symbolic-Weights">Symbolic Weights</a><a id="Symbolic-Weights-1"></a><a class="docs-heading-anchor-permalink" href="#Symbolic-Weights" title="Permalink"></a></h3><p>Weighted kets and superpositions can have symbolic coefficients:</p><pre><code class="language-julia hljs">H, Hb = HilbertSpace(:H, 2)
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
+
+# Symbolic amplitudes
+α = Sym(:α)
+β = Sym(:β)
+
+# Weighted ket
+α * ψ  # → α·|ψ⟩
+
+# Superposition with symbolic amplitudes
+state = α * ψ + β * ϕ  # → α·|ψ⟩ + β·|ϕ⟩</code></pre><h3 id="Example:-Parametric-Expressions"><a class="docs-heading-anchor" href="#Example:-Parametric-Expressions">Example: Parametric Expressions</a><a id="Example:-Parametric-Expressions-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Parametric-Expressions" title="Permalink"></a></h3><pre><code class="language-julia hljs">using QSymbolic
+
+# Define parameters
+n = Sym(:n, :nonnegative, :integer)
+ω = Sym(:ω, :positive)
+
+# Harmonic oscillator energy
+E_n = ω * (n + 1//2)
+E_n  # → ω*(n + 1/2)
+
+# Substitute specific values
+E_0 = substitute(E_n, :n =&gt; 0)
+E_0  # → ω/2
+
+E_0_numeric = substitute(E_0, :ω =&gt; 2π)
+evaluate(E_0_numeric)  # → π ≈ 3.14159...</code></pre><h2 id="Type-System"><a class="docs-heading-anchor" href="#Type-System">Type System</a><a id="Type-System-1"></a><a class="docs-heading-anchor-permalink" href="#Type-System" title="Permalink"></a></h2><p>QSymbolic uses Symbolics.jl types internally:</p><pre><code class="language-julia hljs"># AbstractSymbolic is an alias for Symbolics types
+const AbstractSymbolic = Union{Symbolics.Num, Complex{Symbolics.Num}}
+
+# Check if a value is symbolic
+x isa AbstractSymbolic
+
+# Sym creates Symbolics.Num variables
+n = Sym(:n)
+typeof(n)  # → Num</code></pre><h3 id="Compatibility-Types"><a class="docs-heading-anchor" href="#Compatibility-Types">Compatibility Types</a><a id="Compatibility-Types-1"></a><a class="docs-heading-anchor-permalink" href="#Compatibility-Types" title="Permalink"></a></h3><p>For backward compatibility, these constructors are provided:</p><table><tr><th style="text-align: left">Constructor</th><th style="text-align: left">Behavior</th></tr><tr><td style="text-align: left"><code>Sym(:name)</code></td><td style="text-align: left">Creates <code>Symbolics.Num</code> variable</td></tr><tr><td style="text-align: left"><code>SymNum(x)</code></td><td style="text-align: left">Returns <code>x</code> unchanged (passthrough)</td></tr><tr><td style="text-align: left"><code>SymExpr(op, args...)</code></td><td style="text-align: left">Builds expression via arithmetic</td></tr></table><h2 id="API-Summary"><a class="docs-heading-anchor" href="#API-Summary">API Summary</a><a id="API-Summary-1"></a><a class="docs-heading-anchor-permalink" href="#API-Summary" title="Permalink"></a></h2><table><tr><th style="text-align: left">Function</th><th style="text-align: left">Description</th></tr><tr><td style="text-align: left"><code>Sym(:name)</code></td><td style="text-align: left">Create symbolic variable</td></tr><tr><td style="text-align: left"><code>Sym(:name, :assumption...)</code></td><td style="text-align: left">Create with assumptions</td></tr><tr><td style="text-align: left"><code>@variables x y z</code></td><td style="text-align: left">Create multiple variables (Symbolics.jl)</td></tr><tr><td style="text-align: left"><code>@syms a b c</code></td><td style="text-align: left">Create multiple variables (Symbolics.jl)</td></tr><tr><td style="text-align: left"><code>KroneckerDelta(i, j)</code></td><td style="text-align: left">Kronecker delta δᵢⱼ</td></tr><tr><td style="text-align: left"><code>substitute(expr, pairs...)</code></td><td style="text-align: left">Replace symbols with values</td></tr><tr><td style="text-align: left"><code>evaluate(expr)</code></td><td style="text-align: left">Compute numeric result</td></tr><tr><td style="text-align: left"><code>simplify(expr)</code></td><td style="text-align: left">Apply algebraic simplifications</td></tr><tr><td style="text-align: left"><code>symbols(expr)</code></td><td style="text-align: left">Get set of symbol names</td></tr><tr><td style="text-align: left"><code>is_numeric(expr)</code></td><td style="text-align: left">Check if fully numeric</td></tr><tr><td style="text-align: left"><code>is_real(sym)</code></td><td style="text-align: left">Check real assumption</td></tr><tr><td style="text-align: left"><code>is_positive(sym)</code></td><td style="text-align: left">Check positive assumption</td></tr><tr><td style="text-align: left"><code>is_integer(sym)</code></td><td style="text-align: left">Check integer assumption</td></tr><tr><td style="text-align: left"><code>assumptions(sym)</code></td><td style="text-align: left">Get set of assumptions</td></tr></table><h2 id="See-Also"><a class="docs-heading-anchor" href="#See-Also">See Also</a><a id="See-Also-1"></a><a class="docs-heading-anchor-permalink" href="#See-Also" title="Permalink"></a></h2><ul><li><a href="../contraction_rules/#Custom-Contraction-Rules">Custom Contraction Rules</a> - Define non-orthonormal inner products</li><li><a href="../getting_started/#Getting-Started">Getting Started</a> - Basic quantum state operations</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../operators/">« Operators</a><a class="docs-footer-nextpage" href="../contraction_rules/">Custom Contraction Rules »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Sunday 4 January 2026 18:03">Sunday 4 January 2026</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

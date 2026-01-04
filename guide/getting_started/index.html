@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting Started · QSymbolic.jl</title><meta name="title" content="Getting Started · QSymbolic.jl"/><meta property="og:title" content="Getting Started · QSymbolic.jl"/><meta property="twitter:title" content="Getting Started · QSymbolic.jl"/><meta name="description" content="Documentation for QSymbolic.jl."/><meta property="og:description" content="Documentation for QSymbolic.jl."/><meta property="twitter:description" content="Documentation for QSymbolic.jl."/><meta property="og:url" content="https://TendonFFF.github.io/QSymbolic.jl/guide/getting_started/"/><meta property="twitter:url" content="https://TendonFFF.github.io/QSymbolic.jl/guide/getting_started/"/><link rel="canonical" href="https://TendonFFF.github.io/QSymbolic.jl/guide/getting_started/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">QSymbolic.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Guide</span><ul><li class="is-active"><a class="tocitem" href>Getting Started</a><ul class="internal"><li><a class="tocitem" href="#Hilbert-Spaces-and-Bases"><span>Hilbert Spaces and Bases</span></a></li><li><a class="tocitem" href="#States:-Kets-and-Bras"><span>States: Kets and Bras</span></a></li><li><a class="tocitem" href="#Inner-Products"><span>Inner Products</span></a></li><li><a class="tocitem" href="#Linear-Combinations-(Superpositions)"><span>Linear Combinations (Superpositions)</span></a></li><li><a class="tocitem" href="#Symbolic-Scalars"><span>Symbolic Scalars</span></a></li><li><a class="tocitem" href="#Outer-Products-and-Operators"><span>Outer Products and Operators</span></a></li><li><a class="tocitem" href="#Quick-Example:-Spin-1/2-System"><span>Quick Example: Spin-1/2 System</span></a></li><li><a class="tocitem" href="#Next-Steps"><span>Next Steps</span></a></li></ul></li><li><a class="tocitem" href="../transforms/">Basis Transforms</a></li><li><a class="tocitem" href="../composite/">Composite Systems</a></li><li><a class="tocitem" href="../operators/">Operators</a></li><li><a class="tocitem" href="../symbolic/">Symbolic Scalars</a></li><li><a class="tocitem" href="../contraction_rules/">Custom Contraction Rules</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../api/api/">Full API</a></li><li><a class="tocitem" href="../../api/spaces/">Spaces</a></li><li><a class="tocitem" href="../../api/bases/">Bases</a></li><li><a class="tocitem" href="../../api/states/">States</a></li><li><a class="tocitem" href="../../api/transforms/">Transforms</a></li><li><a class="tocitem" href="../../api/operators/">Operators</a></li><li><a class="tocitem" href="../../api/symbolic/">Symbolic Scalars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Guide</a></li><li class="is-active"><a href>Getting Started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Getting Started</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/TendonFFF/QSymbolic.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/TendonFFF/QSymbolic.jl/blob/main/docs/src/guide/getting_started.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Getting-Started"><a class="docs-heading-anchor" href="#Getting-Started">Getting Started</a><a id="Getting-Started-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Started" title="Permalink"></a></h1><p>This guide introduces the basic concepts of QSymbolic.jl for symbolic quantum mechanics.</p><h2 id="Hilbert-Spaces-and-Bases"><a class="docs-heading-anchor" href="#Hilbert-Spaces-and-Bases">Hilbert Spaces and Bases</a><a id="Hilbert-Spaces-and-Bases-1"></a><a class="docs-heading-anchor-permalink" href="#Hilbert-Spaces-and-Bases" title="Permalink"></a></h2><p>A Hilbert space is the fundamental mathematical arena for quantum mechanics. In QSymbolic.jl, you create spaces with the <code>HilbertSpace</code> constructor:</p><pre><code class="language-julia hljs">using QSymbolic
+
+# Finite-dimensional space (e.g., qubit with 2 dimensions)
+H = HilbertSpace(:qubit, 2)
+
+# Infinite-dimensional space (e.g., harmonic oscillator)
+F = HilbertSpace(:oscillator)
+
+# Convenience alias for Fock spaces
+F = FockSpace(:oscillator)  # equivalent to HilbertSpace(:oscillator)</code></pre><h3 id="Creating-Bases"><a class="docs-heading-anchor" href="#Creating-Bases">Creating Bases</a><a id="Creating-Bases-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-Bases" title="Permalink"></a></h3><p>Every ket lives in a <strong>basis</strong>. Create named bases with <code>Basis(space, name)</code>:</p><pre><code class="language-julia hljs">H = HilbertSpace(:spin, 2)
+
+# Create named bases
+Zb = Basis(H, :z)   # spin-z eigenbasis
+Xb = Basis(H, :x)   # spin-x eigenbasis</code></pre><h3 id="Convenient-Destructuring"><a class="docs-heading-anchor" href="#Convenient-Destructuring">Convenient Destructuring</a><a id="Convenient-Destructuring-1"></a><a class="docs-heading-anchor-permalink" href="#Convenient-Destructuring" title="Permalink"></a></h3><p><code>HilbertSpace</code> supports destructuring to get both a space and a default basis in one line:</p><pre><code class="language-julia hljs"># Get space AND default basis
+H, Hb = HilbertSpace(:H, 2)
+
+# Equivalent to:
+# H = HilbertSpace(:H, 2)
+# Hb = Basis(H, :default)
+
+# Same works for FockSpace
+F, Fb = FockSpace(:mode)</code></pre><p>This pattern is convenient and used throughout the documentation.</p><h2 id="States:-Kets-and-Bras"><a class="docs-heading-anchor" href="#States:-Kets-and-Bras">States: Kets and Bras</a><a id="States:-Kets-and-Bras-1"></a><a class="docs-heading-anchor-permalink" href="#States:-Kets-and-Bras" title="Permalink"></a></h2><p>Quantum states are represented in Dirac notation. A <strong>ket</strong> <code>|ψ⟩</code> represents a quantum state, and its dual <strong>bra</strong> <code>⟨ψ|</code> is the conjugate transpose.</p><h3 id="Creating-Kets"><a class="docs-heading-anchor" href="#Creating-Kets">Creating Kets</a><a id="Creating-Kets-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-Kets" title="Permalink"></a></h3><pre><code class="language-julia hljs">H, Hb = HilbertSpace(:H, 2)
+
+# Create kets with symbolic labels
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
+
+# Display uses Dirac notation
+ψ   # → |ψ⟩
+
+# Get the bra (conjugate transpose) via adjoint
+ψ&#39;  # → ⟨ψ|</code></pre><h3 id="Numeric-Indices-(Fock-States)"><a class="docs-heading-anchor" href="#Numeric-Indices-(Fock-States)">Numeric Indices (Fock States)</a><a id="Numeric-Indices-(Fock-States)-1"></a><a class="docs-heading-anchor-permalink" href="#Numeric-Indices-(Fock-States)" title="Permalink"></a></h3><p>For number states, use integer indices:</p><pre><code class="language-julia hljs">F, Fb = FockSpace(:mode)
+
+# Number states |n⟩
+n0 = Ket(Fb, 0)   # Ground state |0⟩
+n1 = Ket(Fb, 1)   # First excited |1⟩
+n2 = Ket(Fb, 2)   # Second excited |2⟩
+
+# Orthonormality
+n0&#39; * n0  # → 1
+n0&#39; * n1  # → 0</code></pre><h3 id="Symbolic-Indices"><a class="docs-heading-anchor" href="#Symbolic-Indices">Symbolic Indices</a><a id="Symbolic-Indices-1"></a><a class="docs-heading-anchor-permalink" href="#Symbolic-Indices" title="Permalink"></a></h3><p>Kets can have symbolic indices for general representations:</p><pre><code class="language-julia hljs">F, Fb = FockSpace(:mode)
+
+# Create symbolic index
+n = Sym(:n, :nonnegative, :integer)
+
+# Ket with symbolic index
+ket_n = Ket(Fb, n)   # |n⟩
+
+# Inner products give KroneckerDelta
+m = Sym(:m, :nonnegative, :integer)
+Ket(Fb, m)&#39; * ket_n  # → δ(m,n)</code></pre><div class="admonition is-info" id="Orthonormality-22fb3b10c39b8cbe"><header class="admonition-header">Orthonormality<a class="admonition-anchor" href="#Orthonormality-22fb3b10c39b8cbe" title="Permalink"></a></header><div class="admonition-body"><p>States in the same basis with different labels are automatically orthogonal. This reflects the standard assumption that basis states form an orthonormal set.</p></div></div><h2 id="Inner-Products"><a class="docs-heading-anchor" href="#Inner-Products">Inner Products</a><a id="Inner-Products-1"></a><a class="docs-heading-anchor-permalink" href="#Inner-Products" title="Permalink"></a></h2><p>Inner products follow quantum mechanics conventions with <code>⟨bra|ket⟩</code> notation:</p><pre><code class="language-julia hljs">H, Hb = HilbertSpace(:H, 2)
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
+
+# Orthonormal basis states
+ψ&#39; * ψ  # → 1 (normalized)
+ψ&#39; * ϕ  # → 0 (orthogonal - different labels)
+
+# Inner product of superpositions expands linearly
+# ⟨ψ + ϕ|ψ + ϕ⟩ = ⟨ψ|ψ⟩ + ⟨ψ|ϕ⟩ + ⟨ϕ|ψ⟩ + ⟨ϕ|ϕ⟩ = 1 + 0 + 0 + 1 = 2
+(ψ + ϕ)&#39; * (ψ + ϕ)  # → 2</code></pre><h2 id="Linear-Combinations-(Superpositions)"><a class="docs-heading-anchor" href="#Linear-Combinations-(Superpositions)">Linear Combinations (Superpositions)</a><a id="Linear-Combinations-(Superpositions)-1"></a><a class="docs-heading-anchor-permalink" href="#Linear-Combinations-(Superpositions)" title="Permalink"></a></h2><p>Quantum superpositions are built using standard arithmetic:</p><pre><code class="language-julia hljs">H, Hb = HilbertSpace(:H, 2)
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
+
+# Scalar multiplication
+2 * ψ           # → 2|ψ⟩
+
+# Addition creates superpositions
+ψ + ϕ           # → |ψ⟩ + |ϕ⟩
+
+# Subtraction
+ψ - ϕ           # → |ψ⟩ - |ϕ⟩
+
+# Division by scalars (for normalization)
+(ψ + ϕ) / √2    # → (|ψ⟩ + |ϕ⟩)/√2
+
+# Rational division also works
+ψ // 2          # → (1//2)|ψ⟩</code></pre><h3 id="Type-Promotion"><a class="docs-heading-anchor" href="#Type-Promotion">Type Promotion</a><a id="Type-Promotion-1"></a><a class="docs-heading-anchor-permalink" href="#Type-Promotion" title="Permalink"></a></h3><p>Operations automatically create appropriate types:</p><table><tr><th style="text-align: left">Operation</th><th style="text-align: left">Input</th><th style="text-align: left">Result Type</th></tr><tr><td style="text-align: left"><code>α * ψ</code></td><td style="text-align: left">Scalar × Ket</td><td style="text-align: left"><code>WeightedKet</code></td></tr><tr><td style="text-align: left"><code>ψ + ϕ</code></td><td style="text-align: left">Ket + Ket</td><td style="text-align: left"><code>SumKet</code></td></tr><tr><td style="text-align: left"><code>ψ ⊗ ϕ</code></td><td style="text-align: left">Ket ⊗ Ket</td><td style="text-align: left"><code>ProductKet</code></td></tr></table><h2 id="Symbolic-Scalars"><a class="docs-heading-anchor" href="#Symbolic-Scalars">Symbolic Scalars</a><a id="Symbolic-Scalars-1"></a><a class="docs-heading-anchor-permalink" href="#Symbolic-Scalars" title="Permalink"></a></h2><p>QSymbolic.jl uses <a href="https://github.com/JuliaSymbolics/Symbolics.jl">Symbolics.jl</a> for symbolic computation. Create symbolic variables with <code>Sym</code>:</p><pre><code class="language-julia hljs"># Basic symbolic variable
+n = Sym(:n)
+
+# With type assumptions
+θ = Sym(:θ, :real)
+k = Sym(:k, :positive, :integer)
+
+# Using Symbolics.jl macros (re-exported)
+@variables x y z
+@syms α β</code></pre><h3 id="Assumptions"><a class="docs-heading-anchor" href="#Assumptions">Assumptions</a><a id="Assumptions-1"></a><a class="docs-heading-anchor-permalink" href="#Assumptions" title="Permalink"></a></h3><p>Assumptions affect simplification and conjugation:</p><pre><code class="language-julia hljs"># Complex (default) - conjugate applies
+z = Sym(:z)
+z&#39;  # → conj(z)
+
+# Real - self-conjugate
+r = Sym(:r, :real)
+r&#39;  # → r
+
+# Available: :real, :positive, :negative, :nonnegative, :integer</code></pre><h3 id="Symbolic-State-Coefficients"><a class="docs-heading-anchor" href="#Symbolic-State-Coefficients">Symbolic State Coefficients</a><a id="Symbolic-State-Coefficients-1"></a><a class="docs-heading-anchor-permalink" href="#Symbolic-State-Coefficients" title="Permalink"></a></h3><pre><code class="language-julia hljs">H, Hb = HilbertSpace(:H, 2)
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
+
+# Symbolic amplitudes
+α = Sym(:α)
+β = Sym(:β)
+
+# Superposition with symbolic coefficients
+state = α * ψ + β * ϕ  # → α|ψ⟩ + β|ϕ⟩</code></pre><h2 id="Outer-Products-and-Operators"><a class="docs-heading-anchor" href="#Outer-Products-and-Operators">Outer Products and Operators</a><a id="Outer-Products-and-Operators-1"></a><a class="docs-heading-anchor-permalink" href="#Outer-Products-and-Operators" title="Permalink"></a></h2><p>Create operators via outer products <code>|ψ⟩⟨ϕ|</code>:</p><pre><code class="language-julia hljs">H, Hb = HilbertSpace(:spin, 2)
+Zb = Basis(H, :z)
+
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
+
+# Projector onto |↑⟩
+P_up = up * up&#39;      # |↑⟩⟨↑|
+
+# Apply to states
+P_up * up    # → |↑⟩
+P_up * down  # → 0
+
+# Ladder operator
+σ_plus = up * down&#39;  # |↑⟩⟨↓|
+σ_plus * down  # → |↑⟩
+
+# Pauli Z
+σz = up * up&#39; - down * down&#39;
+σz * up    # → |↑⟩
+σz * down  # → -|↓⟩</code></pre><h2 id="Quick-Example:-Spin-1/2-System"><a class="docs-heading-anchor" href="#Quick-Example:-Spin-1/2-System">Quick Example: Spin-1/2 System</a><a id="Quick-Example:-Spin-1/2-System-1"></a><a class="docs-heading-anchor-permalink" href="#Quick-Example:-Spin-1/2-System" title="Permalink"></a></h2><pre><code class="language-julia hljs">using QSymbolic
+
+# Create 2D Hilbert space with z-basis
+H = HilbertSpace(:spin, 2)
+Zb = Basis(H, :z)
+
+# Basis states
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
+
+# Superposition (equal superposition)
+ψ = (up + down) / √2
+
+# Check normalization
+ψ&#39; * ψ  # → 1
+
+# Pauli operators
+σz = up * up&#39; - down * down&#39;
+σx = up * down&#39; + down * up&#39;
+
+# Apply operators
+σz * up     # → |↑⟩
+σz * down   # → -|↓⟩
+σx * up     # → |↓⟩
+σx * down   # → |↑⟩
+
+# Measurement probability
+# P(↑) = |⟨↑|ψ⟩|² 
+up&#39; * ψ  # → 1/√2, so P(↑) = 1/2</code></pre><h2 id="Next-Steps"><a class="docs-heading-anchor" href="#Next-Steps">Next Steps</a><a id="Next-Steps-1"></a><a class="docs-heading-anchor-permalink" href="#Next-Steps" title="Permalink"></a></h2><ul><li><a href="../transforms/">Basis Transforms</a> - Changing between representations (z ↔ x basis)</li><li><a href="../composite/#Composite-Systems">Composite Systems</a> - Multi-particle states and tensor products</li><li><a href="../operators/">Operators</a> - Function operators and operator algebra</li><li><a href="../symbolic/">Symbolic Scalars</a> - Advanced symbolic computation</li><li><a href="../contraction_rules/#Custom-Contraction-Rules">Custom Contraction Rules</a> - Non-orthonormal bases</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../transforms/">Basis Transforms »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Sunday 4 January 2026 18:03">Sunday 4 January 2026</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
