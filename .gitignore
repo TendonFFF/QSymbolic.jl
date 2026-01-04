@@ -2,3 +2,4 @@
 docs/build/
 docs/Manifest.toml
 /test ground.ipynb
+.ipynb_checkpoints/
