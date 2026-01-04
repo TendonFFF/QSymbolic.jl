@@ -179,13 +179,15 @@ space(::CompositeBasis{Bs}) where {Bs} = _composite_space_type(Bs.parameters)
     DefaultBasis{S}
 
 Implicit basis when no explicit basis is specified. Provides backward compatibility
-for code that creates kets directly from spaces without specifying a basis.
+for code that creates kets without explicitly providing a basis object.
 
 # Examples
 ```jldoctest
 julia> H = HilbertSpace(:H, 2);
 
-julia> ψ = BasisKet(H, :ψ)  # uses DefaultBasis internally
+julia> Hb = Basis(H, :default);
+
+julia> ψ = Ket(Hb, :ψ)  # creates ket using the basis Hb
 |ψ⟩
 ```
 """

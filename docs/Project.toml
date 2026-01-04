@@ -1,6 +1,3 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 QSymbolic = "51350ce6-7c10-437b-ae15-8948c6144b7d"
-
-[sources]
-QSymbolic = {path = "/Users/work/git/QSymbolic.jl"}
