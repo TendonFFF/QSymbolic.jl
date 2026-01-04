@@ -14,7 +14,6 @@ The most natural way to build quantum operators is via outer products `|ψ⟩⟨
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
-Hb = Basis(H, :default)
 Zb = Basis(H, :z)
 
 up = Ket(Zb, :↑)
@@ -140,17 +139,22 @@ Operators act linearly on superpositions:
 
 ## Function-Based Operators
 
-For operators with complex or infinite-dimensional action (like ladder operators in Fock space), use `FunctionOperator`:
+For operators with complex or infinite-dimensional action (like ladder operators in Fock space), use `FunctionOperator`. This is particularly useful when:
+
+- The action depends on the state label (like Fock space number)
+- The space is infinite-dimensional
+- The transformation is more naturally expressed procedurally
+
+### Basic Syntax
 
 ```julia
-F = FockSpace(:mode)
-Fb = Basis(F, :n)
+F, Fb = FockSpace(:mode)
 
-# Annihilation operator: â|n⟩ = √n |n-1⟩
-â = FunctionOperator(:â, Fb) do ket
-    n = parse(Int, string(ket.index))
-    n == 0 ? 0 : √n * Ket(Fb, n - 1)
-end
+# Define action function
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+
+# Create function operator
+â = FunctionOperator(annihilate, Fb, name=:â)
 
 # Apply to Fock states
 n3 = Ket(Fb, 3)
@@ -160,49 +164,99 @@ n0 = Ket(Fb, 0)
 â * n0  # → 0 (vacuum annihilated)
 ```
 
-### When to Use FunctionOperator
+### With Do-Block Syntax
 
-Use `FunctionOperator` when:
-- The action depends on the state label (like Fock space number)
-- The space is infinite-dimensional
-- The transformation is more naturally expressed procedurally
+```julia
+F, Fb = FockSpace(:mode)
 
-Use outer product `Operator` when:
-- Building operators from known matrix elements
-- Working with finite-dimensional systems
-- Combining projectors and ladder operators
+# Using do-block
+â = FunctionOperator(Fb, name=:â) do ket
+    n = ket.index
+    n == 0 ? 0 : √n * Ket{typeof(Fb)}(n - 1)
+end
+```
+
+### With Adjoint Action
+
+For operators where you also need the adjoint (like creation operator for annihilation):
+
+```julia
+F, Fb = FockSpace(:mode)
+
+# Define both actions
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+create(ket::Ket{B}) where B = √(ket.index + 1) * Ket{B}(ket.index + 1)
+
+# Create with adjoint
+â = FunctionOperator(annihilate, Fb, adjoint_action=create, name=:â)
+
+# Now adjoint works
+â'  # Creation operator â†
+
+# Verify â†â|n⟩ = n|n⟩ (number operator)
+n = Sym(:n, :nonnegative, :integer)
+ket_n = Ket(Fb, n)
+â' * (â * ket_n)  # → n|n⟩
+```
+
+### Working with Symbolic Indices
+
+Function operators work seamlessly with symbolic indices:
+
+```julia
+F, Fb = FockSpace(:mode)
+
+# Action handles symbolic indices
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+â = FunctionOperator(annihilate, Fb, name=:â)
+
+# Symbolic index
+d = Sym(:d, :nonnegative, :integer)
+ket_d = Ket(Fb, d)
+
+â * ket_d  # → √d |d-1⟩
+```
+
+### Operators on Composite States
+
+Function operators automatically handle tensor products:
+
+```julia
+S_cavity, B_cavity = FockSpace(:cavity)
+S_dot, B_dot = HilbertSpace(:dot, 3)
+
+# Annihilation operator on cavity
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+a = FunctionOperator(annihilate, B_cavity, name=:a)
+
+# Apply to product state |d⟩ ⊗ |g⟩
+d = Sym(:d)
+product_state = Ket(B_cavity, d) ⊗ Ket(B_dot, :g)
+
+a * product_state  # → √d |d-1⟩ ⊗ |g⟩
+```
 
 ## Identity Operator
 
 ```julia
-# Create identity on a basis
-I = IdentityOp(Zb)
+H = HilbertSpace(:H, 2)
 
-I * up    # → |↑⟩
-I * down  # → |↓⟩
+# Create identity on a space
+I = Identity(H)
+
+H, Hb = HilbertSpace(:H, 2)
+ψ = Ket(Hb, :ψ)
+I * ψ  # → |ψ⟩
 ```
 
-## Basis Dependence
+## Operator Types Summary
 
-!!! important "Operators Are Basis-Dependent"
-    All operators in QSymbolic.jl are associated with a specific basis. This reflects the physical fact that an operator's matrix representation depends on the chosen basis.
-
-```julia
-Zb = Basis(H, :z)
-Xb = Basis(H, :x)
-
-up_z = Ket(Zb, :↑)
-up_x = Ket(Xb, :↑)
-
-# Operator in z-basis
-P_z = up_z * up_z'
-
-# Applying to z-basis ket works
-P_z * up_z  # → |↑⟩
-
-# Applying to x-basis ket returns symbolic (cross-basis)
-P_z * up_x  # → OpKet (symbolic, needs basis transform)
-```
+| Type | Description | Example |
+|:-----|:------------|:--------|
+| `Outer` | Single outer product `\|ψ⟩⟨ϕ\|` | `up * down'` |
+| `Operator` | Sum of weighted outers | `σz = P_up - P_down` |
+| `Identity` | Identity on space | `Identity(H)` |
+| `FunctionOperator` | User-defined action | `FunctionOperator(action, basis)` |
 
 ## Complete Example: Pauli Matrices
 
@@ -210,7 +264,6 @@ P_z * up_x  # → OpKet (symbolic, needs basis transform)
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
-Hb = Basis(H, :default)
 Zb = Basis(H, :z)
 
 up = Ket(Zb, :↑)
@@ -232,3 +285,33 @@ down = Ket(Zb, :↓)
 ψ = (up + down) / √2
 σz * ψ     # → (|↑⟩ - |↓⟩)/√2
 ```
+
+## Complete Example: Fock Space Ladder Operators
+
+```julia
+using QSymbolic
+
+F, Fb = FockSpace(:mode)
+
+# Define annihilation and creation
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+create(ket::Ket{B}) where B = √(ket.index + 1) * Ket{B}(ket.index + 1)
+
+â = FunctionOperator(annihilate, Fb, adjoint_action=create, name=:â)
+â† = â'
+
+# Number operator N̂ = â†â
+# Apply to |n⟩
+n = Sym(:n, :nonnegative, :integer)
+ket_n = Ket(Fb, n)
+
+â * ket_n       # → √n |n-1⟩
+â† * ket_n      # → √(n+1) |n+1⟩
+â† * (â * ket_n)  # → n|n⟩ (eigenvalue equation)
+```
+
+## See Also
+
+- [Getting Started](@ref) - Basic quantum state operations
+- [Composite Systems](@ref) - Operators on tensor products
+- [Basis Transforms](@ref) - Cross-basis operator application

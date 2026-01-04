@@ -23,9 +23,8 @@ Use `Basis(space, name)` to create a named orthonormal basis:
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
-Hb = Basis(H, :default)
 
-# Define two different bases for the same space
+# Define different bases for the same space
 Zb = Basis(H, :z)  # spin-z eigenbasis
 Xb = Basis(H, :x)  # spin-x eigenbasis
 
@@ -36,8 +35,8 @@ up_x = Ket(Xb, :↑)
 down_x = Ket(Xb, :↓)
 ```
 
-!!! tip "Default Basis"
-    When you use `Ket(space, label)` directly (without an explicit basis), QSymbolic uses an implicit `DefaultBasis`. This is convenient for simple calculations where you don't need multiple bases.
+!!! tip "Convenient Destructuring"
+    Use `H, Hb = HilbertSpace(:H, 2)` to get both space and a default basis in one line.
 
 ## Orthonormality Within a Basis
 
@@ -53,19 +52,18 @@ up_x' * down_x  # → 0
 
 ## Cross-Basis Inner Products
 
-What happens when you compute ``⟨↑_z|↑_x⟩``? Without knowing the relationship between bases, this is undefined. QSymbolic returns a symbolic result:
+Without knowing the relationship between bases, cross-basis inner products return a symbolic result:
 
 ```julia
-up_z' * up_x  # → ⟨↑|↑⟩ (InnerProduct - symbolic, unevaluated)
+up_z' * up_x  # → InnerProduct (symbolic, unevaluated)
 ```
 
 ## Registering Transforms
 
-To compute cross-basis inner products, tell QSymbolic how to transform between bases using `define_transform!`:
+Tell QSymbolic how to transform between bases using `define_transform!`:
 
 ```julia
 # Define transform from x-basis to z-basis
-# The function takes an index and returns the state in the target basis
 define_transform!(Xb, Zb) do idx
     if idx == :↑
         (up_z + down_z) / √2    # |↑_x⟩ = (|↑_z⟩ + |↓_z⟩)/√2
@@ -78,10 +76,10 @@ end
 Now cross-basis inner products are computed automatically:
 
 ```julia
-up_z' * up_x    # → 0.7071... (1/√2)
-down_z' * up_x  # → 0.7071... (1/√2)
-up_z' * down_x  # → 0.7071... (1/√2)
-down_z' * down_x # → -0.7071... (-1/√2)
+up_z' * up_x    # → 1/√2 ≈ 0.7071
+down_z' * up_x  # → 1/√2 ≈ 0.7071
+up_z' * down_x  # → 1/√2 ≈ 0.7071
+down_z' * down_x # → -1/√2 ≈ -0.7071
 ```
 
 ## Transform API
@@ -107,7 +105,7 @@ clear_transforms!()  # Remove all registered transforms
 
 ## Bidirectional Transforms
 
-Transforms are **directional**. If you need to transform in both directions, register both:
+Transforms are **directional**. Register both directions if needed:
 
 ```julia
 # X → Z (spin-x to spin-z)
@@ -121,20 +119,53 @@ define_transform!(Zb, Xb) do idx
 end
 ```
 
-## Example: Position and Momentum Bases
+## Factorized Transforms (Composite Systems)
 
-Here's how you might set up position-momentum transforms (conceptually):
+For composite systems, transforms **factorize automatically**. See [Composite Systems](@ref) for details.
 
 ```julia
-H = HilbertSpace(:particle)
-Hb = Basis(H, :default)
+H_A, H_B = HilbertSpace(:A, 2), HilbertSpace(:B, 2)
+Za, Xa = Basis(H_A, :z), Basis(H_A, :x)
+Zb, Xb = Basis(H_B, :z), Basis(H_B, :x)
 
-Xb = Basis(H, :x)  # position basis
-Pb = Basis(H, :p)  # momentum basis
+# Define individual transforms
+define_transform!(Xa, Za) do idx ... end
+define_transform!(Xb, Zb) do idx ... end
 
-# In reality, these are continuous bases with Fourier transform relationship
-# |p⟩ = ∫ e^{ipx/ℏ}|x⟩ dx / √(2πℏ)
+# Composite transform Xa⊗Xb → Za⊗Zb works automatically!
+has_transform(typeof(Xa ⊗ Xb), typeof(Za ⊗ Zb))  # → true
 ```
 
-!!! note "Discrete vs Continuous"
-    QSymbolic.jl currently works with symbolic/discrete states. Continuous bases like position/momentum can be modeled discretely or symbolically, but true continuous integrals are beyond the current scope.
+## Complete Example
+
+```julia
+using QSymbolic
+
+H = HilbertSpace(:spin, 2)
+Zb = Basis(H, :z)
+Xb = Basis(H, :x)
+
+# Z-basis states
+up_z = Ket(Zb, :↑)
+down_z = Ket(Zb, :↓)
+
+# X-basis states  
+up_x = Ket(Xb, :↑)
+down_x = Ket(Xb, :↓)
+
+# Define X → Z transform
+define_transform!(Xb, Zb) do idx
+    idx == :↑ ? (up_z + down_z)/√2 : (up_z - down_z)/√2
+end
+
+# Now cross-basis inner products work
+up_z' * up_x    # → 0.7071...
+
+# Explicit transform
+transform(up_x, typeof(Zb))  # → SumKet: 0.7071|↑⟩ + 0.7071|↓⟩
+```
+
+## See Also
+
+- [Getting Started](@ref) - Basic ket/bra operations
+- [Composite Systems](@ref) - Tensor products with factorized transforms

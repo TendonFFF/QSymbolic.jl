@@ -5,12 +5,13 @@
 ## Features
 
 - **Hilbert Spaces**: Define finite and infinite-dimensional Hilbert spaces
-- **Explicit Bases**: Named orthonormal bases with automatic orthogonality
+- **Explicit Bases**: Named orthonormal bases with automatic orthogonality  
+- **Flexible Indices**: Symbolic, numeric, or multi-index kets for composite systems
 - **Basis Transforms**: Register transformations between bases; cross-basis inner products computed automatically
-- **Composite Systems**: Tensor products with factorized transforms
+- **Composite Systems**: Tensor products with order-independent (bosonic) behavior and factorized transforms
+- **Custom Contraction Rules**: Define non-orthonormal inner products for dressed states
 - **Operators**: Outer product operators `|ψ⟩⟨ϕ|`, operator algebra, and function-defined operators
-- **Symbolic Scalars**: Lazy arithmetic with symbolic variables for truly symbolic computation
-- **Symbolic Computation**: Unevaluated inner products when transforms are undefined
+- **Symbolics.jl Backend**: Full symbolic computation with `Sym`, `@variables`, `KroneckerDelta`
 
 ## Installation
 
@@ -24,9 +25,8 @@ Pkg.add(url="https://github.com/TendonFFF/QSymbolic.jl")
 ```julia
 using QSymbolic
 
-# Create a 2-dimensional Hilbert space
-H = HilbertSpace(:spin, 2)
-Hb = Basis(H, :default)
+# Create a 2-dimensional Hilbert space with default basis
+H, Hb = HilbertSpace(:spin, 2)
 
 # Define spin-z basis
 Zb = Basis(H, :z)
@@ -52,10 +52,38 @@ P_up * down  # → 0
 σz * up    # → |↑⟩
 σz * down  # → -|↓⟩
 
-# Symbolic scalars for lazy evaluation
-n = Sym(:n)
-expr = √n * 2
-substitute(expr, :n => 4) |> evaluate  # → 4.0
+# Symbolic variables (Symbolics.jl backend)
+n = Sym(:n, :nonnegative, :integer)
+√n + 1  # → 1 + √n
+
+# Symbolic inner products
+F, Fb = FockSpace(:mode)
+ket_n = Ket(Fb, n)
+m = Sym(:m, :nonnegative, :integer)
+Ket(Fb, m)' * ket_n  # → δ(m,n) (KroneckerDelta)
+```
+
+## Type Hierarchy
+
+### States
+```
+AbstractKet
+├── Ket           # Basic ket with index: |ψ⟩
+├── ProductKet    # Tensor product: |ψ⟩⊗|ϕ⟩ (order-independent)
+├── WeightedKet   # Scalar × ket: α|ψ⟩
+└── SumKet        # Superposition: α|ψ⟩ + β|ϕ⟩
+
+AbstractBra       # Lazy adjoints of kets
+├── Bra, ProductBra, WeightedBra, SumBra
+```
+
+### Operators
+```
+AbstractOperator
+├── Outer            # Single |ψ⟩⟨ϕ|
+├── Operator         # Sum of weighted outers
+├── Identity         # Identity 𝕀
+└── FunctionOperator # User-defined action
 ```
 
 ## Contents
@@ -67,6 +95,7 @@ Pages = [
     "guide/composite.md",
     "guide/operators.md",
     "guide/symbolic.md",
+    "guide/contraction_rules.md",
     "api/spaces.md",
     "api/bases.md",
     "api/states.md",

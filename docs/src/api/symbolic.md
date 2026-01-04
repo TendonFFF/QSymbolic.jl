@@ -1,23 +1,27 @@
 # Symbolic Scalars
 
-The symbolic scalar system provides lazy arithmetic evaluation, enabling truly symbolic quantum computations.
+QSymbolic.jl uses [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl) as its backend for symbolic computation.
 
 ## Overview
 
-| Type | Description |
-|:-----|:------------|
-| `AbstractSymbolic` | Abstract supertype for all symbolic scalars |
-| `Sym` | Symbolic variable (with optional type assumptions) |
-| `SymNum` | Wrapped numeric value |
-| `SymExpr` | Expression tree |
-| `KroneckerDelta` | Symbolic Kronecker delta δᵢⱼ |
+| Type/Function | Description |
+|:--------------|:------------|
+| `AbstractSymbolic` | Type alias for Symbolics.jl types |
+| `Sym` | Create symbolic variable with assumptions |
+| `@variables`, `@syms` | Re-exported from Symbolics.jl |
+| `KroneckerDelta` | Kronecker delta δᵢⱼ |
+| `substitute` | Replace symbols with values |
+| `evaluate` | Compute numeric result |
+| `simplify` | Algebraic simplification |
 
 ## Types
 
-### Abstract Type
+### AbstractSymbolic
 
-```@docs
-AbstractSymbolic
+Type alias for symbolic types:
+
+```julia
+const AbstractSymbolic = Union{Symbolics.Num, Complex{Symbolics.Num}}
 ```
 
 ### Symbolic Variable
@@ -26,23 +30,35 @@ AbstractSymbolic
 Sym
 ```
 
-### Wrapped Numeric
-
-```@docs
-SymNum
-```
-
-### Expression Tree
-
-```@docs
-SymExpr
-```
-
 ### Kronecker Delta
 
 ```@docs
 KroneckerDelta
 ```
+
+## Creating Variables
+
+```julia
+# QSymbolic API
+n = Sym(:n)                        # Default (real)
+m = Sym(:m, :integer)              # With assumption
+θ = Sym(:θ, :real, :positive)      # Multiple assumptions
+
+# Symbolics.jl macros (re-exported)
+@variables x y z
+@syms a b c
+@variables n::Integer
+```
+
+## Assumptions
+
+Available assumptions for `Sym`:
+- `:real` - real number
+- `:positive` - strictly positive (implies real)
+- `:negative` - strictly negative (implies real)
+- `:nonnegative` - non-negative (implies real)
+- `:integer` - integer value
+- `:complex` - complex number
 
 ## Evaluation Functions
 
@@ -66,83 +82,51 @@ simplify
 
 ## Introspection
 
-### Symbol Extraction
-
 ```@docs
 symbols
-```
-
-### Numeric Check
-
-```@docs
 is_numeric
-```
-
-### Type Assumptions
-
-```@docs
 is_real
 is_positive
-is_negative
-is_nonnegative
 is_integer
 assumptions
 ```
 
-## Supported Operations
+## KroneckerDelta Behavior
 
-The following operations are defined for `AbstractSymbolic` types and build expression trees:
+```julia
+# Concrete values
+KroneckerDelta(1, 1)  # → 1
+KroneckerDelta(1, 2)  # → 0
 
-### Arithmetic
-- `+`, `-` (binary and unary)
-- `*`, `/`, `//`
-- `^`
+# Literal Symbols
+KroneckerDelta(:a, :a) |> simplify  # → 1
+KroneckerDelta(:a, :b) |> simplify  # → 0
 
-### Functions
-- `sqrt`, `√`
-- `conj`, `adjoint` (')
-- `abs`, `abs2`
-- `sin`, `cos`, `tan`
-- `exp`, `log`
+# Symbolic variables (may be equal after substitution)
+a, b = Sym(:a), Sym(:b)
+KroneckerDelta(a, b) |> simplify    # → δ(a,b) (stays symbolic)
+KroneckerDelta(a, a) |> simplify    # → 1 (same variable)
+```
 
 ## Examples
-
-### Basic Usage
 
 ```julia
 using QSymbolic
 
 # Create symbolic variables
-n = Sym(:n)
-θ = Sym(:θ)
+n = Sym(:n, :nonnegative, :integer)
+ω = Sym(:ω, :positive)
 
 # Build expressions
-expr = √n + 1
-trig = sin(θ)^2 + cos(θ)^2
+E_n = ω * (n + 1//2)  # Harmonic oscillator energy
 
-# Substitute and evaluate
-result = substitute(expr, :n => 4)
-evaluate(result)  # → 3.0
-```
+# Substitute values
+E_0 = substitute(E_n, :n => 0)  # → ω/2
+E_numeric = substitute(E_0, :ω => 2π) |> evaluate  # → π
 
-### Introspection
-
-```julia
-a, b = Sym(:a), Sym(:b)
-expr = a^2 + 2*a*b + b^2
-
-symbols(expr)        # → Set([:a, :b])
-is_numeric(expr)     # → false
-is_numeric(substitute(expr, :a => 1, :b => 2))  # → true
-```
-
-### Simplification
-
-```julia
-n = Sym(:n)
-
-simplify(n * 1)  # → n
-simplify(n * 0)  # → 0
-simplify(n + 0)  # → n
-simplify(n^0)    # → 1
+# Use in quantum states
+F, Fb = FockSpace(:mode)
+ket_n = Ket(Fb, n)
+ket_m = Ket(Fb, Sym(:m))
+ket_m' * ket_n  # → δ(m,n)
 ```

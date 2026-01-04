@@ -6,13 +6,10 @@ Quantum operators transform states and are essential for describing observables 
 
 | Type | Description |
 |:-----|:------------|
-| `Operator` | Outer product `\|ψ⟩⟨ϕ\|` with coefficient |
-| `SumOperator` | Sum of operators: Â + B̂ |
-| `ScaledOperator` | Scalar times operator: α·Â |
-| `OperatorProduct` | Product of operators: ÂB̂ |
+| `Outer` | Single outer product `\|ψ⟩⟨ϕ\|` |
+| `Operator` | Sum of weighted outer products |
+| `Identity` | Identity operator 𝕀 |
 | `FunctionOperator` | Operator defined by a function |
-| `IdentityOp` | Identity operator 𝕀 |
-| `TensorOperator` | Tensor product of operators: Â ⊗ B̂ |
 
 ## Abstract Type
 
@@ -25,71 +22,51 @@ AbstractOperator
 The primary way to build operators from states:
 
 ```@docs
+Outer
+```
+
+## Operator Container
+
+Sum of weighted outer products:
+
+```@docs
 Operator
-```
-
-## Operator Algebra Types
-
-### Sum of Operators
-
-```@docs
-SumOperator
-```
-
-### Scaled Operator
-
-```@docs
-ScaledOperator
-```
-
-### Operator Product
-
-```@docs
-OperatorProduct
-```
-
-## Function-Based Operator
-
-For operators with procedural definitions:
-
-```@docs
-FunctionOperator
 ```
 
 ## Identity Operator
 
 ```@docs
-IdentityOp
+Identity
 ```
 
-## Tensor Product Operator
+## Function-Based Operator
+
+For operators with procedural definitions (e.g., Fock space ladder operators):
 
 ```@docs
-TensorOperator
+FunctionOperator
 ```
 
-### Tensor Product Utilities
+### FunctionOperator Syntax
 
-```@docs
-lift
-swap
-reorder
-partial_trace
-```
+```julia
+# Basic usage
+action(ket::Ket{B}) where B = ...  # returns AbstractKet or Number
+op = FunctionOperator(action, basis, name=:op)
 
-## Symbolic Types
+# With adjoint action
+op = FunctionOperator(action, basis, adjoint_action=adj_action, name=:op)
 
-When operator application cannot be simplified:
-
-```@docs
-OpKet
-OpBra
+# Do-block syntax
+op = FunctionOperator(basis, name=:op) do ket
+    # action on ket
+end
 ```
 
 ## Accessor Functions
 
 ```@docs
-basis(::Operator)
+space(::AbstractOperator)
 ```
 
 ## Examples
@@ -99,86 +76,40 @@ basis(::Operator)
 ```julia
 using QSymbolic
 
-H = HilbertSpace(:spin, 2)
-Hb = Basis(H, :default)
+H, Hb = HilbertSpace(:spin, 2)
 Zb = Basis(H, :z)
 up = Ket(Zb, :↑)
 down = Ket(Zb, :↓)
 
 # Projector
-P_up = up * up'         # |↑⟩⟨↑|
+P_up = up * up'  # |↑⟩⟨↑|
+P_up * up   # → |↑⟩
+P_up * down # → 0
 
-# Ladder operators
-σ_plus = up * down'     # |↑⟩⟨↓|
-σ_minus = down * up'    # |↓⟩⟨↑|
+# Ladder operator
+σ_plus = up * down'  # |↑⟩⟨↓|
+σ_plus * down  # → |↑⟩
 
-# Apply
-P_up * up       # → |↑⟩
-σ_plus * down   # → |↑⟩
-```
-
-### Pauli Matrices
-
-```julia
-# Build from outer products
-σx = up * down' + down * up'
-σy = -im * (up * down') + im * (down * up')
+# Operator sum
 σz = up * up' - down * down'
-
-# Eigenvalue equations
-σz * up    # → |↑⟩
-σz * down  # → -|↓⟩
 ```
 
-### Function Operator (Fock Space)
+### Fock Space Operators
 
 ```julia
-F = FockSpace(:mode)
-Fb = Basis(F, :n)
+using QSymbolic
 
-# Annihilation operator
-â = FunctionOperator(:â, Fb) do ket
-    n = parse(Int, string(ket.index))
-    n == 0 ? 0 : √n * Ket(Fb, n - 1)
-end
+F, Fb = FockSpace(:mode)
 
-# Creation operator  
-â† = FunctionOperator(:â†, Fb) do ket
-    n = parse(Int, string(ket.index))
-    √(n + 1) * Ket(Fb, n + 1)
-end
-```
+# Annihilation operator: â|n⟩ = √n |n-1⟩
+annihilate(ket::Ket{B}) where B = √(ket.index) * Ket{B}(ket.index - 1)
+create(ket::Ket{B}) where B = √(ket.index + 1) * Ket{B}(ket.index + 1)
 
-### Tensor Product Operators
+â = FunctionOperator(annihilate, Fb, adjoint_action=create, name=:â)
 
-```julia
-# Two-qubit system
-H1 = HilbertSpace(:qubit1, 2)
-H1b = Basis(H1, :default)
-H2 = HilbertSpace(:qubit2, 2)
-H2b = Basis(H2, :default)
-B1 = Basis(H1, :z)
-B2 = Basis(H2, :z)
-
-up1 = Ket(B1, :↑)
-down1 = Ket(B1, :↓)
-up2 = Ket(B2, :↑)
-down2 = Ket(B2, :↓)
-
-# Single-qubit operators
-σz1 = up1 * up1' - down1 * down1'
-σz2 = up2 * up2' - down2 * down2'
-
-# Tensor product
-σz1_σz2 = σz1 ⊗ σz2  # σz ⊗ σz
-
-# Lift operator to composite space with identity
-σz1_full = σz1 ⊗ IdentityOp(B2)  # σz ⊗ 𝕀
-
-# Using lift function
-σz1_lifted = lift(σz1, B2)  # equivalent to σz1 ⊗ 𝕀(B2)
-
-# Reorder tensor product to match target basis order
-T12 = σz1 ⊗ σz2
-T21 = reorder(T12, (B2, B1))  # reorder to B2⊗B1
+# Apply to symbolic Fock state
+n = Sym(:n, :nonnegative, :integer)
+ket_n = Ket(Fb, n)
+â * ket_n   # → √n |n-1⟩
+â' * ket_n  # → √(n+1) |n+1⟩
 ```
