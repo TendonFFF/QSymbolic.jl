@@ -18,9 +18,8 @@ export InnerProduct
 export SingleIndexValue, KetIndex  # Index type aliases
 
 # Types - Operators
-export AbstractOperator, Operator, Outer, Identity
+export AbstractOperator, Operator, SumOperator, ScaledOperator, OperatorProduct
 export FunctionOperator, AdjointFunctionOperator
-export OperatorSum, WeightedOperator
 export TensorOperator
 export OpKet, OpBra, IdentityOp
 export create_ladder_operators
@@ -46,31 +45,15 @@ export define_contraction_rule!, has_contraction_rule, clear_contraction_rules!
 export apply_contraction_rule
 
 # Include source files in dependency order
-# 1. Abstract types and foundational types
 include("abstract_types.jl")
-include("symbolic_scalar_symbolics.jl")  # Symbolics.jl-based implementation
+include("symbolic_scalar_symbolics.jl")  # New Symbolics.jl-based implementation
 include("spaces.jl")
 include("basis.jl")
 include("contraction_rules.jl")  # Contraction rule system
-
-# 2. Type definitions (reorganized)
-include("types/kets.jl")          # Ket, WeightedKet, SumKet, ProductKet
-include("types/bras.jl")          # Bra, WeightedBra, SumBra, ProductBra
-include("types/operators.jl")     # Outer, Operator, Identity, FunctionOperator
-include("types/operator_sum.jl")  # OperatorSum container
-
-# 3. Transforms (needs types to be defined)
+include("states.jl")
 include("basis_transforms.jl")
-
-# 4. Arithmetic operations (reorganized)
-include("arithmetic/ket_arithmetic.jl")      # Adjoint, scalar mult, addition
-include("arithmetic/inner_products.jl")      # Bra * Ket contractions
-include("arithmetic/tensor_products.jl")     # ⊗ for kets
-include("arithmetic/operator_ket.jl")        # Operator * Ket
-include("arithmetic/operator_operator.jl")   # Operator * Operator
-include("arithmetic/bra_operator.jl")        # Bra * Operator
-
-# 5. Miscellaneous utilities
+include("arithmetic.jl")
+include("operators.jl")
 include("miscellaneous.jl")
 
 end
