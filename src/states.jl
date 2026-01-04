@@ -86,6 +86,11 @@ Tensor product of kets: |ψ₁⟩⊗|ψ₂⟩⊗...⊗|ψₙ⟩.
 Lives in a `CompositeBasis`. This is a container struct (like SumKet),
 not a basic element - only `Ket` is a basic element.
 
+**Note**: ProductKets are **order-independent** (bosonic/symmetric).
+The kets are canonically ordered by basis, so `k1 ⊗ k2 == k2 ⊗ k1` when
+they have different bases. This is the default behavior; fermionic
+(anti-symmetric) tensor products will be added in a future update.
+
 The tensor product operator `⊗` creates ProductKets automatically.
 
 # Examples
@@ -96,6 +101,9 @@ julia> ψ, ϕ = Ket(H1, :ψ), Ket(H2, :ϕ);
 
 julia> ψ ⊗ ϕ
 |ψ⟩⊗|ϕ⟩
+
+julia> ϕ ⊗ ψ == ψ ⊗ ϕ  # Order-independent (bosonic)
+true
 
 julia> H3 = HilbertSpace(:C, 2);
 
@@ -108,21 +116,29 @@ julia> ψ ⊗ ϕ ⊗ χ  # Three kets
 See also: [`Ket`](@ref), [`⊗`](@ref)
 """ ProductKet
 struct ProductKet{Bs<:Tuple} <: AbstractKet{CompositeBasis{Bs}}
-    kets::Vector{Ket}  # Vector of basic kets
+    kets::Vector{Ket}  # Vector of basic kets (canonically ordered)
     
     function ProductKet(kets::Vector{Ket})
         if length(kets) < 2
             throw(ArgumentError("ProductKet requires at least 2 kets"))
         end
+        # Canonicalize order: sort kets by basis type for order-independence
+        sorted_kets = _canonicalize_product_kets(kets)
         # Extract basis types from each ket
-        basis_types = Tuple{[basis(typeof(k)) for k in kets]...}
-        new{basis_types}(kets)
+        basis_types = Tuple{[basis(typeof(k)) for k in sorted_kets]...}
+        new{basis_types}(sorted_kets)
     end
     
     # Convenience constructor from varargs
     function ProductKet(ket1::Ket, ket2::Ket, kets::Ket...)
         ProductKet([ket1, ket2, kets...])
     end
+end
+
+# Canonicalize ket order for bosonic (order-independent) behavior
+function _canonicalize_product_kets(kets::Vector{Ket})
+    # Sort by basis type, then by index for deterministic ordering
+    return sort(kets, by = k -> (string(basis(typeof(k))), string(k.index)))
 end
 
 @doc """
@@ -273,6 +289,9 @@ end
 Tensor product of bras: ⟨ψ₁|⊗⟨ψ₂|⊗...⊗⟨ψₙ|.
 Created via adjoint of ProductKet.
 
+**Note**: ProductBras are **order-independent** (bosonic/symmetric),
+matching the behavior of ProductKet.
+
 See also: [`ProductKet`](@ref), [`Bra`](@ref)
 """ ProductBra
 struct ProductBra{Bs<:Tuple} <: AbstractBra{CompositeBasis{Bs}}
@@ -282,13 +301,21 @@ struct ProductBra{Bs<:Tuple} <: AbstractBra{CompositeBasis{Bs}}
         if length(bras) < 2
             throw(ArgumentError("ProductBra requires at least 2 bras"))
         end
-        basis_types = Tuple{[basis(typeof(b)) for b in bras]...}
-        new{basis_types}(bras)
+        # Canonicalize order: sort bras by basis type for order-independence
+        sorted_bras = _canonicalize_product_bras(bras)
+        basis_types = Tuple{[basis(typeof(b)) for b in sorted_bras]...}
+        new{basis_types}(sorted_bras)
     end
     
     function ProductBra(bra1::Bra, bra2::Bra, bras::Bra...)
         ProductBra([bra1, bra2, bras...])
     end
+end
+
+# Canonicalize bra order for bosonic (order-independent) behavior
+function _canonicalize_product_bras(bras::Vector{Bra})
+    # Sort by basis type, then by index for deterministic ordering
+    return sort(bras, by = b -> (string(basis(typeof(b))), string(b.index)))
 end
 
 @doc """
@@ -386,10 +413,19 @@ check_space(b1::AbstractBra, b2::AbstractBra) =
 # Equality
 Base.:(==)(k1::Ket{B1}, k2::Ket{B2}) where {B1, B2} = B1 == B2 && k1.index == k2.index
 Base.:(==)(b1::Bra{B1}, b2::Bra{B2}) where {B1, B2} = B1 == B2 && b1.index == b2.index
+
+# ProductKet/ProductBra equality: order-independent (bosonic)
+# Since kets/bras are stored in canonical order, simple comparison works
 Base.:(==)(pk1::ProductKet{Bs1}, pk2::ProductKet{Bs2}) where {Bs1,Bs2} = 
     Bs1 == Bs2 && all(pk1.kets[i] == pk2.kets[i] for i in 1:length(pk1.kets))
 Base.:(==)(pb1::ProductBra{Bs1}, pb2::ProductBra{Bs2}) where {Bs1,Bs2} = 
     Bs1 == Bs2 && all(pb1.bras[i] == pb2.bras[i] for i in 1:length(pb1.bras))
+
+# Hash functions for proper collection behavior
+Base.hash(k::Ket, h::UInt) = hash((basis(typeof(k)), k.index), h)
+Base.hash(b::Bra, h::UInt) = hash((basis(typeof(b)), b.index), h)
+Base.hash(pk::ProductKet, h::UInt) = hash((basis(typeof(pk)), pk.kets), h)
+Base.hash(pb::ProductBra, h::UInt) = hash((basis(typeof(pb)), pb.bras), h)
 
 # Helper to format index (single or multi)
 function _format_index(idx)

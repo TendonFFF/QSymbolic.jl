@@ -333,10 +333,12 @@ end
     Base.$(:(*))(sb::SumBra, wk::WeightedKet) = sb * SumKet([wk.ket], [wk.weight])
     
     # ProductBra * ProductKet (same basis) - factorized inner product
+    # Since kets and bras are canonically ordered, element-wise multiplication is correct
     Base.$(:(*))(pb::ProductBra{Bs}, pk::ProductKet{Bs}) where {Bs} = 
         simplify(prod(pb.bras[i] * pk.kets[i] for i in 1:length(pb.bras)))
     
     # ProductBra * ProductKet (cross-basis) - try factorized transform
+    # Order-independence: both are canonically ordered, so element-wise matching works
     function Base.$(:(*))(pb::ProductBra{Bs1}, pk::ProductKet{Bs2}) where {Bs1,Bs2}
         space(CompositeBasis{Bs1}) == space(CompositeBasis{Bs2}) || 
             throw(DimensionMismatch("Bra and ket are in different spaces"))
