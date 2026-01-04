@@ -1,143 +1,271 @@
-@doc "Check that two kets/bras are in the same basis." check_basis
-check_basis(::AbstractKet{B1}, ::AbstractKet{B2}) where {B1,B2} =
-    B1 == B2 || throw(DimensionMismatch("Kets are in different bases"))
-check_basis(::AbstractBra{B1}, ::AbstractBra{B2}) where {B1,B2} =
-    B1 == B2 || throw(DimensionMismatch("Bras are in different bases"))
+# Arithmetic operations for the new ket/bra structure
+# All operations promote to WeightedKet/WeightedBra or SumKet/SumBra as needed
 
-@doc "Check that kets/bras are in the same underlying space." check_space
-check_space(k1::AbstractKet, k2::AbstractKet) = 
-    space(k1) == space(k2) || throw(DimensionMismatch("Kets are in different spaces"))
-check_space(b1::AbstractBra, b2::AbstractBra) = 
-    space(b1) == space(b2) || throw(DimensionMismatch("Bras are in different spaces"))
+# ==================== ADJOINT OPERATIONS ====================
 
-@eval begin
-    Base.$(:(==))(ket1::BasisKet{B1}, ket2::BasisKet{B2}) where {B1, B2} =
-        B1 == B2 && ket1.index == ket2.index
-    Base.$(:(==))(bra1::BasisBra{B1}, bra2::BasisBra{B2}) where {B1, B2} =
-        B1 == B2 && bra1.index == bra2.index
+# Ket ↔ Bra conversions
+Ket(bra::Bra{B}) where B<:AbstractBasis = Ket{B}(bra.index)
+Bra(ket::Ket{B}) where B<:AbstractBasis = Bra{B}(ket.index)
 
-    function Base.$(:(+))(ket1::weightedKet{B1}, ket2::weightedKet{B2}) where {B1, B2}
-        check_basis(ket1, ket2)
-        if ket1.Ket == ket2.Ket
-            w = ket1.weight + ket2.weight
-            return weightedKet(ket1.Ket, w)
-        else
-            sumKet(BasisKet{B1}[ket1.Ket, ket2.Ket], [ket1.weight, ket2.weight])
-        end
-    end
-    function Base.$(:(+))(bra1::weightedBra{B1}, bra2::weightedBra{B2}) where {B1, B2}
-        check_basis(bra1, bra2)
-        if bra1.Bra == bra2.Bra
-            w = bra1.weight + bra2.weight
-            return weightedBra(bra1.Bra, w)
-        else
-            sumBra(BasisBra{B1}[bra1.Bra, bra2.Bra], [bra1.weight, bra2.weight])
-        end
-    end
+Base.adjoint(ket::Ket) = Bra(ket)
+Base.adjoint(bra::Bra) = Ket(bra)
 
-    Base.$(:(+))(Ket1::BasisKet,    ket2::weightedKet) = weightedKet(Ket1, 1) + ket2
-    Base.$(:(+))(Ket1::BasisKet,    Ket2::BasisKet)    = weightedKet(Ket1, 1) + weightedKet(Ket2, 1)
-    Base.$(:(+))(ket1::weightedKet, Ket2::BasisKet)    = ket1 + weightedKet(Ket2, 1)
+Base.adjoint(pk::ProductKet) = ProductBra(adjoint(pk.ket1), adjoint(pk.ket2))
+Base.adjoint(pb::ProductBra) = ProductKet(adjoint(pb.bra1), adjoint(pb.bra2))
 
-    Base.$(:(+))(Bra1::BasisBra,    bra2::weightedBra) = weightedBra(Bra1, 1) + bra2
-    Base.$(:(+))(Bra1::BasisBra,    Bra2::BasisBra)    = weightedBra(Bra1, 1) + weightedBra(Bra2, 1)
-    Base.$(:(+))(bra1::weightedBra, Bra2::BasisBra)    = bra1 + weightedBra(Bra2, 1)
+# WeightedKet ↔ WeightedBra with complex conjugate
+WeightedKet(wb::WeightedBra{B}) where B = WeightedKet(Ket(wb.bra), wb.weight')
+WeightedBra(wk::WeightedKet{B}) where B = WeightedBra(Bra(wk.ket), wk.weight')
 
-    Base.$(:(-))(Ket1::BasisKet,    ket2::weightedKet) = weightedKet(Ket1, 1) + (-1 * ket2)
-    Base.$(:(-))(Ket1::BasisKet,    Ket2::BasisKet)    = weightedKet(Ket1, 1) + weightedKet(Ket2, -1)
-    Base.$(:(-))(ket1::weightedKet, Ket2::BasisKet)    = ket1 + weightedKet(Ket2, -1)
+Base.adjoint(wk::WeightedKet) = WeightedBra(wk)
+Base.adjoint(wb::WeightedBra) = WeightedKet(wb)
 
-    Base.$(:(-))(Bra1::BasisBra,    bra2::weightedBra) = weightedBra(Bra1, 1) + (-1 * bra2)
-    Base.$(:(-))(Bra1::BasisBra,    Bra2::BasisBra)    = weightedBra(Bra1, 1) + weightedBra(Bra2, -1)
-    Base.$(:(-))(bra1::weightedBra, Bra2::BasisBra)    = bra1 + weightedBra(Bra2, -1)
-end
+# SumKet ↔ SumBra with complex conjugate weights
+Base.adjoint(sk::SumKet{B}) where B = SumBra([adjoint(k) for k in sk.kets], adjoint.(sk.weights); name=sk.display_name)
+Base.adjoint(sb::SumBra{B}) where B = SumKet([adjoint(b) for b in sb.bras], adjoint.(sb.weights); name=sb.display_name)
+
+# ==================== SCALAR MULTIPLICATION ====================
+# Basic ket * scalar → WeightedKet
+# ProductKet * scalar → WeightedKet (wrapping ProductKet)
 
 @eval begin
-    Base.$(:(*))(W::Number, ket::BasisKet{B}) where B = weightedKet(ket, W)
-    Base.$(:(*))(W::Number, bra::BasisBra{B}) where B = weightedBra(bra, W)
-    Base.$(:(*))(ket::BasisKet{B}, W::Number) where B = weightedKet(ket, W)
-    Base.$(:(*))(bra::BasisBra{B}, W::Number) where B = weightedBra(bra, W)
-
-    Base.$(:(*))(W::Number, ket::weightedKet{B}) where B = weightedKet(ket.Ket, W * ket.weight)
-    Base.$(:(*))(ket::weightedKet{B}, W::Number) where B = weightedKet(ket.Ket, W * ket.weight)
-    Base.$(:(*))(W::Number, bra::weightedBra{B}) where B = weightedBra(bra.Bra, W * bra.weight)
-    Base.$(:(*))(bra::weightedBra{B}, W::Number) where B = weightedBra(bra.Bra, W * bra.weight)
-
-    Base.$(:(*))(W::Number, ket::sumKet{B,T}) where {B,T} = sumKet(ket.kets, W .* ket.weights; name=ket.display_name)
-    Base.$(:(*))(ket::sumKet{B,T}, W::Number) where {B,T} = W * ket
-    Base.$(:(*))(W::Number, bra::sumBra{B,T}) where {B,T} = sumBra(bra.bras, W .* bra.weights; name=bra.display_name)
-    Base.$(:(*))(bra::sumBra{B,T}, W::Number) where {B,T} = W * bra
-
+    # Ket * Number → WeightedKet
+    Base.$(:(*))(W::Number, ket::Ket{B}) where B = WeightedKet(ket, W)
+    Base.$(:(*))(ket::Ket{B}, W::Number) where B = WeightedKet(ket, W)
+    Base.$(:(*))(W::AbstractSymbolic, ket::Ket{B}) where B = WeightedKet(ket, W)
+    Base.$(:(*))(ket::Ket{B}, W::AbstractSymbolic) where B = WeightedKet(ket, W)
+    
+    # ProductKet * Number → WeightedKet
+    Base.$(:(*))(W::Number, pk::ProductKet) = WeightedKet(pk, W)
+    Base.$(:(*))(pk::ProductKet, W::Number) = WeightedKet(pk, W)
+    Base.$(:(*))(W::AbstractSymbolic, pk::ProductKet) = WeightedKet(pk, W)
+    Base.$(:(*))(pk::ProductKet, W::AbstractSymbolic) = WeightedKet(pk, W)
+    
+    # WeightedKet * Number → WeightedKet (multiply weights, simplify)
+    Base.$(:(*))(W::Number, wk::WeightedKet{B}) where B = WeightedKet(wk.ket, simplify(W * wk.weight))
+    Base.$(:(*))(wk::WeightedKet{B}, W::Number) where B = WeightedKet(wk.ket, simplify(W * wk.weight))
+    Base.$(:(*))(W::AbstractSymbolic, wk::WeightedKet{B}) where B = WeightedKet(wk.ket, simplify(W * wk.weight))
+    Base.$(:(*))(wk::WeightedKet{B}, W::AbstractSymbolic) where B = WeightedKet(wk.ket, simplify(W * wk.weight))
+    
+    # SumKet * Number → SumKet (multiply all weights, simplify)
+    Base.$(:(*))(W::Number, sk::SumKet{B,T}) where {B,T} = SumKet(sk.kets, [simplify(W * w) for w in sk.weights]; name=sk.display_name)
+    Base.$(:(*))(sk::SumKet{B,T}, W::Number) where {B,T} = W * sk
+    Base.$(:(*))(W::AbstractSymbolic, sk::SumKet{B,T}) where {B,T} = SumKet(sk.kets, [simplify(W * w) for w in sk.weights]; name=sk.display_name)
+    Base.$(:(*))(sk::SumKet{B,T}, W::AbstractSymbolic) where {B,T} = W * sk
+    
+    # Same for Bras
+    Base.$(:(*))(W::Number, bra::Bra{B}) where B = WeightedBra(bra, W)
+    Base.$(:(*))(bra::Bra{B}, W::Number) where B = WeightedBra(bra, W)
+    Base.$(:(*))(W::AbstractSymbolic, bra::Bra{B}) where B = WeightedBra(bra, W)
+    Base.$(:(*))(bra::Bra{B}, W::AbstractSymbolic) where B = WeightedBra(bra, W)
+    
+    Base.$(:(*))(W::Number, pb::ProductBra) = WeightedBra(pb, W)
+    Base.$(:(*))(pb::ProductBra, W::Number) = WeightedBra(pb, W)
+    Base.$(:(*))(W::AbstractSymbolic, pb::ProductBra) = WeightedBra(pb, W)
+    Base.$(:(*))(pb::ProductBra, W::AbstractSymbolic) = WeightedBra(pb, W)
+    
+    Base.$(:(*))(W::Number, wb::WeightedBra{B}) where B = WeightedBra(wb.bra, simplify(W * wb.weight))
+    Base.$(:(*))(wb::WeightedBra{B}, W::Number) where B = WeightedBra(wb.bra, simplify(W * wb.weight))
+    Base.$(:(*))(W::AbstractSymbolic, wb::WeightedBra{B}) where B = WeightedBra(wb.bra, simplify(W * wb.weight))
+    Base.$(:(*))(wb::WeightedBra{B}, W::AbstractSymbolic) where B = WeightedBra(wb.bra, simplify(W * wb.weight))
+    
+    Base.$(:(*))(W::Number, sb::SumBra{B,T}) where {B,T} = SumBra(sb.bras, [simplify(W * w) for w in sb.weights]; name=sb.display_name)
+    Base.$(:(*))(sb::SumBra{B,T}, W::Number) where {B,T} = W * sb
+    Base.$(:(*))(W::AbstractSymbolic, sb::SumBra{B,T}) where {B,T} = SumBra(sb.bras, [simplify(W * w) for w in sb.weights]; name=sb.display_name)
+    Base.$(:(*))(sb::SumBra{B,T}, W::AbstractSymbolic) where {B,T} = W * sb
+    
+    # Division
     Base.$(:(//))(ket::AbstractKet, W::Number) = ket * (1 // W)
     Base.$(:(//))(bra::AbstractBra, W::Number) = bra * (1 // W)
     Base.$(:(/))(ket::AbstractKet, W::Number) = ket * (1 / W)
     Base.$(:(/))(bra::AbstractBra, W::Number) = bra * (1 / W)
 end
 
-@doc """
-    FockKet(space::HilbertSpace, n::Int)
+# ==================== ADDITION/SUBTRACTION ====================
+# Basic ket + Basic ket → SumKet
+# Simplification: combine identical kets
 
-Create a Fock state |n⟩ in the given infinite-dimensional Hilbert space.
-The space must have `nothing` as its dimension (created via `HilbertSpace(:name)` or `FockSpace(:name)`).
-
-# Examples
-```jldoctest
-julia> F = FockSpace(:F);
-
-julia> n0 = FockKet(F, 0)  # ground state
-|0⟩
-
-julia> n1 = FockKet(F, 1)  # first excited
-|1⟩
-```
-""" FockKet
-function FockKet(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
-    dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
-    BasisKet(space, n)
-end
-
-@doc """
-    FockBra(space::HilbertSpace, n::Int)
-
-Create a Fock bra ⟨n| in the given infinite-dimensional Hilbert space.
-
-# Examples
-```jldoctest
-julia> F = FockSpace(:F);
-
-julia> FockBra(F, 0)
-⟨0|
-```
-""" FockBra
-function FockBra(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
-    dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
-    BasisBra(space, n)
-end
-
-BasisKet(bra::BasisBra{B}) where B<:AbstractBasis = BasisKet{B}(bra.index)
-BasisBra(ket::BasisKet{B}) where B<:AbstractBasis = BasisBra{B}(ket.index)
-
-Base.adjoint(ket::BasisKet) = BasisBra(ket)
-Base.adjoint(bra::BasisBra) = BasisKet(bra)
-
-weightedKet(bra::weightedBra{B}) where B = weightedKet(BasisKet(bra.Bra), bra.weight')
-weightedBra(ket::weightedKet{B}) where B = weightedBra(BasisBra(ket.Ket), ket.weight')
-
-Base.adjoint(ket::weightedKet) = weightedBra(ket)
-Base.adjoint(bra::weightedBra) = weightedKet(bra)
-
-Base.adjoint(ket::sumKet{B}) where B = sumBra(adjoint.(ket.kets), adjoint.(ket.weights); name=ket.display_name)
-Base.adjoint(bra::sumBra{B}) where B = sumKet(adjoint.(bra.bras), adjoint.(bra.weights); name=bra.display_name)
-
-# Inner products - same basis (orthonormal)
 @eval begin
-    # Same basis: orthonormal → δᵢⱼ
-    function Base.$(:(*))(bra::BasisBra{B}, ket::BasisKet{B}) where B
+    # Ket + Ket → SumKet
+    function Base.$(:(+))(k1::Ket{B}, k2::Ket{B}) where B
+        check_basis(k1, k2)
+        if k1 == k2
+            # Same ket: add weights
+            return WeightedKet(k1, 2)
+        else
+            return SumKet([k1, k2], [1, 1])
+        end
+    end
+    
+    function Base.$(:(-))(k1::Ket{B}, k2::Ket{B}) where B
+        check_basis(k1, k2)
+        if k1 == k2
+            # Same ket: result is zero... but we can't return 0 for kets
+            # Return weighted ket with weight 0
+            return WeightedKet(k1, 0)
+        else
+            return SumKet([k1, k2], [1, -1])
+        end
+    end
+    
+    # Ket + WeightedKet → SumKet
+    Base.$(:(+))(k::Ket{B}, wk::WeightedKet{B}) where B = WeightedKet(k, 1) + wk
+    Base.$(:(+))(wk::WeightedKet{B}, k::Ket{B}) where B = wk + WeightedKet(k, 1)
+    Base.$(:(-))(k::Ket{B}, wk::WeightedKet{B}) where B = WeightedKet(k, 1) - wk
+    Base.$(:(-))(wk::WeightedKet{B}, k::Ket{B}) where B = wk - WeightedKet(k, 1)
+    
+    # WeightedKet + WeightedKet → WeightedKet or SumKet
+    function Base.$(:(+))(wk1::WeightedKet{B}, wk2::WeightedKet{B}) where B
+        check_basis(wk1, wk2)
+        if wk1.ket == wk2.ket
+            # Same ket: add weights and simplify
+            w_sum = simplify(wk1.weight + wk2.weight)
+            return WeightedKet(wk1.ket, w_sum)
+        else
+            return SumKet([wk1.ket, wk2.ket], [wk1.weight, wk2.weight])
+        end
+    end
+    
+    function Base.$(:(-))(wk1::WeightedKet{B}, wk2::WeightedKet{B}) where B
+        check_basis(wk1, wk2)
+        if wk1.ket == wk2.ket
+            # Same ket: subtract weights and simplify
+            w_diff = simplify(wk1.weight - wk2.weight)
+            return WeightedKet(wk1.ket, w_diff)
+        else
+            return SumKet([wk1.ket, wk2.ket], [wk1.weight, -wk2.weight])
+        end
+    end
+    
+    # Ket + SumKet → SumKet
+    Base.$(:(+))(k::Ket{B}, sk::SumKet{B}) where B = SumKet(vcat([k], sk.kets), vcat([1], sk.weights))
+    Base.$(:(+))(sk::SumKet{B}, k::Ket{B}) where B = SumKet(vcat(sk.kets, [k]), vcat(sk.weights, [1]))
+    Base.$(:(-))(k::Ket{B}, sk::SumKet{B}) where B = SumKet(vcat([k], sk.kets), vcat([1], -sk.weights))
+    Base.$(:(-))(sk::SumKet{B}, k::Ket{B}) where B = SumKet(vcat(sk.kets, [k]), vcat(sk.weights, [-1]))
+    
+    # WeightedKet + SumKet → SumKet
+    Base.$(:(+))(wk::WeightedKet{B}, sk::SumKet{B}) where B = SumKet(vcat([wk.ket], sk.kets), vcat([wk.weight], sk.weights))
+    Base.$(:(+))(sk::SumKet{B}, wk::WeightedKet{B}) where B = SumKet(vcat(sk.kets, [wk.ket]), vcat(sk.weights, [wk.weight]))
+    Base.$(:(-))(wk::WeightedKet{B}, sk::SumKet{B}) where B = SumKet(vcat([wk.ket], sk.kets), vcat([wk.weight], -sk.weights))
+    Base.$(:(-))(sk::SumKet{B}, wk::WeightedKet{B}) where B = SumKet(vcat(sk.kets, [wk.ket]), vcat(sk.weights, [-wk.weight]))
+    
+    # SumKet + SumKet → SumKet
+    Base.$(:(+))(sk1::SumKet{B}, sk2::SumKet{B}) where B = SumKet(vcat(sk1.kets, sk2.kets), vcat(sk1.weights, sk2.weights))
+    Base.$(:(-))(sk1::SumKet{B}, sk2::SumKet{B}) where B = SumKet(vcat(sk1.kets, sk2.kets), vcat(sk1.weights, -sk2.weights))
+    
+    # Same operations for Bras
+    function Base.$(:(+))(b1::Bra{B}, b2::Bra{B}) where B
+        check_basis(b1, b2)
+        if b1 == b2
+            return WeightedBra(b1, 2)
+        else
+            return SumBra([b1, b2], [1, 1])
+        end
+    end
+    
+    function Base.$(:(-))(b1::Bra{B}, b2::Bra{B}) where B
+        check_basis(b1, b2)
+        if b1 == b2
+            return WeightedBra(b1, 0)
+        else
+            return SumBra([b1, b2], [1, -1])
+        end
+    end
+    
+    Base.$(:(+))(b::Bra{B}, wb::WeightedBra{B}) where B = WeightedBra(b, 1) + wb
+    Base.$(:(+))(wb::WeightedBra{B}, b::Bra{B}) where B = wb + WeightedBra(b, 1)
+    Base.$(:(-))(b::Bra{B}, wb::WeightedBra{B}) where B = WeightedBra(b, 1) - wb
+    Base.$(:(-))(wb::WeightedBra{B}, b::Bra{B}) where B = wb - WeightedBra(b, 1)
+    
+    function Base.$(:(+))(wb1::WeightedBra{B}, wb2::WeightedBra{B}) where B
+        check_basis(wb1, wb2)
+        if wb1.bra == wb2.bra
+            w_sum = simplify(wb1.weight + wb2.weight)
+            return WeightedBra(wb1.bra, w_sum)
+        else
+            return SumBra([wb1.bra, wb2.bra], [wb1.weight, wb2.weight])
+        end
+    end
+    
+    function Base.$(:(-))(wb1::WeightedBra{B}, wb2::WeightedBra{B}) where B
+        check_basis(wb1, wb2)
+        if wb1.bra == wb2.bra
+            w_diff = simplify(wb1.weight - wb2.weight)
+            return WeightedBra(wb1.bra, w_diff)
+        else
+            return SumBra([wb1.bra, wb2.bra], [wb1.weight, -wb2.weight])
+        end
+    end
+    
+    Base.$(:(+))(b::Bra{B}, sb::SumBra{B}) where B = SumBra(vcat([b], sb.bras), vcat([1], sb.weights))
+    Base.$(:(+))(sb::SumBra{B}, b::Bra{B}) where B = SumBra(vcat(sb.bras, [b]), vcat(sb.weights, [1]))
+    Base.$(:(-))(b::Bra{B}, sb::SumBra{B}) where B = SumBra(vcat([b], sb.bras), vcat([1], -sb.weights))
+    Base.$(:(-))(sb::SumBra{B}, b::Bra{B}) where B = SumBra(vcat(sb.bras, [b]), vcat(sb.weights, [-1]))
+    
+    Base.$(:(+))(wb::WeightedBra{B}, sb::SumBra{B}) where B = SumBra(vcat([wb.bra], sb.bras), vcat([wb.weight], sb.weights))
+    Base.$(:(+))(sb::SumBra{B}, wb::WeightedBra{B}) where B = SumBra(vcat(sb.bras, [wb.bra]), vcat(sb.weights, [wb.weight]))
+    Base.$(:(-))(wb::WeightedBra{B}, sb::SumBra{B}) where B = SumBra(vcat([wb.bra], sb.bras), vcat([wb.weight], -sb.weights))
+    Base.$(:(-))(sb::SumBra{B}, wb::WeightedBra{B}) where B = SumBra(vcat(sb.bras, [wb.bra]), vcat(sb.weights, [-wb.weight]))
+    
+    Base.$(:(+))(sb1::SumBra{B}, sb2::SumBra{B}) where B = SumBra(vcat(sb1.bras, sb2.bras), vcat(sb1.weights, sb2.weights))
+    Base.$(:(-))(sb1::SumBra{B}, sb2::SumBra{B}) where B = SumBra(vcat(sb1.bras, sb2.bras), vcat(sb1.weights, -sb2.weights))
+    
+    # ProductKet operations
+    function Base.$(:(+))(pk1::ProductKet{B1,B2}, pk2::ProductKet{B1,B2}) where {B1,B2}
+        if pk1 == pk2
+            return WeightedKet(pk1, 2)
+        else
+            return SumKet([pk1, pk2], [1, 1])
+        end
+    end
+    
+    function Base.$(:(-))(pk1::ProductKet{B1,B2}, pk2::ProductKet{B1,B2}) where {B1,B2}
+        if pk1 == pk2
+            return WeightedKet(pk1, 0)
+        else
+            return SumKet([pk1, pk2], [1, -1])
+        end
+    end
+    
+    # ProductBra operations
+    function Base.$(:(+))(pb1::ProductBra{B1,B2}, pb2::ProductBra{B1,B2}) where {B1,B2}
+        if pb1 == pb2
+            return WeightedBra(pb1, 2)
+        else
+            return SumBra([pb1, pb2], [1, 1])
+        end
+    end
+    
+    function Base.$(:(-))(pb1::ProductBra{B1,B2}, pb2::ProductBra{B1,B2}) where {B1,B2}
+        if pb1 == pb2
+            return WeightedBra(pb1, 0)
+        else
+            return SumBra([pb1, pb2], [1, -1])
+        end
+    end
+end
+
+# ==================== INNER PRODUCTS ====================
+# Bra * Ket contraction rules
+
+# InnerProduct type for symbolic representation
+struct InnerProduct{B1<:AbstractBasis, B2<:AbstractBasis}
+    bra::Bra{B1}
+    ket::Ket{B2}
+end
+
+function Base.show(io::IO, ip::InnerProduct)
+    print(io, "⟨", isnothing(ip.bra.index) ? "ψ" : ip.bra.index, "|", 
+          isnothing(ip.ket.index) ? "ψ" : ip.ket.index, "⟩")
+end
+
+@eval begin
+    # Same basis: orthonormal → δᵢⱼ or Kronecker delta for symbolic
+    function Base.$(:(*))(bra::Bra{B}, ket::Ket{B}) where B
         i, j = bra.index, ket.index
         # If either index is symbolic, return Kronecker delta
         if i isa AbstractSymbolic || j isa AbstractSymbolic
             # Try to simplify if indices are symbolically equal
-            # Use isequal for structural equality (works with Symbolics.jl)
             if isequal(i, j)
                 return 1
             else
@@ -150,7 +278,7 @@ Base.adjoint(bra::sumBra{B}) where B = sumKet(adjoint.(bra.bras), adjoint.(bra.w
     end
     
     # Cross-basis: return symbolic or compute via transform
-    function Base.$(:(*))(bra::BasisBra{B1}, ket::BasisKet{B2}) where {B1, B2}
+    function Base.$(:(*))(bra::Bra{B1}, ket::Ket{B2}) where {B1, B2}
         space(B1) == space(B2) || throw(DimensionMismatch("Bra and ket are in different spaces"))
         # Try to find transform
         if has_transform(B2, B1)
@@ -158,469 +286,88 @@ Base.adjoint(bra::sumBra{B}) where B = sumKet(adjoint.(bra.bras), adjoint.(bra.w
             ket_transformed = transform(ket, B1)
             return bra * ket_transformed
         elseif has_transform(B1, B2)
-            # Transform bra to ket's basis
-            bra_transformed = transform(BasisKet(bra), B2)'
+            # Transform bra to ket's basis (priority to ket)
+            bra_transformed = transform(Ket(bra), B2)'
             return bra_transformed * ket
         else
             return InnerProduct(bra, ket)
         end
     end
-end
-
-@eval begin
-    function Base.$(:(*))(bras::sumBra{B1}, kets::sumKet{B2}) where {B1, B2}
+    
+    # Bra * WeightedKet → multiply by weight
+    Base.$(:(*))(bra::Bra{B}, wk::WeightedKet{B}) where B = simplify((bra * wk.ket) * wk.weight)
+    function Base.$(:(*))(bra::Bra{B1}, wk::WeightedKet{B2}) where {B1, B2}
+        result = bra * wk.ket
+        return result isa Number || result isa AbstractSymbolic ? simplify(result * wk.weight) : result
+    end
+    
+    # Weighted Bra * Ket → multiply by weight
+    Base.$(:(*))(wb::WeightedBra{B}, ket::Ket{B}) where B = simplify((wb.bra * ket) * wb.weight)
+    function Base.$(:(*))(wb::WeightedBra{B1}, ket::Ket{B2}) where {B1, B2}
+        result = wb.bra * ket
+        return result isa Number || result isa AbstractSymbolic ? simplify(result * wb.weight) : result
+    end
+    
+    # WeightedBra * WeightedKet → multiply both weights
+    Base.$(:(*))(wb::WeightedBra{B}, wk::WeightedKet{B}) where B = simplify((wb.bra * wk.ket) * wb.weight * wk.weight)
+    function Base.$(:(*))(wb::WeightedBra{B1}, wk::WeightedKet{B2}) where {B1, B2}
+        result = wb.bra * wk.ket
+        return result isa Number || result isa AbstractSymbolic ? simplify(result * wb.weight * wk.weight) : result
+    end
+    
+    # SumBra * SumKet → sum over all pairs
+    function Base.$(:(*))(sb::SumBra{B1}, sk::SumKet{B2}) where {B1, B2}
         B1 == B2 || space(B1) == space(B2) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-        bra_list = bras.bras
-        bra_weights = bras.weights
-        ket_list = kets.kets
-        ket_weights = kets.weights
-
-        iter = Iterators.product(1:length(bra_list), 1:length(ket_list))
-
-        sum(iter) do (i, j)
-            bra = bra_list[i]
-            ket = ket_list[j]
-            w = bra_weights[i] * ket_weights[j]
-            result = bra * ket
-            result isa InnerProduct ? result : result * w
+        
+        result = 0
+        for (bra, bra_w) in zip(sb.bras, sb.weights)
+            for (ket, ket_w) in zip(sk.kets, sk.weights)
+                inner = bra * ket
+                if inner isa InnerProduct
+                    # Cannot evaluate symbolically, keep as is
+                    return inner
+                else
+                    result += simplify(inner * bra_w * ket_w)
+                end
+            end
         end
+        return simplify(result)
     end
     
-    # Specific fallbacks to avoid ambiguity
-    Base.$(:(*))(bras::BasisBra, kets::weightedKet) = sumBra(bras) * sumKet(kets)
-    Base.$(:(*))(bras::BasisBra, kets::sumKet) = sumBra(bras) * kets
-    Base.$(:(*))(bras::weightedBra, kets::BasisKet) = sumBra(bras) * sumKet(kets)
-    Base.$(:(*))(bras::weightedBra, kets::weightedKet) = sumBra(bras) * sumKet(kets)
-    Base.$(:(*))(bras::weightedBra, kets::sumKet) = sumBra(bras) * kets
-    Base.$(:(*))(bras::sumBra, kets::BasisKet) = bras * sumKet(kets)
-    Base.$(:(*))(bras::sumBra, kets::weightedKet) = bras * sumKet(kets)
-end
-
-# Helper to format index (single or multi)
-function _format_index(idx)
-    if isnothing(idx)
-        "ψ"
-    elseif idx isa Tuple
-        join(string.(idx), ",")
-    else
-        string(idx)
-    end
-end
-
-# Show methods
-function Base.show(io::IO, ket::BasisKet)
-    name = _format_index(ket.index)
-    print(io, "|", name, "⟩")
-end
-
-function Base.show(io::IO, bra::BasisBra)
-    name = _format_index(bra.index)
-    print(io, "⟨", name, "|")
-end
-
-function Base.show(io::IO, ket::weightedKet)
-    print(io, ket.weight, "·", ket.Ket)
-end
-
-function Base.show(io::IO, bra::weightedBra)
-    print(io, bra.weight, "·", bra.Bra)
-end
-
-function Base.show(io::IO, ket::sumKet)
-    if !isnothing(ket.display_name)
-        print(io, "|", ket.display_name, "⟩")
-    else
-        for (i, (k, w)) in enumerate(zip(ket.kets, ket.weights))
-            i > 1 && print(io, w >= 0 ? " + " : " - ")
-            i == 1 && w < 0 && print(io, "-")
-            abs(w) != 1 && print(io, abs(w), "·")
-            print(io, k)
-        end
-    end
-end
-
-function Base.show(io::IO, bra::sumBra)
-    if !isnothing(bra.display_name)
-        print(io, "⟨", bra.display_name, "|")
-    else
-        for (i, (b, w)) in enumerate(zip(bra.bras, bra.weights))
-            i > 1 && print(io, w >= 0 ? " + " : " - ")
-            i == 1 && w < 0 && print(io, "-")
-            abs(w) != 1 && print(io, abs(w), "·")
-            print(io, b)
-        end
-    end
-end
-
-function Base.show(io::IO, ip::InnerProduct)
-    print(io, "⟨", isnothing(ip.bra.index) ? "ψ" : ip.bra.index, "|", 
-          isnothing(ip.ket.index) ? "ψ" : ip.ket.index, "⟩")
-end
-
-function Base.show(io::IO, b::Basis{S,name}) where {S,name}
-    print(io, "Basis{", name, "}")
-end
-
-function Base.show(io::IO, ::CompositeBasis{B1,B2}) where {B1,B2}
-    show(io, B1())
-    print(io, "⊗")
-    show(io, B2())
-end
-
-function Base.show(io::IO, pk::ProductKet)
-    print(io, pk.ket1, "⊗", pk.ket2)
-end
-
-function Base.show(io::IO, pb::ProductBra)
-    print(io, pb.bra1, "⊗", pb.bra2)
-end
-
-function Base.show(io::IO, sk::SumProductKet)
-    if !isnothing(sk.display_name)
-        print(io, "|", sk.display_name, "⟩")
-    else
-        for (i, (k, w)) in enumerate(zip(sk.kets, sk.weights))
-            if i > 1
-                # For symbolic weights, always use +
-                if !(w isa AbstractSymbolic) && w isa Number && real(w) < 0
-                    print(io, " - ")
-                    w = -w
-                else
-                    print(io, " + ")
-                end
-            elseif !(w isa AbstractSymbolic) && w isa Number && real(w) < 0
-                print(io, "-")
-                w = -w
-            end
-            if !(w isa AbstractSymbolic) && !isequal(w, 1)
-                print(io, "(", w, ")·")
-            elseif w isa AbstractSymbolic
-                print(io, "(", w, ")·")
-            end
-            print(io, k)
-        end
-    end
-end
-
-function Base.show(io::IO, sb::SumProductBra)
-    if !isnothing(sb.display_name)
-        print(io, "⟨", sb.display_name, "|")
-    else
-        for (i, (b, w)) in enumerate(zip(sb.bras, sb.weights))
-            if i > 1
-                # For symbolic weights, always use +
-                if !(w isa AbstractSymbolic) && w isa Number && real(w) < 0
-                    print(io, " - ")
-                    w = -w
-                else
-                    print(io, " + ")
-                end
-            elseif !(w isa AbstractSymbolic) && w isa Number && real(w) < 0
-                print(io, "-")
-                w = -w
-            end
-            if !(w isa AbstractSymbolic) && !isequal(w, 1)
-                print(io, "(", w, ")·")
-            elseif w isa AbstractSymbolic
-                print(io, "(", w, ")·")
-            end
-            print(io, b)
-        end
-    end
-end
-
-# Tensor product of kets and bras
-⊗(k1::BasisKet{B1}, k2::BasisKet{B2}) where {B1,B2} = ProductKet(k1, k2)
-⊗(b1::BasisBra{B1}, b2::BasisBra{B2}) where {B1,B2} = ProductBra(b1, b2)
-
-# Adjoint for product states
-Base.adjoint(pk::ProductKet) = ProductBra(adjoint(pk.ket1), adjoint(pk.ket2))
-Base.adjoint(pb::ProductBra) = ProductKet(adjoint(pb.bra1), adjoint(pb.bra2))
-Base.adjoint(sk::SumProductKet) = SumProductBra([adjoint(k) for k in sk.kets], adjoint.(sk.weights); name=sk.display_name)
-Base.adjoint(sb::SumProductBra) = SumProductKet([adjoint(b) for b in sb.bras], adjoint.(sb.weights); name=sb.display_name)
-
-# Inner product of product states (same basis)
-@eval begin
+    # Mixed cases: promote to Sum types
+    Base.$(:(*))(bra::Bra, sk::SumKet) = SumBra([bra], [1]) * sk
+    Base.$(:(*))(sb::SumBra, ket::Ket) = sb * SumKet([ket], [1])
+    Base.$(:(*))(bra::Bra, wk::WeightedKet) = bra * wk.ket * wk.weight
+    Base.$(:(*))(wb::WeightedBra, ket::Ket) = wb.bra * ket * wb.weight
+    Base.$(:(*))(wb::WeightedBra, sk::SumKet) = SumBra([wb.bra], [wb.weight]) * sk
+    Base.$(:(*))(sb::SumBra, wk::WeightedKet) = sb * SumKet([wk.ket], [wk.weight])
+    
+    # ProductBra * ProductKet (same basis)
     Base.$(:(*))(pb::ProductBra{B1,B2}, pk::ProductKet{B1,B2}) where {B1,B2} = 
-        (pb.bra1 * pk.ket1) * (pb.bra2 * pk.ket2)
+        simplify((pb.bra1 * pk.ket1) * (pb.bra2 * pk.ket2))
     
-    # ProductBra * SumProductKet
-    function Base.$(:(*))(pb::ProductBra{B1,B2}, sk::SumProductKet{B1,B2}) where {B1,B2}
-        sum(zip(sk.kets, sk.weights)) do (k, w)
-            (pb * k) * w
-        end
-    end
-    
-    # SumProductBra * ProductKet
-    function Base.$(:(*))(sb::SumProductBra{B1,B2}, pk::ProductKet{B1,B2}) where {B1,B2}
-        sum(zip(sb.bras, sb.weights)) do (b, w)
-            (b * pk) * w
-        end
-    end
-    
-    # SumProductBra * SumProductKet
-    function Base.$(:(*))(sb::SumProductBra{B1,B2}, sk::SumProductKet{B1,B2}) where {B1,B2}
-        iter = Iterators.product(1:length(sb.bras), 1:length(sk.kets))
-        sum(iter) do (i, j)
-            (sb.bras[i] * sk.kets[j]) * sb.weights[i] * sk.weights[j]
+    # ProductBra * ProductKet (cross-basis) - try factorized transform
+    function Base.$(:(*))(pb::ProductBra{A1,A2}, pk::ProductKet{B1,B2}) where {A1,A2,B1,B2}
+        space(CompositeBasis{A1,A2}) == space(CompositeBasis{B1,B2}) || 
+            throw(DimensionMismatch("Bra and ket are in different spaces"))
+        
+        # Try factorized: ⟨a₁|⊗⟨a₂| × |b₁⟩⊗|b₂⟩ = ⟨a₁|b₁⟩ × ⟨a₂|b₂⟩
+        result1 = pb.bra1 * pk.ket1
+        result2 = pb.bra2 * pk.ket2
+        
+        if (result1 isa Number || result1 isa AbstractSymbolic) && 
+           (result2 isa Number || result2 isa AbstractSymbolic)
+            return simplify(result1 * result2)
+        else
+            # Cannot evaluate, return InnerProduct or try transforms
+            # For now, just try factorized result
+            return simplify(result1 * result2)
         end
     end
 end
 
-# Cross-basis inner products for product states
-# When bra and ket are in different bases but same space, transform and compute
+# ==================== TENSOR PRODUCT ====================
+# Ket ⊗ Ket → ProductKet
 
-# Helper to check if product state bases are compatible (same composite space)
-function _product_bases_same_space(::Type{CompositeBasis{A1,A2}}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
-    space(CompositeBasis{A1,A2}) == space(CompositeBasis{B1,B2})
-end
-
-# ProductBra × ProductKet (cross-basis)
-function Base.:*(pb::ProductBra{A1,A2}, pk::ProductKet{B1,B2}) where {A1,A2,B1,B2}
-    # Check same composite space
-    _product_bases_same_space(CompositeBasis{A1,A2}, CompositeBasis{B1,B2}) || 
-        throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    # Try to transform ket to bra's basis
-    CB_bra = CompositeBasis{A1,A2}
-    CB_ket = CompositeBasis{B1,B2}
-    
-    if has_transform(CB_ket, CB_bra)
-        pk_transformed = transform(pk, CB_bra)
-        return pb * pk_transformed
-    elseif has_transform(CB_bra, CB_ket)
-        pb_transformed = transform(pb', CB_ket)'
-        return pb_transformed * pk
-    else
-        # Try factorized: if each subsystem can transform
-        # ⟨a₁|⊗⟨a₂| × |b₁⟩⊗|b₂⟩ = ⟨a₁|b₁⟩ × ⟨a₂|b₂⟩
-        return (pb.bra1 * pk.ket1) * (pb.bra2 * pk.ket2)
-    end
-end
-
-# ProductBra × SumProductKet (cross-basis)
-function Base.:*(pb::ProductBra{A1,A2}, sk::SumProductKet{B1,B2,T}) where {A1,A2,B1,B2,T}
-    _product_bases_same_space(CompositeBasis{A1,A2}, CompositeBasis{B1,B2}) || 
-        throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    sum(zip(sk.kets, sk.weights)) do (k, w)
-        (pb * k) * w
-    end
-end
-
-# SumProductBra × ProductKet (cross-basis)
-function Base.:*(sb::SumProductBra{A1,A2,T}, pk::ProductKet{B1,B2}) where {A1,A2,T,B1,B2}
-    _product_bases_same_space(CompositeBasis{A1,A2}, CompositeBasis{B1,B2}) || 
-        throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    sum(zip(sb.bras, sb.weights)) do (b, w)
-        (b * pk) * w
-    end
-end
-
-# SumProductBra × SumProductKet (cross-basis)
-function Base.:*(sb::SumProductBra{A1,A2,T1}, sk::SumProductKet{B1,B2,T2}) where {A1,A2,T1,B1,B2,T2}
-    _product_bases_same_space(CompositeBasis{A1,A2}, CompositeBasis{B1,B2}) || 
-        throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    iter = Iterators.product(1:length(sb.bras), 1:length(sk.kets))
-    sum(iter) do (i, j)
-        (sb.bras[i] * sk.kets[j]) * sb.weights[i] * sk.weights[j]
-    end
-end
-
-# Cross-basis: single-space bra × composite ket (eigenbasis ↔ product basis)
-# BasisBra{Basis{CompositeSpace}} × ProductKet{B1,B2}
-function Base.:*(bra::BasisBra{B}, pk::ProductKet{B1,B2}) where {B<:Basis, B1,B2}
-    CB = CompositeBasis{B1,B2}
-    space(B) == space(CB) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    if has_transform(CB, B)
-        pk_transformed = transform(pk, B)
-        return bra * pk_transformed
-    elseif has_transform(B, CB)
-        bra_transformed = transform(BasisKet{B}(bra.index), CB)'
-        return bra_transformed * pk
-    else
-        throw(ArgumentError("No transform between $B and $CB. Define one with define_transform!"))
-    end
-end
-
-# BasisBra{Basis{CompositeSpace}} × SumProductKet{B1,B2}
-function Base.:*(bra::BasisBra{B}, sk::SumProductKet{B1,B2,T}) where {B<:Basis, B1,B2,T}
-    CB = CompositeBasis{B1,B2}
-    space(B) == space(CB) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    if has_transform(CB, B)
-        sk_transformed = transform(sk, B)
-        return bra * sk_transformed
-    elseif has_transform(B, CB)
-        bra_transformed = transform(BasisKet{B}(bra.index), CB)'
-        return bra_transformed * sk
-    else
-        throw(ArgumentError("No transform between $B and $CB. Define one with define_transform!"))
-    end
-end
-
-# sumBra{Basis{CompositeSpace}} × ProductKet{B1,B2}
-function Base.:*(bra::sumBra{B}, pk::ProductKet{B1,B2}) where {B<:Basis, B1,B2}
-    CB = CompositeBasis{B1,B2}
-    space(B) == space(CB) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    sum(zip(bra.bras, bra.weights)) do (b, w)
-        (b * pk) * w
-    end
-end
-
-# sumBra{Basis{CompositeSpace}} × SumProductKet{B1,B2}
-function Base.:*(bra::sumBra{B}, sk::SumProductKet{B1,B2,T}) where {B<:Basis, B1,B2,T}
-    CB = CompositeBasis{B1,B2}
-    space(B) == space(CB) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    iter = Iterators.product(1:length(bra.bras), 1:length(sk.kets))
-    sum(iter) do (i, j)
-        (bra.bras[i] * sk.kets[j]) * bra.weights[i] * sk.weights[j]
-    end
-end
-
-# ProductBra{B1,B2} × BasisKet{Basis{CompositeSpace}}
-function Base.:*(pb::ProductBra{B1,B2}, ket::BasisKet{B}) where {B1,B2,B<:Basis}
-    CB = CompositeBasis{B1,B2}
-    space(B) == space(CB) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    if has_transform(B, CB)
-        ket_transformed = transform(ket, CB)
-        return pb * ket_transformed
-    elseif has_transform(CB, B)
-        pb_transformed = transform(pb', B)'
-        return pb_transformed * ket
-    else
-        throw(ArgumentError("No transform between $B and $CB. Define one with define_transform!"))
-    end
-end
-
-# ProductBra{B1,B2} × sumKet{Basis{CompositeSpace}}
-function Base.:*(pb::ProductBra{B1,B2}, ket::sumKet{B,T}) where {B1,B2,B<:Basis,T}
-    CB = CompositeBasis{B1,B2}
-    space(B) == space(CB) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    sum(zip(ket.kets, ket.weights)) do (k, w)
-        (pb * k) * w
-    end
-end
-
-# SumProductBra{B1,B2} × BasisKet{Basis{CompositeSpace}}
-function Base.:*(sb::SumProductBra{B1,B2,T}, ket::BasisKet{B}) where {B1,B2,T,B<:Basis}
-    CB = CompositeBasis{B1,B2}
-    space(B) == space(CB) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    sum(zip(sb.bras, sb.weights)) do (b, w)
-        (b * ket) * w
-    end
-end
-
-# SumProductBra{B1,B2} × sumKet{Basis{CompositeSpace}}
-function Base.:*(sb::SumProductBra{B1,B2,T1}, ket::sumKet{B,T2}) where {B1,B2,T1,B<:Basis,T2}
-    CB = CompositeBasis{B1,B2}
-    space(B) == space(CB) || throw(DimensionMismatch("Bra and ket are in different spaces"))
-    
-    iter = Iterators.product(1:length(sb.bras), 1:length(ket.kets))
-    sum(iter) do (i, j)
-        (sb.bras[i] * ket.kets[j]) * sb.weights[i] * ket.weights[j]
-    end
-end
-
-# Scalar multiplication for product states
-@eval begin
-    Base.$(:(*))(W::Number, pk::ProductKet) = SumProductKet([pk], [W])
-    Base.$(:(*))(pk::ProductKet, W::Number) = W * pk
-    Base.$(:(*))(W::Number, sk::SumProductKet{B1,B2,T}) where {B1,B2,T} = 
-        SumProductKet(sk.kets, W .* sk.weights; name=sk.display_name)
-    Base.$(:(*))(sk::SumProductKet, W::Number) = W * sk
-    Base.$(:(//))(pk::ProductKet, W::Number) = pk * (1 // W)
-    Base.$(:(/))(pk::ProductKet, W::Number) = pk * (1 / W)
-    Base.$(:(//))(sk::SumProductKet, W::Number) = sk * (1 // W)
-    Base.$(:(/))(sk::SumProductKet, W::Number) = sk * (1 / W)
-    
-    # Scalar multiplication for product bras
-    Base.$(:(*))(W::Number, pb::ProductBra) = SumProductBra([pb], [W])
-    Base.$(:(*))(pb::ProductBra, W::Number) = W * pb
-    Base.$(:(*))(W::Number, sb::SumProductBra{B1,B2,T}) where {B1,B2,T} = 
-        SumProductBra(sb.bras, W .* sb.weights; name=sb.display_name)
-    Base.$(:(*))(sb::SumProductBra, W::Number) = W * sb
-    Base.$(:(//))(pb::ProductBra, W::Number) = pb * (1 // W)
-    Base.$(:(/))(pb::ProductBra, W::Number) = pb * (1 / W)
-    Base.$(:(//))(sb::SumProductBra, W::Number) = sb * (1 // W)
-    Base.$(:(/))(sb::SumProductBra, W::Number) = sb * (1 / W)
-end
-
-# Addition/subtraction for product states
-@eval begin
-    # ProductKet + ProductKet -> SumProductKet
-    function Base.$(:(+))(pk1::ProductKet{B1,B2}, pk2::ProductKet{B1,B2}) where {B1,B2}
-        SumProductKet([pk1, pk2], [1, 1])
-    end
-    function Base.$(:(-))(pk1::ProductKet{B1,B2}, pk2::ProductKet{B1,B2}) where {B1,B2}
-        SumProductKet([pk1, pk2], [1, -1])
-    end
-    
-    # ProductKet + SumProductKet
-    function Base.$(:(+))(pk::ProductKet{B1,B2}, sk::SumProductKet{B1,B2,T}) where {B1,B2,T}
-        SumProductKet(vcat([pk], sk.kets), vcat([one(T)], sk.weights))
-    end
-    function Base.$(:(+))(sk::SumProductKet{B1,B2,T}, pk::ProductKet{B1,B2}) where {B1,B2,T}
-        SumProductKet(vcat(sk.kets, [pk]), vcat(sk.weights, [one(T)]))
-    end
-    function Base.$(:(-))(pk::ProductKet{B1,B2}, sk::SumProductKet{B1,B2,T}) where {B1,B2,T}
-        SumProductKet(vcat([pk], sk.kets), vcat([one(T)], -sk.weights))
-    end
-    function Base.$(:(-))(sk::SumProductKet{B1,B2,T}, pk::ProductKet{B1,B2}) where {B1,B2,T}
-        SumProductKet(vcat(sk.kets, [pk]), vcat(sk.weights, [-one(T)]))
-    end
-    
-    # SumProductKet + SumProductKet
-    function Base.$(:(+))(sk1::SumProductKet{B1,B2}, sk2::SumProductKet{B1,B2}) where {B1,B2}
-        SumProductKet(vcat(sk1.kets, sk2.kets), vcat(sk1.weights, sk2.weights))
-    end
-    function Base.$(:(-))(sk1::SumProductKet{B1,B2}, sk2::SumProductKet{B1,B2}) where {B1,B2}
-        SumProductKet(vcat(sk1.kets, sk2.kets), vcat(sk1.weights, -sk2.weights))
-    end
-    
-    # SumProductKet + scalar (for handling zero results from operators)
-    function Base.$(:(+))(sk::SumProductKet, n::Union{Number, AbstractSymbolic})
-        iszero(n) ? sk : error("Cannot add non-zero scalar $n to ket")
-    end
-    function Base.$(:(+))(n::Union{Number, AbstractSymbolic}, sk::SumProductKet)
-        iszero(n) ? sk : error("Cannot add non-zero scalar $n to ket")
-    end
-    
-    # ProductBra + ProductBra -> SumProductBra
-    function Base.$(:(+))(pb1::ProductBra{B1,B2}, pb2::ProductBra{B1,B2}) where {B1,B2}
-        SumProductBra([pb1, pb2], [1, 1])
-    end
-    function Base.$(:(-))(pb1::ProductBra{B1,B2}, pb2::ProductBra{B1,B2}) where {B1,B2}
-        SumProductBra([pb1, pb2], [1, -1])
-    end
-    
-    # ProductBra + SumProductBra
-    function Base.$(:(+))(pb::ProductBra{B1,B2}, sb::SumProductBra{B1,B2,T}) where {B1,B2,T}
-        SumProductBra(vcat([pb], sb.bras), vcat([one(T)], sb.weights))
-    end
-    function Base.$(:(+))(sb::SumProductBra{B1,B2,T}, pb::ProductBra{B1,B2}) where {B1,B2,T}
-        SumProductBra(vcat(sb.bras, [pb]), vcat(sb.weights, [one(T)]))
-    end
-    function Base.$(:(-))(pb::ProductBra{B1,B2}, sb::SumProductBra{B1,B2,T}) where {B1,B2,T}
-        SumProductBra(vcat([pb], sb.bras), vcat([one(T)], -sb.weights))
-    end
-    function Base.$(:(-))(sb::SumProductBra{B1,B2,T}, pb::ProductBra{B1,B2}) where {B1,B2,T}
-        SumProductBra(vcat(sb.bras, [pb]), vcat(sb.weights, [-one(T)]))
-    end
-    
-    # SumProductBra + SumProductBra
-    function Base.$(:(+))(sb1::SumProductBra{B1,B2}, sb2::SumProductBra{B1,B2}) where {B1,B2}
-        SumProductBra(vcat(sb1.bras, sb2.bras), vcat(sb1.weights, sb2.weights))
-    end
-    function Base.$(:(-))(sb1::SumProductBra{B1,B2}, sb2::SumProductBra{B1,B2}) where {B1,B2}
-        SumProductBra(vcat(sb1.bras, sb2.bras), vcat(sb1.weights, -sb2.weights))
-    end
-end
+⊗(k1::Ket{B1}, k2::Ket{B2}) where {B1,B2} = ProductKet(k1, k2)
+⊗(b1::Bra{B1}, b2::Bra{B2}) where {B1,B2} = ProductBra(b1, b2)

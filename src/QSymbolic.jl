@@ -12,10 +12,10 @@ export AbstractBasis, Basis, DefaultBasis, CompositeBasis
 
 # Types - States
 export AbstractKet, AbstractBra
-export BasisKet, BasisBra, weightedKet, weightedBra, sumKet, sumBra
-export ProductKet, ProductBra, SumProductKet, SumProductBra
+export Ket, Bra, WeightedKet, WeightedBra, SumKet, SumBra
+export ProductKet, ProductBra
 export InnerProduct
-export SingleIndex, MultiIndex, KetIndex  # Index type aliases
+export SingleIndexValue, KetIndex  # Index type aliases
 
 # Types - Operators
 export AbstractOperator, Operator, SumOperator, ScaledOperator, OperatorProduct
