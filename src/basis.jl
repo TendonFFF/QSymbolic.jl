@@ -187,7 +187,7 @@ julia> H = HilbertSpace(:H, 2);
 
 julia> Hb = Basis(H, :default);
 
-julia> ψ = Ket(Hb, :ψ)  # creates ket in default basis
+julia> ψ = Ket(Hb, :ψ)  # creates ket using the basis Hb
 |ψ⟩
 ```
 """
