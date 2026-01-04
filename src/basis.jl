@@ -178,18 +178,9 @@ space(::CompositeBasis{Bs}) where {Bs} = _composite_space_type(Bs.parameters)
 @doc """
     DefaultBasis{S}
 
-Implicit basis when no explicit basis is specified. Provides backward compatibility
-for code that creates kets without explicitly providing a basis object.
-
-# Examples
-```jldoctest
-julia> H = HilbertSpace(:H, 2);
-
-julia> Hb = Basis(H, :default);
-
-julia> ψ = Ket(Hb, :ψ)  # creates ket using the basis Hb
-|ψ⟩
-```
+Marker type for a basis on space `S`. Kets **must** be constructed with an
+explicit basis instance (e.g., `Basis(H, :default)`); QSymbolic does not
+automatically fall back to `DefaultBasis`.
 """
 struct DefaultBasis{S<:AbstractSpace} <: AbstractBasis{S} end
 

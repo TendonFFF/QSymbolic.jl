@@ -7,7 +7,7 @@ Bases provide the reference frame for expressing quantum states. QSymbolic.jl su
 | Type | Description |
 |:-----|:------------|
 | `Basis` | A named orthonormal basis for a Hilbert space |
-| `DefaultBasis` | Implicit basis used when none is specified |
+| `DefaultBasis` | Marker type for bases; kets still require an explicit basis instance |
 | `CompositeBasis` | Tensor product of two bases |
 
 ## Types
