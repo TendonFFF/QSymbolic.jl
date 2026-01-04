@@ -36,8 +36,8 @@ up_x = Ket(Xb, :↑)
 down_x = Ket(Xb, :↓)
 ```
 
-!!! tip "Default Basis"
-    When you use `Ket(space, label)` directly (without an explicit basis), QSymbolic uses an implicit `DefaultBasis`. This is convenient for simple calculations where you don't need multiple bases.
+!!! tip "Default basis helper"
+    Kets require an explicit basis argument. For a convenient orthonormal basis, create one with `Basis(H, :default)` (or destructure: `H, Hb = HilbertSpace(:H, 2)`); there is no implicit fallback when constructing a `Ket`.
 
 ## Orthonormality Within a Basis
 

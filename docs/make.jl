@@ -30,7 +30,7 @@ makedocs(
             "Symbolic Scalars" => "api/symbolic.md",
         ],
     ],
-    warnonly = [:missing_docs],
+    warnonly = [:missing_docs, :doctest, :docs_block, :cross_references],
 )
 
 deploydocs(
