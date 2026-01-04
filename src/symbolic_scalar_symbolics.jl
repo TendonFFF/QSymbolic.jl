@@ -158,7 +158,15 @@ struct KroneckerDelta
 end
 
 function Base.show(io::IO, δ::KroneckerDelta)
-    print(io, "δ(", δ.i, ",", δ.j, ")")
+    # For tuple indices, show as product of deltas: δ(a,b)·δ(c,d)
+    if δ.i isa Tuple && δ.j isa Tuple
+        for (k, (i, j)) in enumerate(zip(δ.i, δ.j))
+            k > 1 && print(io, "·")
+            print(io, "δ(", i, ",", j, ")")
+        end
+    else
+        print(io, "δ(", δ.i, ",", δ.j, ")")
+    end
 end
 
 # Arithmetic with KroneckerDelta
@@ -189,6 +197,22 @@ Base.:+(δ1::KroneckerDelta, δ2::KroneckerDelta) = SumWithDelta(0, [δ1, δ2])
 Base.:+(δ::KroneckerDelta, sd::ScaledDelta) = SumWithDelta(0, [δ, sd])
 Base.:+(sd::ScaledDelta, δ::KroneckerDelta) = δ + sd
 Base.:+(sd1::ScaledDelta, sd2::ScaledDelta) = SumWithDelta(0, [sd1, sd2])
+
+# Multiplication of KroneckerDeltas - merge into tuple indices
+# δ(a,b) * δ(c,d) = δ((a,c), (b,d))
+function Base.:*(δ1::KroneckerDelta, δ2::KroneckerDelta)
+    # Merge indices: flatten if already tuples
+    i1 = δ1.i isa Tuple ? δ1.i : (δ1.i,)
+    j1 = δ1.j isa Tuple ? δ1.j : (δ1.j,)
+    i2 = δ2.i isa Tuple ? δ2.i : (δ2.i,)
+    j2 = δ2.j isa Tuple ? δ2.j : (δ2.j,)
+    return KroneckerDelta((i1..., i2...), (j1..., j2...))
+end
+
+# ScaledDelta * KroneckerDelta
+Base.:*(sd::ScaledDelta, δ::KroneckerDelta) = ScaledDelta(sd.coeff, sd.delta * δ)
+Base.:*(δ::KroneckerDelta, sd::ScaledDelta) = ScaledDelta(sd.coeff, δ * sd.delta)
+Base.:*(sd1::ScaledDelta, sd2::ScaledDelta) = ScaledDelta(simplify(sd1.coeff * sd2.coeff), sd1.delta * sd2.delta)
 
 # SumWithDelta: represents constant + sum of (scaled) deltas
 struct SumWithDelta
@@ -228,39 +252,72 @@ simplify(x::Symbol) = x  # Julia Symbols pass through unchanged
 simplify(x::Symbolics.Num) = Symbolics.simplify(x)
 simplify(x::Complex{Symbolics.Num}) = Complex(Symbolics.simplify(real(x)), Symbolics.simplify(imag(x)))
 
-function simplify(δ::KroneckerDelta)
-    i_simp = simplify(δ.i)
-    j_simp = simplify(δ.j)
+# Helper to simplify a single pair of indices
+function _simplify_delta_pair(i, j)
+    i_simp = simplify(i)
+    j_simp = simplify(j)
     
     # If both are identical (same object), return 1
-    # This handles Sym(:a) vs Sym(:a) via isequal
     if isequal(i_simp, j_simp)
-        return 1
+        return 1, nothing, nothing
     end
     
     # Try to evaluate if both are concrete (non-symbolic) numbers
     i_is_concrete = i_simp isa Number && !(i_simp isa Symbolics.Num)
     j_is_concrete = j_simp isa Number && !(j_simp isa Symbolics.Num)
     if i_is_concrete && j_is_concrete
-        return i_simp == j_simp ? 1 : 0
+        return (i_simp == j_simp ? 1 : 0), nothing, nothing
     end
     
-    # If both are literal Symbols (not symbolic variables), we can compare them directly
-    # Different literal symbols are definitely not equal
+    # If both are literal Symbols (not symbolic variables), compare directly
     if i_simp isa Symbol && j_simp isa Symbol
-        return i_simp == j_simp ? 1 : 0
+        return (i_simp == j_simp ? 1 : 0), nothing, nothing
     end
     
-    # Check symbolic equality using Symbolics - only if we can prove they're equal
+    # Check symbolic equality using Symbolics
     if i_simp isa Symbolics.Num && j_simp isa Symbolics.Num
         diff = Symbolics.simplify(i_simp - j_simp)
-        # Check if diff simplifies to literal 0 (not symbolic zero)
         if isequal(diff, 0) || isequal(Symbolics.value(diff), 0)
-            return 1
+            return 1, nothing, nothing
         end
     end
     
-    # Can't simplify further (e.g., Sym(:a) vs Sym(:b) could be equal after substitution)
+    # Can't simplify - return the simplified indices
+    return nothing, i_simp, j_simp
+end
+
+function simplify(δ::KroneckerDelta)
+    # Handle tuple indices element-wise
+    if δ.i isa Tuple && δ.j isa Tuple
+        remaining_i = []
+        remaining_j = []
+        
+        for (i, j) in zip(δ.i, δ.j)
+            result, i_simp, j_simp = _simplify_delta_pair(i, j)
+            if result == 0
+                return 0  # Any zero kills the product
+            elseif result === nothing
+                # Couldn't simplify this pair, keep it
+                push!(remaining_i, i_simp)
+                push!(remaining_j, j_simp)
+            end
+            # result == 1 means this pair simplified away
+        end
+        
+        if isempty(remaining_i)
+            return 1  # All pairs simplified to 1
+        elseif length(remaining_i) == 1
+            return KroneckerDelta(remaining_i[1], remaining_j[1])
+        else
+            return KroneckerDelta(Tuple(remaining_i), Tuple(remaining_j))
+        end
+    end
+    
+    # Non-tuple case
+    result, i_simp, j_simp = _simplify_delta_pair(δ.i, δ.j)
+    if result !== nothing
+        return result
+    end
     return KroneckerDelta(i_simp, j_simp)
 end
 
