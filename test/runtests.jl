@@ -546,9 +546,9 @@ end
     @test ket_sym.index == (:↑, :↓)
     @test ket_sym.index isa Tuple
     
-    # Multi-index with integers (converted to symbols)
+    # Multi-index with integers (preserved as integers)
     ket_int = Ket(composite, (0, 1))
-    @test ket_int.index == (Symbol("0"), Symbol("1"))
+    @test ket_int.index == (0, 1)
     
     # Multi-index with symbolic
     n = Sym(:n)

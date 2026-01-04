@@ -10,9 +10,9 @@ export check_space, check_basis
 
 # ==================== INDEX TYPES ====================
 # An index can be:
-# - A single value: Symbol, Nothing, or AbstractSymbolic
+# - A single value: Symbol, Nothing, Integer, or AbstractSymbolic
 # - A tuple of any length: (n,), (n, m), (n, m, k), etc.
-const SingleIndexValue = Union{Symbol, Nothing, AbstractSymbolic}
+const SingleIndexValue = Union{Symbol, Nothing, Integer, AbstractSymbolic}
 const KetIndex = Union{SingleIndexValue, Tuple{Vararg{SingleIndexValue}}}
 
 # ==================== KET TYPES ====================
@@ -27,9 +27,9 @@ Basic ket state |index⟩ in a specific basis. This is the fundamental building 
 
 Index can be:
 - A `Symbol` (e.g., `:↑`, `:ψ`)
-- An `Int` (converted to Symbol)
+- An `Integer` (e.g., `0`, `1`, `2` for Fock states)
 - A symbolic expression (`Sym`, `SymExpr`)
-- A tuple for multi-index (e.g., `(:n, :m)` for composite bases)
+- A tuple for multi-index (e.g., `(:n, :m)` or `(0, 1)` for composite bases)
 
 # Examples
 ```jldoctest
@@ -54,20 +54,7 @@ struct Ket{B<:AbstractBasis} <: AbstractKet{B}
     function Ket(::B, idx::KetIndex=nothing) where B<:AbstractBasis
         new{B}(idx)
     end
-    function Ket(::B, idx::Int) where B<:AbstractBasis
-        new{B}(Symbol(idx))
-    end
-    function Ket(::B, idx::Tuple{Vararg{Int}}) where B<:AbstractBasis
-        # Convert all Int elements to Symbol
-        new{B}(Tuple(Symbol(i) for i in idx))
-    end
-    function Ket{B}(idx::Union{Symbol, Int, Nothing}=nothing) where B<:AbstractBasis
-        new{B}(isnothing(idx) ? nothing : Symbol(idx))
-    end
-    function Ket{B}(idx::AbstractSymbolic) where B<:AbstractBasis
-        new{B}(idx)
-    end
-    function Ket{B}(idx::Tuple{Vararg{SingleIndexValue}}) where B<:AbstractBasis
+    function Ket{B}(idx::KetIndex=nothing) where B<:AbstractBasis
         new{B}(idx)
     end
 end
@@ -247,19 +234,7 @@ struct Bra{B<:AbstractBasis} <: AbstractBra{B}
     function Bra(::B, idx::KetIndex=nothing) where B<:AbstractBasis
         new{B}(idx)
     end
-    function Bra(::B, idx::Int) where B<:AbstractBasis
-        new{B}(Symbol(idx))
-    end
-    function Bra(::B, idx::Tuple{Vararg{Int}}) where B<:AbstractBasis
-        new{B}(Tuple(Symbol(i) for i in idx))
-    end
-    function Bra{B}(idx::Union{Symbol, Int, Nothing}=nothing) where B<:AbstractBasis
-        new{B}(isnothing(idx) ? nothing : Symbol(idx))
-    end
-    function Bra{B}(idx::AbstractSymbolic) where B<:AbstractBasis
-        new{B}(idx)
-    end
-    function Bra{B}(idx::Tuple{Vararg{SingleIndexValue}}) where B<:AbstractBasis
+    function Bra{B}(idx::KetIndex=nothing) where B<:AbstractBasis
         new{B}(idx)
     end
 end
