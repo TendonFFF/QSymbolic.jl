@@ -91,7 +91,9 @@ The tensor product operator `⊗` creates ProductKets automatically.
 ```jldoctest
 julia> H1, H2 = HilbertSpace(:A, 2), HilbertSpace(:B, 2);
 
-julia> ψ, ϕ = Ket(H1, :ψ), Ket(H2, :ϕ);
+julia> B1, B2 = Basis(H1, :default), Basis(H2, :default);
+
+julia> ψ, ϕ = Ket(B1, :ψ), Ket(B2, :ϕ);
 
 julia> ψ ⊗ ϕ
 |ψ⟩⊗|ϕ⟩
@@ -101,7 +103,9 @@ true
 
 julia> H3 = HilbertSpace(:C, 2);
 
-julia> χ = Ket(H3, :χ);
+julia> B3 = Basis(H3, :default);
+
+julia> χ = Ket(B3, :χ);
 
 julia> ψ ⊗ ϕ ⊗ χ  # Three kets
 |ψ⟩⊗|ϕ⟩⊗|χ⟩
@@ -145,7 +149,9 @@ Created automatically via scalar multiplication: `weight * ket`.
 ```jldoctest
 julia> H = HilbertSpace(:H, 2);
 
-julia> ψ = Ket(H, :ψ);
+julia> Hb = Basis(H, :default);
+
+julia> ψ = Ket(Hb, :ψ);
 
 julia> 2 * ψ
 2·|ψ⟩
@@ -182,7 +188,9 @@ The kets can be either `Ket` or `ProductKet` (but all must share the same basis 
 ```jldoctest
 julia> H = HilbertSpace(:H, 2);
 
-julia> ψ, ϕ = Ket(H, :ψ), Ket(H, :ϕ);
+julia> Hb = Basis(H, :default);
+
+julia> ψ, ϕ = Ket(Hb, :ψ), Ket(Hb, :ϕ);
 
 julia> ψ + ϕ
 |ψ⟩ + |ϕ⟩
