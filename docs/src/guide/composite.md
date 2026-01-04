@@ -214,6 +214,6 @@ a * product_state  # → √d |d-1⟩ ⊗ |g⟩
 
 ## See Also
 
-- [Basis Transforms](@ref) - Cross-basis computations
-- [Operators](@ref) - Operator algebra
+- [Basis Transforms](transforms.md) - Cross-basis computations
+- [Operators](operators.md) - Operator algebra
 - [Custom Contraction Rules](@ref) - Multi-index inner products

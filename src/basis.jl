@@ -184,9 +184,9 @@ for code that creates kets directly from spaces without specifying a basis.
 
 # Examples
 ```jldoctest
-julia> H = HilbertSpace(:H, 2);
+julia> _, Hb = HilbertSpace(:H, 2);
 
-julia> ψ = BasisKet(H, :ψ)  # uses DefaultBasis internally
+julia> ψ = Ket(Hb, :ψ)  # uses DefaultBasis
 |ψ⟩
 ```
 """
@@ -222,8 +222,13 @@ Iteration protocol for `HilbertSpace` that enables convenient destructuring.
 julia> H = HilbertSpace(:H, 2)  # Just the space
 ℋ(H, dim=2)
 
-julia> H, Hb = HilbertSpace(:H, 2)  # Space and default basis
-(ℋ(H, dim=2), Basis{default})
+julia> H, Hb = HilbertSpace(:H, 2);  # Space and default basis
+
+julia> H
+ℋ(H, dim=2)
+
+julia> Hb
+Basis{default}
 ```
 
 The first iteration returns the space itself, and the second returns a default basis.

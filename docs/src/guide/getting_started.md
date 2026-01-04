@@ -272,8 +272,8 @@ up' * ψ  # → 1/√2, so P(↑) = 1/2
 
 ## Next Steps
 
-- [Basis Transforms](@ref) - Changing between representations (z ↔ x basis)
+- [Basis Transforms](transforms.md) - Changing between representations (z ↔ x basis)
 - [Composite Systems](@ref) - Multi-particle states and tensor products
-- [Operators](@ref) - Function operators and operator algebra
-- [Symbolic Scalars](@ref) - Advanced symbolic computation
+- [Operators](operators.md) - Function operators and operator algebra
+- [Symbolic Scalars](symbolic.md) - Advanced symbolic computation
 - [Custom Contraction Rules](@ref) - Non-orthonormal bases

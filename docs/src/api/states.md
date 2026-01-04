@@ -67,13 +67,6 @@ ProductBra
 
 ## Utility Functions
 
-### Accessing Basis and Space
-
-```@docs
-basis
-space
-```
-
 ### Fock States
 
 Convenience constructors for number states:
@@ -81,13 +74,6 @@ Convenience constructors for number states:
 ```@docs
 FockKet
 FockBra
-```
-
-### Validation
-
-```@docs
-check_basis
-check_space
 ```
 
 ## Examples

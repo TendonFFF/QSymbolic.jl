@@ -3,7 +3,7 @@
 
 # Exports
 export Outer, Operator, Identity, FunctionOperator
-export OperatorSum
+export OperatorSum, OperatorProduct
 export tr
 
 # space() - get the space an operator acts on
@@ -302,6 +302,61 @@ function Base.show(io::IO, opsum::OperatorSum{S}) where S
         print(io, typeof(op).name.name)
     end
 end
+
+# ============== OperatorProduct: Lazy Product of Operators ==============
+
+@doc """
+    OperatorProduct
+
+Lazy container for product of operators. Operators may be from different spaces,
+enabling cross-space operator expressions. Validity is checked when applied to a ket.
+
+Enables expressions like:
+- A * B where A and B are on different spaces (tensor product context)
+- (a + a†) * (|e⟩⟨g| + |g⟩⟨e|) mixing cavity and dot spaces
+
+Application evaluates right-to-left: (ABC)|ψ⟩ = A(B(C|ψ⟩))
+
+# Examples
+```julia
+# Cross-space lazy product
+cavity_op = a + a'   # annihilation + creation on cavity
+dot_op = eg + ge     # |e⟩⟨g| + |g⟩⟨e| on dot
+
+H_int = cavity_op * dot_op  # Creates OperatorProduct (no space check)
+
+# Valid when applied to composite ket:
+ψ = |n⟩ ⊗ |g⟩
+H_int * ψ  # Evaluated at application time
+```
+
+See also: [`OperatorSum`](@ref), [`Operator`](@ref)
+"""
+struct OperatorProduct <: AbstractOperator{Nothing}
+    operators::Vector{<:AbstractOperator}
+    
+    function OperatorProduct(ops::Vector{<:AbstractOperator})
+        isempty(ops) && throw(ArgumentError("OperatorProduct requires at least one operator"))
+        new(ops)
+    end
+end
+
+# Show method
+function Base.show(io::IO, opprod::OperatorProduct)
+    print(io, "(")
+    for (i, op) in enumerate(opprod.operators)
+        i > 1 && print(io, ")·(")
+        show(io, op)
+    end
+    print(io, ")")
+end
+
+# Adjoint of product: reverse order, adjoint each
+Base.adjoint(opprod::OperatorProduct) = OperatorProduct(reverse([op' for op in opprod.operators]))
+
+# Scalar multiplication: wrap in OperatorSum with weight
+Base.:*(c::Number, opprod::OperatorProduct) = OperatorSum([opprod], [c])
+Base.:*(opprod::OperatorProduct, c::Number) = c * opprod
 
 # ============== Trace ==============
 

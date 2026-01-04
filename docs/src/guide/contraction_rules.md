@@ -159,4 +159,4 @@ clear_contraction_rules!()
 
 - [Getting Started](@ref) - Basic ket/bra operations
 - [Composite Systems](@ref) - Tensor products and multi-index states
-- [Symbolic Scalars](@ref) - Working with symbolic expressions
+- [Symbolic Scalars](symbolic.md) - Working with symbolic expressions

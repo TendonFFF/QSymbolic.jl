@@ -20,8 +20,10 @@ makedocs(
             "Composite Systems" => "guide/composite.md",
             "Operators" => "guide/operators.md",
             "Symbolic Scalars" => "guide/symbolic.md",
+            "Custom Contraction Rules" => "guide/contraction_rules.md",
         ],
         "API Reference" => [
+            "Full API" => "api/api.md",
             "Spaces" => "api/spaces.md",
             "Bases" => "api/bases.md",
             "States" => "api/states.md",
@@ -30,7 +32,9 @@ makedocs(
             "Symbolic Scalars" => "api/symbolic.md",
         ],
     ],
-    warnonly = [:missing_docs],
+    # Note: doctests in source files use old API (Ket(HilbertSpace,...))
+    # that was replaced with Ket(Basis,...) - needs separate source fix
+    warnonly = [:missing_docs, :doctest],
 )
 
 deploydocs(

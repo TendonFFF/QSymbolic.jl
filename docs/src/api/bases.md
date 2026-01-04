@@ -26,7 +26,6 @@ space
 basisname
 basis1
 basis2
-bases
 ```
 
 ## Tensor Product

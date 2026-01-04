@@ -36,9 +36,12 @@ Abstract supertype for bra vectors ⟨ψ| in a specific basis.
 abstract type AbstractBra{basis<:AbstractBasis} end
 
 @doc """
-    AbstractOperator{S<:AbstractSpace}
+    AbstractOperator{S}
 
 Abstract supertype for all quantum operators acting on space `S`.
 Operators use bra-ket arithmetic for contraction.
+
+The type parameter `S` is typically an `AbstractSpace` subtype, but can also be 
+`Nothing` for space-agnostic lazy containers like `OperatorProduct`.
 """
-abstract type AbstractOperator{S<:AbstractSpace} end
+abstract type AbstractOperator{S} end

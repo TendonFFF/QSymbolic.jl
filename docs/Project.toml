@@ -1,6 +1,8 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 QSymbolic = "51350ce6-7c10-437b-ae15-8948c6144b7d"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [sources]
-QSymbolic = {path = "/Users/work/git/QSymbolic.jl"}
+QSymbolic = {path = ".."}

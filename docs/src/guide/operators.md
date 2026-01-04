@@ -314,4 +314,4 @@ ket_n = Ket(Fb, n)
 
 - [Getting Started](@ref) - Basic quantum state operations
 - [Composite Systems](@ref) - Operators on tensor products
-- [Basis Transforms](@ref) - Cross-basis operator application
+- [Basis Transforms](transforms.md) - Cross-basis operator application
