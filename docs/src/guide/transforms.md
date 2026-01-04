@@ -23,6 +23,7 @@ Use `Basis(space, name)` to create a named orthonormal basis:
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 
 # Define two different bases for the same space
 Zb = Basis(H, :z)  # spin-z eigenbasis
@@ -126,6 +127,7 @@ Here's how you might set up position-momentum transforms (conceptually):
 
 ```julia
 H = HilbertSpace(:particle)
+Hb = Basis(H, :default)
 
 Xb = Basis(H, :x)  # position basis
 Pb = Basis(H, :p)  # momentum basis

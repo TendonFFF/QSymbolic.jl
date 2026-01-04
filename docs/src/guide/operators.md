@@ -14,6 +14,7 @@ The most natural way to build quantum operators is via outer products `|ψ⟩⟨
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 Zb = Basis(H, :z)
 
 up = Ket(Zb, :↑)
@@ -209,6 +210,7 @@ P_z * up_x  # → OpKet (symbolic, needs basis transform)
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 Zb = Basis(H, :z)
 
 up = Ket(Zb, :↑)

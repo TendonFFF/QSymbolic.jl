@@ -35,10 +35,11 @@ using QSymbolic
 
 # Define a 2-dimensional Hilbert space (qubit)
 H = HilbertSpace(:H, 2)
+Hb = Basis(H, :default)
 
 # Create basis kets
-ψ = Ket(H, :ψ)
-ϕ = Ket(H, :ϕ)
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
 
 # Linear combinations (automatic promotion to SumKet)
 superposition = ψ + ϕ
@@ -55,14 +56,17 @@ n1 = FockKet(F, 1)  # First excited state |1⟩
 
 # Tensor products of spaces and states
 H1 = HilbertSpace(:A, 2)
+H1b = Basis(H1, :default)
 H2 = HilbertSpace(:B, 2)
+H2b = Basis(H2, :default)
 H3 = HilbertSpace(:C, 2)
+H3b = Basis(H3, :default)
 H_composite = H1 ⊗ H2 ⊗ H3
 
 # Tensor product of kets (supports arbitrary number)
-ψ1 = Ket(H1, :ψ)
-ψ2 = Ket(H2, :ϕ)
-ψ3 = Ket(H3, :χ)
+ψ1 = Ket(H1b, :ψ)
+ψ2 = Ket(H2b, :ϕ)
+ψ3 = Ket(H3b, :χ)
 product_state = ψ1 ⊗ ψ2 ⊗ ψ3  # |ψ⟩⊗|ϕ⟩⊗|χ⟩
 ```
 

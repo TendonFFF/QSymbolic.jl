@@ -194,8 +194,9 @@ Weighted kets and sum states can have symbolic coefficients:
 using QSymbolic
 
 H = HilbertSpace(:H, 2)
-ψ = Ket(H, :ψ)
-ϕ = Ket(H, :ϕ)
+Hb = Basis(H, :default)
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
 
 # Symbolic amplitudes
 α = Sym(:α)

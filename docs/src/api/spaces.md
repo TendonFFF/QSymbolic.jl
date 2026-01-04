@@ -34,6 +34,7 @@ using QSymbolic
 
 # Single qubit
 H = HilbertSpace(:qubit, 2)
+Hb = Basis(H, :default)
 
 # Harmonic oscillator (infinite-dimensional)  
 F = FockSpace(:oscillator)

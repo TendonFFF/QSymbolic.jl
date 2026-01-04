@@ -11,9 +11,11 @@ using QSymbolic
 
 # Finite-dimensional space (e.g., qubit with 2 dimensions)
 H = HilbertSpace(:qubit, 2)
+Hb = Basis(H, :default)
 
 # Infinite-dimensional space (e.g., harmonic oscillator)
 F = HilbertSpace(:oscillator)
+Fb = Basis(F, :default)
 
 # Convenience alias for Fock spaces
 F = FockSpace(:oscillator)  # equivalent to above
@@ -27,10 +29,11 @@ Quantum states are represented in Dirac notation. A **ket** ``|ψ⟩`` represent
 
 ```julia
 H = HilbertSpace(:H, 2)
+Hb = Basis(H, :default)
 
 # Create kets with symbolic labels
-ψ = Ket(H, :ψ)
-ϕ = Ket(H, :ϕ)
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
 
 # Display uses Dirac notation
 ψ   # |ψ⟩
@@ -74,8 +77,9 @@ Inner products follow quantum mechanics conventions:
 
 ```julia
 H = HilbertSpace(:H, 2)
-ψ = Ket(H, :ψ)
-ϕ = Ket(H, :ϕ)
+Hb = Basis(H, :default)
+ψ = Ket(Hb, :ψ)
+ϕ = Ket(Hb, :ϕ)
 
 # Orthonormal basis states
 ψ' * ψ  # → 1 (normalized)

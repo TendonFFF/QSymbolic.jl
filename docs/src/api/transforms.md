@@ -43,6 +43,7 @@ clear_transforms!
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 Zb = Basis(H, :z)
 Xb = Basis(H, :x)
 

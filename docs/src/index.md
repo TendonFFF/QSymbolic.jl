@@ -26,6 +26,7 @@ using QSymbolic
 
 # Create a 2-dimensional Hilbert space
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 
 # Define spin-z basis
 Zb = Basis(H, :z)

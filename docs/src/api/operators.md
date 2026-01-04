@@ -101,6 +101,7 @@ basis(::Operator)
 using QSymbolic
 
 H = HilbertSpace(:spin, 2)
+Hb = Basis(H, :default)
 Zb = Basis(H, :z)
 up = Ket(Zb, :↑)
 down = Ket(Zb, :↓)
@@ -154,7 +155,9 @@ end
 ```julia
 # Two-qubit system
 H1 = HilbertSpace(:qubit1, 2)
+H1b = Basis(H1, :default)
 H2 = HilbertSpace(:qubit2, 2)
+H2b = Basis(H2, :default)
 B1 = Basis(H1, :z)
 B2 = Basis(H2, :z)
 

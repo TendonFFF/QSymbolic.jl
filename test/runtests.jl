@@ -5,6 +5,7 @@ using TestItemRunner
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
+    Hb = Basis(H, :default)
     @test H == HilbertSpace(:H, 2)
     @test H != HilbertSpace(:H, 3)
     @test H != HilbertSpace(:G, 2)
@@ -14,7 +15,9 @@ using TestItemRunner
     
     # Composite spaces
     H1 = HilbertSpace(:A, 2)
+    H1b = Basis(H1, :default)
     H2 = HilbertSpace(:B, 2)
+    H2b = Basis(H2, :default)
     H12 = H1 ⊗ H2
     @test H12 == CompositeSpace(H1, H2)
 end
@@ -23,6 +26,7 @@ end
     using QSymbolic
     
     H = HilbertSpace(:spin, 2)
+    Hb = Basis(H, :default)
     Zb = Basis(H, :z)
     Xb = Basis(H, :x)
     
@@ -36,12 +40,13 @@ end
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
+    Hb = Basis(H, :default)
     
     # Default basis (backward compatible)
-    ψ = Ket(H, :ψ)
-    ϕ = Ket(H, :ϕ)
+    ψ = Ket(Hb, :ψ)
+    ϕ = Ket(Hb, :ϕ)
     
-    @test ψ == Ket(H, :ψ)
+    @test ψ == Ket(Hb, :ψ)
     @test ψ != ϕ
     
     # Adjoint
@@ -64,6 +69,7 @@ end
     using QSymbolic
     
     H = HilbertSpace(:spin, 2)
+    Hb = Basis(H, :default)
     Zb = Basis(H, :z)
     Xb = Basis(H, :x)
     
@@ -95,7 +101,8 @@ end
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
-    ψ = Ket(H, :ψ)
+    Hb = Basis(H, :default)
+    ψ = Ket(Hb, :ψ)
     
     wket = 2 * ψ
     @test wket isa WeightedKet
@@ -117,8 +124,9 @@ end
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
-    ψ = Ket(H, :ψ)
-    ϕ = Ket(H, :ϕ)
+    Hb = Basis(H, :default)
+    ψ = Ket(Hb, :ψ)
+    ϕ = Ket(Hb, :ϕ)
     
     sum_ket = ψ + ϕ
     @test sum_ket isa SumKet
@@ -139,8 +147,9 @@ end
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
-    ψ = Ket(H, :ψ)
-    ϕ = Ket(H, :ϕ)
+    Hb = Basis(H, :default)
+    ψ = Ket(Hb, :ψ)
+    ϕ = Ket(Hb, :ϕ)
     
     # ⟨ψ|ψ⟩ + ⟨ψ|ϕ⟩ = 1 + 0 = 1
     @test (ψ + ϕ)' * ψ == 1
@@ -164,10 +173,12 @@ end
     using QSymbolic
     
     H1 = HilbertSpace(:A, 2)
+    H1b = Basis(H1, :default)
     H2 = HilbertSpace(:B, 2)
+    H2b = Basis(H2, :default)
     
-    ψ = Ket(H1, :ψ)
-    ϕ = Ket(H2, :ϕ)
+    ψ = Ket(H1b, :ψ)
+    ϕ = Ket(H2b, :ϕ)
     
     # Tensor product
     product = ψ ⊗ ϕ
@@ -181,7 +192,7 @@ end
     @test product' * product == 1
     
     # Orthogonal states
-    χ = Ket(H2, :χ)
+    χ = Ket(H2b, :χ)
     product2 = ψ ⊗ χ
     @test product' * product2 == 0
 end
@@ -190,7 +201,9 @@ end
     using QSymbolic
     
     H1 = HilbertSpace(:A, 2)
+    H1b = Basis(H1, :default)
     H2 = HilbertSpace(:B, 2)
+    H2b = Basis(H2, :default)
     
     # Bases for subsystem A
     Za = Basis(H1, :z)
@@ -363,6 +376,7 @@ end
     using QSymbolic
     
     H = HilbertSpace(:spin, 2)
+    Hb = Basis(H, :default)
     Zb = Basis(H, :z)
     up = Ket(Zb, :↑)
     down = Ket(Zb, :↓)
@@ -392,6 +406,7 @@ end
     using QSymbolic
     
     H = HilbertSpace(:spin, 2)
+    Hb = Basis(H, :default)
     Zb = Basis(H, :z)
     up = Ket(Zb, :↑)
     down = Ket(Zb, :↓)
@@ -563,8 +578,9 @@ end
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
-    ψ = Ket(H, :ψ)
-    ϕ = Ket(H, :ϕ)
+    Hb = Basis(H, :default)
+    ψ = Ket(Hb, :ψ)
+    ϕ = Ket(Hb, :ϕ)
     
     # Symbolic coefficients in sum
     α = Sym(:α)
@@ -584,7 +600,9 @@ end
     
     # Setup composite space
     H1 = HilbertSpace(:A, 2)
+    H1b = Basis(H1, :default)
     H2 = HilbertSpace(:B, 2)
+    H2b = Basis(H2, :default)
     composite = H1 ⊗ H2
     
     # Multi-index with symbols

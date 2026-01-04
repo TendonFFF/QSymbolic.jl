@@ -92,6 +92,7 @@ check_space
 using QSymbolic
 
 H = HilbertSpace(:H, 2)
+Hb = Basis(H, :default)
 Zb = Basis(H, :z)
 
 # Create basis kets

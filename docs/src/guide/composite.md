@@ -74,7 +74,9 @@ Then the composite transform `Xa⊗Xb → Za⊗Zb` is derived automatically, wit
 ```julia
 # Setup two qubits
 H_A = HilbertSpace(:A, 2)
+H_Ab = Basis(H_A, :default)
 H_B = HilbertSpace(:B, 2)
+H_Bb = Basis(H_B, :default)
 
 # Define bases for each
 Za, Xa = Basis(H_A, :z), Basis(H_A, :x)
@@ -114,6 +116,7 @@ Entangled states are **superpositions** of product states that cannot be factore
 
 ```julia
 H = HilbertSpace(:qubit, 2)
+Hb = Basis(H, :default)
 Z = Basis(H, :z)
 
 up = Ket(Z, :0)
@@ -159,7 +162,9 @@ Operators on composite systems can be constructed as tensor products:
 
 ```julia
 H_A = HilbertSpace(:A, 2)
+H_Ab = Basis(H_A, :default)
 H_B = HilbertSpace(:B, 2)
+H_Bb = Basis(H_B, :default)
 Za = Basis(H_A, :z)
 Zb = Basis(H_B, :z)
 

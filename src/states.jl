@@ -13,9 +13,10 @@ const KetIndex = Union{SingleIndexValue, Tuple{Vararg{SingleIndexValue}}}
 @doc """
     Ket{B<:AbstractBasis}(index)
     Ket(basis, index)
-    Ket(space, index)  # uses DefaultBasis
 
 Basic ket state |index⟩ in a specific basis. This is the fundamental building block.
+
+**Note**: A basis is **required**. You must explicitly provide a basis object.
 
 Index can be:
 - A `Symbol` (e.g., `:↑`, `:ψ`)
@@ -32,11 +33,13 @@ julia> Zb = Basis(H, :z);
 julia> up = Ket(Zb, :↑)   # |↑⟩ in z-basis
 |↑⟩
 
-julia> ψ = Ket(H, :ψ)     # |ψ⟩ in default basis
+julia> Xb = Basis(H, :x);
+
+julia> ψ = Ket(Xb, :ψ)     # |ψ⟩ in x-basis
 |ψ⟩
 ```
 
-See also: [`Bra`](@ref), [`WeightedKet`](@ref), [`SumKet`](@ref), [`ProductKet`](@ref)
+See also: [`Bra`](@ref), [`Basis`](@ref), [`WeightedKet`](@ref), [`SumKet`](@ref), [`ProductKet`](@ref)
 """ Ket
 struct Ket{B<:AbstractBasis} <: AbstractKet{B}
     index::KetIndex
@@ -59,22 +62,6 @@ struct Ket{B<:AbstractBasis} <: AbstractKet{B}
     end
     function Ket{B}(idx::Tuple{Vararg{SingleIndexValue}}) where B<:AbstractBasis
         new{B}(idx)
-    end
-    function Ket(space::AbstractSpace, idx::Union{Symbol, Int, Nothing}=nothing)
-        B = DefaultBasis{typeof(space)}
-        new{B}(isnothing(idx) ? nothing : Symbol(idx))
-    end
-    function Ket(space::AbstractSpace, idx::AbstractSymbolic)
-        B = DefaultBasis{typeof(space)}
-        new{B}(idx)
-    end
-    function Ket(space::AbstractSpace, idx::Tuple{Vararg{SingleIndexValue}})
-        B = DefaultBasis{typeof(space)}
-        new{B}(idx)
-    end
-    function Ket(space::AbstractSpace, idx::Tuple{Vararg{Int}})
-        B = DefaultBasis{typeof(space)}
-        new{B}(Tuple(Symbol(i) for i in idx))
     end
 end
 
@@ -236,12 +223,13 @@ end
 @doc """
     Bra{B<:AbstractBasis}(index)
     Bra(basis, index)
-    Bra(space, index)  # uses DefaultBasis
 
 Basic bra state ⟨index| in a specific basis.
 Usually created via adjoint: `ket'`.
 
-See also: [`Ket`](@ref)
+**Note**: A basis is **required**. You must explicitly provide a basis object.
+
+See also: [`Ket`](@ref), [`Basis`](@ref)
 """ Bra
 struct Bra{B<:AbstractBasis} <: AbstractBra{B}
     index::KetIndex
@@ -263,22 +251,6 @@ struct Bra{B<:AbstractBasis} <: AbstractBra{B}
     end
     function Bra{B}(idx::Tuple{Vararg{SingleIndexValue}}) where B<:AbstractBasis
         new{B}(idx)
-    end
-    function Bra(space::AbstractSpace, idx::Union{Symbol, Int, Nothing}=nothing)
-        B = DefaultBasis{typeof(space)}
-        new{B}(isnothing(idx) ? nothing : Symbol(idx))
-    end
-    function Bra(space::AbstractSpace, idx::AbstractSymbolic)
-        B = DefaultBasis{typeof(space)}
-        new{B}(idx)
-    end
-    function Bra(space::AbstractSpace, idx::Tuple{Vararg{SingleIndexValue}})
-        B = DefaultBasis{typeof(space)}
-        new{B}(idx)
-    end
-    function Bra(space::AbstractSpace, idx::Tuple{Vararg{Int}})
-        B = DefaultBasis{typeof(space)}
-        new{B}(Tuple(Symbol(i) for i in idx))
     end
 end
 
