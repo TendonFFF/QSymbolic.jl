@@ -29,8 +29,8 @@ Quantum states are represented in Dirac notation. A **ket** ``|ψ⟩`` represent
 H = HilbertSpace(:H, 2)
 
 # Create kets with symbolic labels
-ψ = BasisKet(H, :ψ)
-ϕ = BasisKet(H, :ϕ)
+ψ = Ket(H, :ψ)
+ϕ = Ket(H, :ϕ)
 
 # Display uses Dirac notation
 ψ   # |ψ⟩
@@ -74,8 +74,8 @@ Inner products follow quantum mechanics conventions:
 
 ```julia
 H = HilbertSpace(:H, 2)
-ψ = BasisKet(H, :ψ)
-ϕ = BasisKet(H, :ϕ)
+ψ = Ket(H, :ψ)
+ϕ = Ket(H, :ϕ)
 
 # Orthonormal basis states
 ψ' * ψ  # → 1 (normalized)

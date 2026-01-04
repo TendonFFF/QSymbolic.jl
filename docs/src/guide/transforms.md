@@ -29,14 +29,14 @@ Zb = Basis(H, :z)  # spin-z eigenbasis
 Xb = Basis(H, :x)  # spin-x eigenbasis
 
 # Create states in specific bases
-up_z = BasisKet(Zb, :↑)
-down_z = BasisKet(Zb, :↓)
-up_x = BasisKet(Xb, :↑)
-down_x = BasisKet(Xb, :↓)
+up_z = Ket(Zb, :↑)
+down_z = Ket(Zb, :↓)
+up_x = Ket(Xb, :↑)
+down_x = Ket(Xb, :↓)
 ```
 
 !!! tip "Default Basis"
-    When you use `BasisKet(space, label)` directly (without an explicit basis), QSymbolic uses an implicit `DefaultBasis`. This is convenient for simple calculations where you don't need multiple bases.
+    When you use `Ket(space, label)` directly (without an explicit basis), QSymbolic uses an implicit `DefaultBasis`. This is convenient for simple calculations where you don't need multiple bases.
 
 ## Orthonormality Within a Basis
 
@@ -95,7 +95,7 @@ has_transform(typeof(Zb), typeof(Xb))  # → false (not defined yet)
 ### Apply Transform Explicitly
 
 ```julia
-transform(up_x, typeof(Zb))  # → (|↑⟩ + |↓⟩)/√2 as sumKet
+transform(up_x, typeof(Zb))  # → (|↑⟩ + |↓⟩)/√2 as SumKet
 ```
 
 ### Clear All Transforms

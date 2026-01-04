@@ -6,11 +6,11 @@ Quantum states are represented as kets `|ψ⟩` and their duals as bras `⟨ψ|`
 
 | Type | Description |
 |:-----|:------------|
-| `BasisKet` / `BasisBra` | Single basis state |
-| `weightedKet` / `weightedBra` | Scalar × basis state |
-| `sumKet` / `sumBra` | Linear combination of basis states |
+| `Ket` / `Bra` | Single basis state |
+| `WeightedKet` / `WeightedBra` | Scalar × basis state |
+| `SumKet` / `SumBra` | Linear combination of basis states |
 | `ProductKet` / `ProductBra` | Tensor product of states |
-| `SumProductKet` / `SumProductBra` | Superposition of product states |
+| `SumKet` / `SumBra` | Superposition of product states |
 | `InnerProduct` | Symbolic (unevaluated) inner product |
 
 ## Single-System States
@@ -25,22 +25,22 @@ AbstractBra
 ### Basis States
 
 ```@docs
-BasisKet
-BasisBra
+Ket
+Bra
 ```
 
 ### Weighted States
 
 ```@docs
-weightedKet
-weightedBra
+WeightedKet
+WeightedBra
 ```
 
 ### Superpositions
 
 ```@docs
-sumKet
-sumBra
+SumKet
+SumBra
 ```
 
 ## Composite States
@@ -50,8 +50,8 @@ For multi-particle systems:
 ```@docs
 ProductKet
 ProductBra
-SumProductKet
-SumProductBra
+SumKet
+SumBra
 ```
 
 ## Symbolic Types
@@ -95,8 +95,8 @@ H = HilbertSpace(:H, 2)
 Zb = Basis(H, :z)
 
 # Create basis kets
-up = BasisKet(Zb, :↑)
-down = BasisKet(Zb, :↓)
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
 
 # Superposition
 plus = (up + down) / √2

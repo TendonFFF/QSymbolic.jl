@@ -31,8 +31,8 @@ H = HilbertSpace(:spin, 2)
 Zb = Basis(H, :z)
 
 # Create kets in the z-basis
-up = BasisKet(Zb, :↑)
-down = BasisKet(Zb, :↓)
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
 
 # Orthonormality
 up' * up    # → 1

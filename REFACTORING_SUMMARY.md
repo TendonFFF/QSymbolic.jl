@@ -67,11 +67,11 @@ AbstractBra
    - Multi-index: component-wise checking
 
 4. **src/operators.jl**, **src/basis_transforms.jl**, **src/miscellaneous.jl**: 
-   - Updated to use new type names (Ket instead of BasisKet, etc.)
+   - Updated to use new type names (Ket instead of the previous naming)
 
-#### Backward Compatibility
+#### Implementation Details
 
-The old types are preserved in `src/states_old.jl` and `src/arithmetic_old.jl` for reference, but are not loaded. The new implementation is a clean break.
+The new implementation provides a clean, consistent type hierarchy focused on flexibility and extensibility.
 
 ### Usage Examples
 
@@ -174,27 +174,9 @@ up_x = Ket(Xb, :↑)
 up_z' * up_x  # → 1/√2 (uses transform)
 ```
 
-### Migration Guide
+### Implementation Details
 
-For existing code using the old structure:
-
-1. **Type Name Changes**:
-   - `BasisKet` → `Ket`
-   - `BasisBra` → `Bra`
-   - `weightedKet` → `WeightedKet`
-   - `weightedBra` → `WeightedBra`
-   - `sumKet` → `SumKet`
-   - `sumBra` → `SumBra`
-   - `SumProductKet` → `SumKet` (unified with regular SumKet)
-   - `SumProductBra` → `SumBra` (unified with regular SumBra)
-
-2. **Field Access**:
-   - `WeightedKet`: `.Ket` → `.ket` (lowercase)
-   - `WeightedBra`: `.Bra` → `.bra` (lowercase)
-
-3. **Construction**:
-   - Same constructors work, just use new type names
-   - Multi-index support is now more flexible
+All types use a consistent, clean interface focused on the core concept that only `Ket` is a true atomic element.
 
 ### Testing Status
 
