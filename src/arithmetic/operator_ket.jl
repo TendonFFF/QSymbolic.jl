@@ -244,3 +244,27 @@ function Base.:*(op::FunctionOperator{S, B}, pk::ProductKet) where {S, B}
         end
     end
 end
+
+# Apply FunctionOperator to WeightedKet with CompositeBasis (e.g., from Outer * ProductKet)
+function Base.:*(op::FunctionOperator{S, B}, wk::WeightedKet{CB}) where {S, B, CB<:CompositeBasis}
+    # The underlying ket should be a ProductKet - apply op to it, then rescale
+    result = op * wk.ket
+    if result isa Number && iszero(result)
+        return 0
+    end
+    return wk.weight * result
+end
+
+# Apply FunctionOperator to SumKet with CompositeBasis
+function Base.:*(op::FunctionOperator{S, B}, sk::SumKet{CB}) where {S, B, CB<:CompositeBasis}
+    total = nothing
+    for (ket, w) in zip(sk.kets, sk.weights)
+        result = op * ket
+        if result isa Number && iszero(result)
+            continue
+        end
+        term = w * result
+        total = isnothing(total) ? term : total + term
+    end
+    isnothing(total) ? 0 : total
+end

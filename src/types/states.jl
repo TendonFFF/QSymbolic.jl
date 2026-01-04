@@ -8,6 +8,16 @@ export SingleIndexValue, KetIndex  # Index type aliases
 export FockKet, FockBra  # Convenience constructors
 export check_space, check_basis
 
+# ==================== HELPER FUNCTIONS ====================
+
+# Check if a value is a concrete (non-symbolic) number for display purposes
+# Symbolics.Num <: Number is true, so we need explicit checking
+_is_concrete_number(x) = x isa Number && !(x isa AbstractSymbolic)
+_is_concrete_number(x::Rational) = true
+_is_concrete_number(x::Integer) = true
+_is_concrete_number(x::AbstractFloat) = true
+_is_concrete_number(x::Complex) = _is_concrete_number(real(x)) && _is_concrete_number(imag(x))
+
 # ==================== INDEX TYPES ====================
 # An index can be:
 # - A single value: Symbol, Nothing, Integer, or AbstractSymbolic
@@ -58,6 +68,24 @@ struct Ket{B<:AbstractBasis} <: AbstractKet{B}
         new{B}(idx)
     end
 end
+
+# Structural equality for Kets - handles symbolic indices properly
+# Uses isequal for indices to avoid boolean context errors with Symbolics.Num
+function _idx_isequal(a, b)
+    try
+        isequal(a, b)
+    catch
+        false  # Different types or incomparable
+    end
+end
+
+# Tuples need element-wise comparison
+function _idx_isequal(a::Tuple, b::Tuple)
+    length(a) == length(b) && all(_idx_isequal(ai, bi) for (ai, bi) in zip(a, b))
+end
+
+Base.isequal(k1::Ket{B}, k2::Ket{B}) where B = _idx_isequal(k1.index, k2.index)
+Base.hash(k::Ket{B}, h::UInt) where B = hash((:Ket, B, k.index), h)
 
 @doc """
     ProductKet{Bs<:Tuple}(kets::Vector{Ket})
@@ -239,6 +267,10 @@ struct Bra{B<:AbstractBasis} <: AbstractBra{B}
     end
 end
 
+# Structural equality for Bras - mirrors Ket implementation
+Base.isequal(b1::Bra{B}, b2::Bra{B}) where B = _idx_isequal(b1.index, b2.index)
+Base.hash(b::Bra{B}, h::UInt) where B = hash((:Bra, B, b.index), h)
+
 @doc """
     ProductBra{Bs<:Tuple}(bras::Vector{Bra})
     ProductBra(bra1, bra2, ...)
@@ -378,6 +410,12 @@ Base.:(==)(pk1::ProductKet{Bs1}, pk2::ProductKet{Bs2}) where {Bs1,Bs2} =
 Base.:(==)(pb1::ProductBra{Bs1}, pb2::ProductBra{Bs2}) where {Bs1,Bs2} = 
     Bs1 == Bs2 && all(pb1.bras[i] == pb2.bras[i] for i in 1:length(pb1.bras))
 
+# isequal for ProductKet/ProductBra - symbolic-safe comparison using isequal on underlying kets
+Base.isequal(pk1::ProductKet{Bs}, pk2::ProductKet{Bs}) where {Bs} = 
+    all(isequal(pk1.kets[i], pk2.kets[i]) for i in 1:length(pk1.kets))
+Base.isequal(pb1::ProductBra{Bs}, pb2::ProductBra{Bs}) where {Bs} = 
+    all(isequal(pb1.bras[i], pb2.bras[i]) for i in 1:length(pb1.bras))
+
 # Hash functions for proper collection behavior
 Base.hash(k::Ket, h::UInt) = hash((basis(typeof(k)), k.index), h)
 Base.hash(b::Bra, h::UInt) = hash((basis(typeof(b)), b.index), h)
@@ -444,9 +482,20 @@ function Base.show(io::IO, sk::SumKet)
         print(io, "|", sk.display_name, "⟩")
     else
         for (i, (k, w)) in enumerate(zip(sk.kets, sk.weights))
-            i > 1 && print(io, w >= 0 ? " + " : " - ")
-            i == 1 && w < 0 && print(io, "-")
-            abs(w) != 1 && print(io, abs(w), "·")
+            if i > 1
+                # For symbolic weights, just use + 
+                is_neg = _is_concrete_number(w) && w < 0
+                print(io, is_neg ? " - " : " + ")
+                w = is_neg ? -w : w
+            else
+                # First term
+                is_neg = _is_concrete_number(w) && w < 0
+                is_neg && print(io, "-")
+                w = is_neg ? -w : w
+            end
+            # Check if weight is not 1 (only for concrete numbers)
+            is_unit = _is_concrete_number(w) && abs(w) == 1
+            !is_unit && (print(io, w); print(io, "·"))
             print(io, k)
         end
     end
@@ -457,9 +506,20 @@ function Base.show(io::IO, sb::SumBra)
         print(io, "⟨", sb.display_name, "|")
     else
         for (i, (b, w)) in enumerate(zip(sb.bras, sb.weights))
-            i > 1 && print(io, w >= 0 ? " + " : " - ")
-            i == 1 && w < 0 && print(io, "-")
-            abs(w) != 1 && print(io, abs(w), "·")
+            if i > 1
+                # For symbolic weights, just use + 
+                is_neg = _is_concrete_number(w) && w < 0
+                print(io, is_neg ? " - " : " + ")
+                w = is_neg ? -w : w
+            else
+                # First term
+                is_neg = _is_concrete_number(w) && w < 0
+                is_neg && print(io, "-")
+                w = is_neg ? -w : w
+            end
+            # Check if weight is not 1 (only for concrete numbers)
+            is_unit = _is_concrete_number(w) && abs(w) == 1
+            !is_unit && (print(io, w); print(io, "·"))
             print(io, b)
         end
     end

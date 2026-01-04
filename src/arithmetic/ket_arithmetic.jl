@@ -151,7 +151,7 @@ end
     # WeightedKet + WeightedKet → WeightedKet or SumKet
     function Base.$(:(+))(wk1::WeightedKet{B}, wk2::WeightedKet{B}) where B
         check_basis(wk1, wk2)
-        if wk1.ket == wk2.ket
+        if isequal(wk1.ket, wk2.ket)
             # Same ket: add weights and simplify
             w_sum = simplify(wk1.weight + wk2.weight)
             return WeightedKet(wk1.ket, w_sum)
@@ -162,7 +162,7 @@ end
     
     function Base.$(:(-))(wk1::WeightedKet{B}, wk2::WeightedKet{B}) where B
         check_basis(wk1, wk2)
-        if wk1.ket == wk2.ket
+        if isequal(wk1.ket, wk2.ket)
             # Same ket: subtract weights and simplify
             w_diff = simplify(wk1.weight - wk2.weight)
             return WeightedKet(wk1.ket, w_diff)
