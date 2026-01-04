@@ -156,7 +156,8 @@ bases(::Type{CompositeBasis{Bs}}) where {Bs} = Bs.parameters
 bases(::CompositeBasis{Bs}) where {Bs} = Bs.parameters
 
 # Space of a composite basis is the composite of its component spaces
-function _composite_space_type(basis_types::Tuple)
+function _composite_space_type(basis_types)
+    # basis_types can be a Tuple or Core.SimpleVector
     # Extract space for each basis type
     spaces = [space(B) for B in basis_types]
     

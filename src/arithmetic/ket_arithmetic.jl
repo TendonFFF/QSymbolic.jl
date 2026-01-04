@@ -87,6 +87,27 @@ Base.adjoint(sb::SumBra{B}) where B = SumKet([adjoint(b) for b in sb.bras], adjo
     Base.$(:(*))(W::AbstractSymbolic, sb::SumBra{B,T}) where {B,T} = SumBra(sb.bras, [simplify(W * w) for w in sb.weights]; name=sb.display_name)
     Base.$(:(*))(sb::SumBra{B,T}, W::AbstractSymbolic) where {B,T} = W * sb
     
+    # KroneckerDelta and ScaledDelta with kets/bras
+    Base.$(:(*))(δ::KroneckerDelta, ket::Ket{B}) where B = WeightedKet(ket, δ)
+    Base.$(:(*))(ket::Ket{B}, δ::KroneckerDelta) where B = WeightedKet(ket, δ)
+    Base.$(:(*))(δ::KroneckerDelta, pk::ProductKet) = WeightedKet(pk, δ)
+    Base.$(:(*))(pk::ProductKet, δ::KroneckerDelta) = WeightedKet(pk, δ)
+    Base.$(:(*))(δ::KroneckerDelta, wk::WeightedKet{B}) where B = WeightedKet(wk.ket, δ * wk.weight)
+    Base.$(:(*))(wk::WeightedKet{B}, δ::KroneckerDelta) where B = WeightedKet(wk.ket, wk.weight * δ)
+    Base.$(:(*))(δ::KroneckerDelta, bra::Bra{B}) where B = WeightedBra(bra, δ)
+    Base.$(:(*))(bra::Bra{B}, δ::KroneckerDelta) where B = WeightedBra(bra, δ)
+    Base.$(:(*))(δ::KroneckerDelta, pb::ProductBra) = WeightedBra(pb, δ)
+    Base.$(:(*))(pb::ProductBra, δ::KroneckerDelta) = WeightedBra(pb, δ)
+    
+    Base.$(:(*))(sd::ScaledDelta, ket::Ket{B}) where B = WeightedKet(ket, sd)
+    Base.$(:(*))(ket::Ket{B}, sd::ScaledDelta) where B = WeightedKet(ket, sd)
+    Base.$(:(*))(sd::ScaledDelta, pk::ProductKet) = WeightedKet(pk, sd)
+    Base.$(:(*))(pk::ProductKet, sd::ScaledDelta) = WeightedKet(pk, sd)
+    Base.$(:(*))(sd::ScaledDelta, bra::Bra{B}) where B = WeightedBra(bra, sd)
+    Base.$(:(*))(bra::Bra{B}, sd::ScaledDelta) where B = WeightedBra(bra, sd)
+    Base.$(:(*))(sd::ScaledDelta, pb::ProductBra) = WeightedBra(pb, sd)
+    Base.$(:(*))(pb::ProductBra, sd::ScaledDelta) = WeightedBra(pb, sd)
+    
     # Division
     Base.$(:(//))(ket::AbstractKet, W::Number) = ket * (1 // W)
     Base.$(:(//))(bra::AbstractBra, W::Number) = bra * (1 // W)

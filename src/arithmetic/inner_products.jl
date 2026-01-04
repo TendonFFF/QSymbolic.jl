@@ -116,4 +116,91 @@ end
         end
         return result
     end
+    
+    # ==================== PARTIAL CONTRACTION ====================
+    # Bra on single space acting on ProductKet - partial trace/contraction
+    # Only applies when bra's space matches ONE subsystem of ProductKet
+    
+    # Helper: Find matching ket in ProductKet for a given bra's space
+    function _find_matching_ket(pk::ProductKet, bra_space)
+        for (i, k) in enumerate(pk.kets)
+            if space(basis(typeof(k))) == bra_space
+                return i
+            end
+        end
+        return nothing
+    end
+    
+    # Bra{B} * ProductKet - dispatch based on space relationship
+    function Base.$(:(*))(bra::Bra{B}, pk::ProductKet{Bs}) where {B<:Basis, Bs}
+        bra_space = space(B)
+        pk_space = space(CompositeBasis{Bs})
+        
+        # Case 1: Same composite space (hybridized ↔ localized) - use transform
+        if bra_space == pk_space
+            # Try to find transform from CompositeBasis to B (hybridized)
+            CB = CompositeBasis{Bs}
+            if has_transform(CB, B)
+                # Transform ProductKet to hybridized basis
+                pk_transformed = transform(Ket(pk), B)
+                return bra * pk_transformed
+            elseif has_transform(B, CB)
+                # Transform bra to localized basis
+                bra_transformed = transform(Ket(bra), CB)'
+                return bra_transformed * pk
+            else
+                throw(ArgumentError("No transform defined between hybridized basis $(B) and localized basis $(CB). Define a transform with define_transform!"))
+            end
+        end
+        
+        # Case 2: Bra space matches a subsystem - partial contraction
+        idx = _find_matching_ket(pk, bra_space)
+        
+        if isnothing(idx)
+            throw(ArgumentError("Bra space $(bra_space) not found in ProductKet subsystems"))
+        end
+        
+        # Extract the matching ket and the rest
+        target_ket = pk.kets[idx]
+        other_kets = [pk.kets[i] for i in 1:length(pk.kets) if i != idx]
+        
+        # Compute inner product with matching ket
+        inner = bra * target_ket
+        
+        if inner isa Number && iszero(inner)
+            return 0
+        end
+        
+        # Result: inner * (remaining product state)
+        if isempty(other_kets)
+            return inner
+        elseif length(other_kets) == 1
+            return inner * other_kets[1]
+        else
+            return inner * ProductKet(other_kets)
+        end
+    end
+    
+    # ==================== LOCALIZED ↔ HYBRIDIZED BASIS (via transform) ====================
+    # ProductBra{localized bases} * Ket{hybridized basis on CompositeSpace}
+    # Same space, different basis structure - must use transform
+    function Base.$(:(*))(pb::ProductBra{Bs}, ket::Ket{B}) where {Bs, B<:Basis{<:CompositeSpace}}
+        CB = CompositeBasis{Bs}
+        # Verify spaces match
+        space(CB) == space(B) || 
+            throw(DimensionMismatch("ProductBra and Ket are in different spaces"))
+        
+        # Try to find transform
+        if has_transform(B, CB)
+            # Transform ket to localized basis
+            ket_transformed = transform(ket, CB)
+            return pb * ket_transformed
+        elseif has_transform(CB, B)
+            # Transform ProductBra to hybridized basis
+            pb_transformed = transform(Ket(pb), B)'
+            return pb_transformed * ket
+        else
+            throw(ArgumentError("No transform defined between hybridized basis $(B) and localized basis $(CB). Define a transform with define_transform!"))
+        end
+    end
 end

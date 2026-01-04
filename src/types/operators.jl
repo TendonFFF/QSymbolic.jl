@@ -4,6 +4,7 @@
 # Exports
 export Outer, Operator, Identity, FunctionOperator
 export OperatorSum
+export tr
 
 # space() - get the space an operator acts on
 space(::AbstractOperator{S}) where S = S
@@ -277,19 +278,15 @@ H_shifted * ψ  # → σ_z|↑⟩ + 2|↑⟩ = 3|↑⟩
 See also: [`Operator`](@ref), [`Identity`](@ref), [`Outer`](@ref)
 """
 struct OperatorSum{S<:AbstractSpace} <: AbstractOperator{S}
-    operators::Vector{AbstractOperator{S}}
-    weights::Vector{Number}
-    space::S
+    operators::Vector{<:AbstractOperator{S}}
+    weights::Vector{<:Number}
     
     function OperatorSum(ops::Vector{<:AbstractOperator{S}}, weights::Vector{<:Number}) where S
         length(ops) == length(weights) || throw(ArgumentError("operators and weights must have same length"))
         isempty(ops) && throw(ArgumentError("OperatorSum requires at least one operator"))
         
-        # All operators must act on same space
-        sp = space(ops[1])
-        all(space(op) == sp for op in ops) || throw(ArgumentError("All operators must act on same space"))
-        
-        new{S}(ops, weights, sp)
+        # All operators must act on same space (S is already constrained by type)
+        new{S}(ops, weights)
     end
 end
 
@@ -297,11 +294,83 @@ end
 OperatorSum(op::AbstractOperator{S}, weight::Number) where S = OperatorSum([op], [weight])
 
 # Show method
-function Base.show(io::IO, opsum::OperatorSum)
-    print(io, "OperatorSum on $(opsum.space): ")
+function Base.show(io::IO, opsum::OperatorSum{S}) where S
+    print(io, "OperatorSum on $(S): ")
     for (i, (op, w)) in enumerate(zip(opsum.operators, opsum.weights))
         i > 1 && print(io, " + ")
         !isone(w) && print(io, "($w)×")
         print(io, typeof(op).name.name)
     end
+end
+
+# ============== Trace ==============
+
+@doc """
+    tr(op::AbstractOperator)
+
+Compute the trace of an operator.
+
+For an outer product |ψ⟩⟨ϕ|, the trace is ⟨ϕ|ψ⟩.
+For a sum of weighted outers Σᵢ wᵢ|ψᵢ⟩⟨ϕᵢ|, the trace is Σᵢ wᵢ⟨ϕᵢ|ψᵢ⟩.
+
+# Examples
+```julia
+H, Hb = HilbertSpace(:H, 2)
+up = Ket(Hb, :↑)
+down = Ket(Hb, :↓)
+
+# Projector - trace is 1
+P_up = up * up'
+tr(P_up)  # → 1
+
+# Off-diagonal - trace is 0 (orthonormal basis)
+σ_plus = up * down'
+tr(σ_plus)  # → 0
+
+# σ_x = |↑⟩⟨↓| + |↓⟩⟨↑| - trace is 0
+σ_x = up * down' + down * up'
+tr(σ_x)  # → 0
+```
+
+See also: [`Outer`](@ref), [`Operator`](@ref)
+"""
+function tr end
+
+# Trace of Outer: ⟨ϕ|ψ⟩
+tr(op::Outer) = op.bra * op.ket
+
+# Trace of Operator: collect all kets and bras, sum over all pairs
+# tr(Σᵢ wᵢ|ψᵢ⟩⟨ϕᵢ|) = Σᵢⱼ wᵢ ⟨ϕⱼ|ψᵢ⟩
+function tr(op::Operator)
+    # Collect all weighted kets and all bras from the outers
+    weighted_kets = [(outer.ket, w) for (outer, w) in zip(op.outers, op.weights)]
+    bras = [outer.bra for outer in op.outers]
+    
+    # Sum over all (bra, ket) pairs
+    result = 0
+    for bra in bras
+        for (ket, w) in weighted_kets
+            result = simplify(result + w * (bra * ket))
+        end
+    end
+    return result
+end
+
+# Trace of Identity: dimension of the space
+function tr(op::Identity{S}) where S<:AbstractSpace{name, dims} where {name, dims}
+    # dims is a tuple of dimensions (e.g., (2,) or (2, 3) or (nothing,))
+    # Total dimension is the product, or infinite if any is nothing
+    if any(isnothing, dims)
+        return Sym(:∞)  # Infinite-dimensional space
+    end
+    return prod(dims)
+end
+
+# Trace of OperatorSum: sum of traces
+function tr(opsum::OperatorSum)
+    result = 0
+    for (op, w) in zip(opsum.operators, opsum.weights)
+        result = simplify(result + w * tr(op))
+    end
+    return result
 end

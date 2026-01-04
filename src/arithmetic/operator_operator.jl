@@ -94,6 +94,10 @@ Base.:*(id1::Identity{S}, ::Identity{S}) where S = id1
 # Adjoint
 Base.adjoint(id::Identity) = id
 
+# Scalar multiplication of Identity creates OperatorSum (c * 𝕀)
+Base.:*(c::Number, id::Identity{S}) where S = OperatorSum([id], [c])
+Base.:*(id::Identity{S}, c::Number) where S = c * id
+
 # ============== OperatorSum Arithmetic ==============
 
 # Addition: OperatorSum + anything

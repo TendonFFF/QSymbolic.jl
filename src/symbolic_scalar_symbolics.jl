@@ -174,6 +174,48 @@ end
 
 Base.show(io::IO, sd::ScaledDelta) = print(io, sd.coeff, "·", sd.delta)
 
+# Arithmetic with ScaledDelta
+Base.:*(a::Number, sd::ScaledDelta) = iszero(a) ? 0 : ScaledDelta(simplify(a * sd.coeff), sd.delta)
+Base.:*(sd::ScaledDelta, a::Number) = a * sd
+Base.:*(a::Symbolics.Num, sd::ScaledDelta) = ScaledDelta(simplify(a * sd.coeff), sd.delta)
+Base.:*(sd::ScaledDelta, a::Symbolics.Num) = a * sd
+
+# Addition with KroneckerDelta and ScaledDelta
+Base.:+(a::Number, δ::KroneckerDelta) = iszero(a) ? δ : SumWithDelta(a, [δ])
+Base.:+(δ::KroneckerDelta, a::Number) = a + δ
+Base.:+(a::Number, sd::ScaledDelta) = iszero(a) ? sd : SumWithDelta(a, [sd])
+Base.:+(sd::ScaledDelta, a::Number) = a + sd
+Base.:+(δ1::KroneckerDelta, δ2::KroneckerDelta) = SumWithDelta(0, [δ1, δ2])
+Base.:+(δ::KroneckerDelta, sd::ScaledDelta) = SumWithDelta(0, [δ, sd])
+Base.:+(sd::ScaledDelta, δ::KroneckerDelta) = δ + sd
+Base.:+(sd1::ScaledDelta, sd2::ScaledDelta) = SumWithDelta(0, [sd1, sd2])
+
+# SumWithDelta: represents constant + sum of (scaled) deltas
+struct SumWithDelta
+    constant::Any
+    deltas::Vector  # Vector of KroneckerDelta or ScaledDelta
+end
+
+function Base.show(io::IO, s::SumWithDelta)
+    if !iszero(s.constant)
+        print(io, s.constant)
+        !isempty(s.deltas) && print(io, " + ")
+    end
+    for (i, d) in enumerate(s.deltas)
+        i > 1 && print(io, " + ")
+        print(io, d)
+    end
+end
+
+# Arithmetic with SumWithDelta
+Base.:+(s::SumWithDelta, a::Number) = SumWithDelta(simplify(s.constant + a), s.deltas)
+Base.:+(a::Number, s::SumWithDelta) = s + a
+Base.:+(s::SumWithDelta, δ::KroneckerDelta) = SumWithDelta(s.constant, vcat(s.deltas, [δ]))
+Base.:+(δ::KroneckerDelta, s::SumWithDelta) = s + δ
+Base.:+(s::SumWithDelta, sd::ScaledDelta) = SumWithDelta(s.constant, vcat(s.deltas, [sd]))
+Base.:+(sd::ScaledDelta, s::SumWithDelta) = s + sd
+Base.:+(s1::SumWithDelta, s2::SumWithDelta) = SumWithDelta(simplify(s1.constant + s2.constant), vcat(s1.deltas, s2.deltas))
+
 # ============== Simplification ==============
 
 """
@@ -235,6 +277,28 @@ function simplify(sd::ScaledDelta)
     end
     
     return ScaledDelta(coeff_simp, delta_simp)
+end
+
+function simplify(s::SumWithDelta)
+    const_simp = simplify(s.constant)
+    simplified_deltas = []
+    
+    for d in s.deltas
+        d_simp = simplify(d)
+        if d_simp isa Number
+            const_simp = simplify(const_simp + d_simp)
+        elseif !iszero(d_simp isa ScaledDelta ? d_simp.coeff : 1)
+            push!(simplified_deltas, d_simp)
+        end
+    end
+    
+    if isempty(simplified_deltas)
+        return const_simp
+    elseif iszero(const_simp) && length(simplified_deltas) == 1
+        return simplified_deltas[1]
+    else
+        return SumWithDelta(const_simp, simplified_deltas)
+    end
 end
 
 # ============== Substitution ==============
