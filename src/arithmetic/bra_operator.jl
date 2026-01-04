@@ -51,14 +51,6 @@ function Base.:*(bra::AbstractBra, op::FunctionOperator)
     end
 end
 
-# Bra * AdjointFunctionOperator: ⟨ψ|F̂†
-function Base.:*(bra::AbstractBra, op::AdjointFunctionOperator)
-    # Apply the original operator's action to the adjoint of the bra
-    ket = adjoint(bra)
-    result_ket = op.parent * ket
-    return adjoint(result_ket)
-end
-
 # Bra * OperatorSum: ⟨ψ|(Σᵢ wᵢ Opᵢ) = Σᵢ wᵢ⟨ψ|Opᵢ
 function Base.:*(bra::AbstractBra, opsum::OperatorSum)
     result = nothing
@@ -71,6 +63,3 @@ function Base.:*(bra::AbstractBra, opsum::OperatorSum)
     end
     isnothing(result) ? 0 : result
 end
-
-# Bra * WeightedOperator
-Base.:*(bra::AbstractBra, wop::WeightedOperator) = wop.weight * (bra * wop.operator)

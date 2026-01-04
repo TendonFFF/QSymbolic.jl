@@ -2,8 +2,6 @@
 
 # No additional exports - uses base * operator
 
-_bra_str(b::AbstractBra) = "⟨bra|"
-
 # Apply outer product to ket: (|ψ⟩⟨ϕ|)|χ⟩ = ⟨ϕ|χ⟩ |ψ⟩
 function Base.:*(op::Outer, ket::AbstractKet)
     # Use bra-ket contraction
@@ -17,57 +15,6 @@ end
 
 # Adjoint: (|ψ⟩⟨ϕ|)† = |ϕ⟩⟨ψ|
 Base.adjoint(op::Outer) = Outer(adjoint(op.bra), adjoint(op.ket))
-
-# ============== Operator Container ==============
-
-@doc """
-    Operator{S<:AbstractSpace}(outers, weights)
-
-Container type representing a sum of weighted outer products:
-    Σᵢ wᵢ |ψᵢ⟩⟨ϕᵢ|
-
-Application decomposes to bra-ket arithmetic:
-    (Σᵢ wᵢ |ψᵢ⟩⟨ϕᵢ|)|χ⟩ = Σᵢ wᵢ ⟨ϕᵢ|χ⟩ |ψᵢ⟩
-
-# Examples
-```julia
-H, Hb = HilbertSpace(:H, 2)
-up = Ket(Hb, :↑)
-down = Ket(Hb, :↓)
-
-# σ_x = |↑⟩⟨↓| + |↓⟩⟨↑|
-σ_x = Operator([Outer(up, down'), Outer(down, up')], [1, 1])
-
-# Or construct from arithmetic
-σ_x = up * down' + down * up'
-```
-
-See also: [`Outer`](@ref), [`Identity`](@ref)
-"""
-struct Operator{S<:AbstractSpace} <: AbstractOperator{S}
-    outers::Vector{Outer{S}}
-    weights::Vector
-    space::S
-    
-    function Operator(outers::Vector{Outer{S}}, weights::Vector) where S
-        length(outers) == length(weights) || throw(ArgumentError("outers and weights must have same length"))
-        isempty(outers) && throw(ArgumentError("Operator must have at least one outer product"))
-        space_val = space(outers[1])
-        new{S}(outers, weights, space_val)
-    end
-end
-
-# Display
-function Base.show(io::IO, op::Operator)
-    for (i, (outer, w)) in enumerate(zip(op.outers, op.weights))
-        i > 1 && print(io, " + ")
-        if !(w isa AbstractSymbolic) && isequal(w, 1)
-            print(io, outer)
-        else
-            print(io, w, "·(", outer, ")")
-        end
-    end
-end
 
 # Apply operator to ket: decomposes to bra-ket contractions
 function Base.:*(op::Operator, ket::AbstractKet)
@@ -107,7 +54,7 @@ end
 # Subtraction
 Base.:-(op1::AbstractOperator{S}, op2::AbstractOperator{S}) where S = op1 + (-1 * op2)
 
-# Scalar multiplication
+# Scalar multiplication for Operator
 function Base.:*(a::Number, op::Operator{S}) where S
     Operator{S}(op.outers, [a * w for w in op.weights])
 end

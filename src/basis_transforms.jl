@@ -55,13 +55,18 @@ has_transform(::Type{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasi
     haskey(BASIS_TRANSFORMS, (B1, B2))
 
 # For composite bases: check if factorized transform is possible
-function has_transform(::Type{CompositeBasis{A1,A2}}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
+function has_transform(::Type{CompositeBasis{As}}, ::Type{CompositeBasis{Bs}}) where {As<:Tuple, Bs<:Tuple}
     # Explicit transform takes priority
-    haskey(BASIS_TRANSFORMS, (CompositeBasis{A1,A2}, CompositeBasis{B1,B2})) && return true
-    # Otherwise check if both components can transform (or are identical)
-    can_transform_1 = (A1 == B1) || has_transform(A1, B1)
-    can_transform_2 = (A2 == B2) || has_transform(A2, B2)
-    return can_transform_1 && can_transform_2
+    haskey(BASIS_TRANSFORMS, (CompositeBasis{As}, CompositeBasis{Bs})) && return true
+    # Must have same number of components
+    As_params = As.parameters
+    Bs_params = Bs.parameters
+    length(As_params) == length(Bs_params) || return false
+    # Check if all components can transform (or are identical)
+    for (A, B) in zip(As_params, Bs_params)
+        (A == B) || has_transform(A, B) || return false
+    end
+    return true
 end
 
 @doc """
@@ -99,43 +104,69 @@ function transform(ket::Ket{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:Abstr
 end
 
 # transform(ProductKet, CompositeBasis) - additional method
-function transform(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
+function transform(ket::ProductKet{As}, ::Type{CompositeBasis{Bs}}) where {As<:Tuple, Bs<:Tuple}
+    As_params = As.parameters
+    Bs_params = Bs.parameters
+    
     # Identity transform - already in target basis
-    if A1 == B1 && A2 == B2
+    if As == Bs
         return SumKet([ket], [1])
     end
     
     # Check for explicit composite transform first
-    if haskey(BASIS_TRANSFORMS, (CompositeBasis{A1,A2}, CompositeBasis{B1,B2}))
-        f = get_transform(CompositeBasis{A1,A2}, CompositeBasis{B1,B2})
+    if haskey(BASIS_TRANSFORMS, (CompositeBasis{As}, CompositeBasis{Bs}))
+        f = get_transform(CompositeBasis{As}, CompositeBasis{Bs})
         return f(ket)
     end
     
-    # Factorized transform: (U₁ ⊗ U₂)|ψ₁⟩|ψ₂⟩ = (U₁|ψ₁⟩) ⊗ (U₂|ψ₂⟩)
-    ket1_transformed = A1 == B1 ? SumKet(ket.ket1) : transform(ket.ket1, B1)
-    ket2_transformed = A2 == B2 ? SumKet(ket.ket2) : transform(ket.ket2, B2)
+    # Must have same number of components for factorized transform
+    length(As_params) == length(Bs_params) || throw(ArgumentError("Cannot transform between composite bases of different sizes"))
     
-    # Combine: Σᵢⱼ wᵢwⱼ |i⟩⊗|j⟩
-    result_kets = ProductKet{B1,B2}[]
-    result_weights = promote_type(eltype(ket1_transformed.weights), eltype(ket2_transformed.weights))[]
-    
-    for (k1, w1) in zip(ket1_transformed.kets, ket1_transformed.weights)
-        for (k2, w2) in zip(ket2_transformed.kets, ket2_transformed.weights)
-            push!(result_kets, ProductKet(k1, k2))
-            push!(result_weights, w1 * w2)
+    # Factorized transform: (U₁ ⊗ U₂ ⊗ ...) |ψ₁⟩|ψ₂⟩... = (U₁|ψ₁⟩) ⊗ (U₂|ψ₂⟩) ⊗ ...
+    transformed_kets = Vector{SumKet}()
+    for (i, (A, B)) in enumerate(zip(As_params, Bs_params))
+        ki = ket.kets[i]
+        if A == B
+            push!(transformed_kets, SumKet(ki))
+        else
+            push!(transformed_kets, transform(ki, B))
         end
+    end
+    
+    # Combine all transformed kets via tensor product expansion
+    # Start with first transformed ket
+    result_kets = [k for k in transformed_kets[1].kets]
+    result_weights = copy(transformed_kets[1].weights)
+    
+    # Iterate through remaining transformed kets and expand
+    for tk in transformed_kets[2:end]
+        new_kets = []
+        new_weights = promote_type(eltype(result_weights), eltype(tk.weights))[]
+        for (k1, w1) in zip(result_kets, result_weights)
+            for (k2, w2) in zip(tk.kets, tk.weights)
+                # Combine kets into ProductKet
+                if k1 isa ProductKet
+                    push!(new_kets, ProductKet(vcat(k1.kets, [k2])))
+                else
+                    push!(new_kets, ProductKet([k1, k2]))
+                end
+                push!(new_weights, w1 * w2)
+            end
+        end
+        result_kets = new_kets
+        result_weights = new_weights
     end
     
     return SumKet(result_kets, result_weights)
 end
 
-# transform(ProductKet, Basis) - additional method
-function transform(ket::ProductKet{A1,A2}, ::Type{B}) where {A1,A2,B<:Basis}
-    CB = CompositeBasis{A1,A2}
+# transform(ProductKet, Basis) - additional method (for composite space eigenbasis)
+function transform(ket::ProductKet{As}, ::Type{B}) where {As<:Tuple, B<:Basis}
+    CB = CompositeBasis{As}
     has_transform(CB, B) || throw(ArgumentError("No transform registered from $CB to $B"))
     f = get_transform(CB, B)
     # For ProductKet, create a combined index (tuple of indices from each component)
-    combined_idx = (ket.ket1.index, ket.ket2.index)
+    combined_idx = Tuple(k.index for k in ket.kets)
     result = f(combined_idx)
     result isa AbstractKet || throw(ArgumentError("Transform must return a ket"))
     if result isa Ket
@@ -145,10 +176,10 @@ function transform(ket::ProductKet{A1,A2}, ::Type{B}) where {A1,A2,B<:Basis}
     end
 end
 
-# Transform for SumKet
-function transform(sk::SumKet{A1,A2,T}, ::Type{B}) where {A1,A2,T,B<:AbstractBasis}
+# Transform for SumKet (with CompositeBasis)
+function transform(sk::SumKet{CompositeBasis{As},T}, ::Type{B}) where {As<:Tuple,T,B<:AbstractBasis}
     # Identity transform - already in target basis
-    if B == CompositeBasis{A1,A2}
+    if B == CompositeBasis{As}
         return sk
     end
     # Transform each component and combine
@@ -161,8 +192,10 @@ function transform(sk::SumKet{A1,A2,T}, ::Type{B}) where {A1,A2,T,B<:AbstractBas
     isnothing(total) ? 0 : total
 end
 
-# Transform for SumKet
-function transform(sk::SumKet{B1,T}, ::Type{B2}) where {B1,T,B2<:AbstractBasis}
+# Transform for SumKet (with simple basis)
+function transform(sk::SumKet{B1,T}, ::Type{B2}) where {B1<:Basis,T,B2<:AbstractBasis}
+    # Identity transform
+    B1 == B2 && return sk
     has_transform(B1, B2) || throw(ArgumentError("No transform registered from $B1 to $B2"))
     # Transform each component and combine
     total = nothing
@@ -176,7 +209,7 @@ end
 
 # Transform for WeightedKet
 function transform(wk::WeightedKet{B1}, ::Type{B2}) where {B1,B2<:AbstractBasis}
-    wk.weight * transform(wk.Ket, B2)
+    wk.weight * transform(wk.ket, B2)
 end
 
 @doc """

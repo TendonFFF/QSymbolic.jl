@@ -81,35 +81,7 @@ function Base.:*(op1::Operator{S}, op2::Operator{S}) where S
     return Operator{S}(result_outers, result_weights)
 end
 
-# Identity operator multiplication
-Base.:*(::Identity{S}, op::AbstractOperator{S}) where S = op
-Base.:*(op::AbstractOperator{S}, ::Identity{S}) where S = op
-
-# ============== Identity Operator ==============
-
-@doc """
-    Identity{S<:AbstractSpace}(space)
-
-The identity operator on space S. Basis-independent.
-
-# Examples
-```julia
-H, Hb = HilbertSpace(:H, 2)
-I = Identity(H)
-
-ψ = Ket(Hb, :ψ)
-I * ψ  # → |ψ⟩
-```
-
-See also: [`Operator`](@ref), [`Outer`](@ref)
-"""
-struct Identity{S<:AbstractSpace} <: AbstractOperator{S}
-    space::S
-    
-    function Identity(s::S) where S<:AbstractSpace
-        new{S}(s)
-    end
-end
+# ============== Identity Operator Methods ==============
 
 # Apply identity
 Base.:*(::Identity, ket::AbstractKet) = ket
@@ -117,90 +89,48 @@ Base.:*(::Identity, ket::AbstractKet) = ket
 # Operator algebra with identity
 Base.:*(::Identity{S}, op::AbstractOperator{S}) where S = op
 Base.:*(op::AbstractOperator{S}, ::Identity{S}) where S = op
-Base.:*(::Identity{S}, ::Identity{S}) where S = Identity(S)
+Base.:*(id1::Identity{S}, ::Identity{S}) where S = id1
 
 # Adjoint
 Base.adjoint(id::Identity) = id
 
-# Display
-Base.show(io::IO, ::Identity) = print(io, "𝕀")
+# ============== OperatorSum Arithmetic ==============
 
-# ============== Function-based Operator ==============
+# Addition: OperatorSum + anything
+Base.:+(opsum::OperatorSum{S}, op::AbstractOperator{S}) where S = 
+    OperatorSum(vcat(opsum.operators, [op]), vcat(opsum.weights, [1]))
 
-@doc """
-    FunctionOperator{S<:AbstractSpace, B<:AbstractBasis}(basis, action; adjoint_action=nothing, name=:F)
-    FunctionOperator(basis) do ket ... end
+Base.:+(op::AbstractOperator{S}, opsum::OperatorSum{S}) where S = opsum + op
 
-Function-based operator that applies a user-defined function to kets in a specific basis.
-The function receives a ket in the operator's basis and returns any AbstractKet.
+# Addition: OperatorSum + OperatorSum
+Base.:+(opsum1::OperatorSum{S}, opsum2::OperatorSum{S}) where S =
+    OperatorSum(vcat(opsum1.operators, opsum2.operators), vcat(opsum1.weights, opsum2.weights))
 
-If the input ket is in a different basis, the operator automatically applies a basis
-transform before applying the action (if a transform is defined).
+# Addition: Operator + Identity (the key use case!)
+Base.:+(op::Operator{S}, id::Identity{S}) where S = OperatorSum([op, id], [1, 1])
+Base.:+(id::Identity{S}, op::Operator{S}) where S = OperatorSum([id, op], [1, 1])
 
-Constructed with do-block syntax:
-```julia
-F_op = FunctionOperator(basis) do ket
-    # Process ket in 'basis', return AbstractKet or Number
-    ...
-end
-```
+Base.:+(op::Outer{S}, id::Identity{S}) where S = OperatorSum([op, id], [1, 1])
+Base.:+(id::Identity{S}, op::Outer{S}) where S = OperatorSum([id, op], [1, 1])
 
-Optionally provide `adjoint_action` for the adjoint operator and `name` for display.
+Base.:+(op::FunctionOperator{S}, id::Identity{S}) where S = OperatorSum([op, id], [1, 1])
+Base.:+(id::Identity{S}, op::FunctionOperator{S}) where S = OperatorSum([id, op], [1, 1])
 
-# Examples
-```julia
-F, Fb = HilbertSpace(:Fock, Inf)
+# Scalar multiplication
+Base.:*(c::Number, opsum::OperatorSum) = OperatorSum(opsum.operators, c .* opsum.weights)
+Base.:*(opsum::OperatorSum, c::Number) = c * opsum
 
-# Annihilation operator: â|n⟩ = √n |n-1⟩
-â = FunctionOperator(Fb) do ket
-    n = parse(Int, string(ket.index))
-    n == 0 ? 0 : √n * Ket(Fb, n - 1)
-end
+# ============== OperatorSum Application ==============
 
-# With adjoint (creation operator):
-â = FunctionOperator(Fb; 
-    adjoint_action = ket -> begin
-        n = parse(Int, string(ket.index))
-        √(n + 1) * Ket(Fb, n + 1)
-    end,
-    name = :â
-) do ket
-    n = parse(Int, string(ket.index))
-    n == 0 ? 0 : √n * Ket(Fb, n - 1)
-end
-
-# Cross-basis: if ket is in different basis, transform is applied first
-Fb2 = Basis(F, :energy)
-# Define transform between bases first
-define_transform!(typeof(Fb2), typeof(Fb)) do k
-    # ... transformation logic ...
-end
-â * Ket(Fb2, :E0)  # Transforms to Fb basis first, then applies â
-```
-
-See also: [`Operator`](@ref), [`Outer`](@ref), [`define_transform!`](@ref)
-"""
-struct FunctionOperator{S<:AbstractSpace, B<:AbstractBasis} <: AbstractOperator{S}
-    space::S
-    basis::B
-    action::Function
-    adjoint_action::Union{Function, Nothing}
-    name::Symbol
-    
-    function FunctionOperator{S,B}(space::S, basis::B, action::Function, adjoint_action::Union{Function, Nothing}, name::Symbol) where {S<:AbstractSpace, B<:AbstractBasis}
-        space(basis) == space || throw(ArgumentError("Basis must be in the same space as operator"))
-        new{S,B}(space, basis, action, adjoint_action, name)
+# OperatorSum acting on ket: (Σᵢ wᵢ Opᵢ)|ψ⟩ = Σᵢ wᵢ(Opᵢ|ψ⟩)
+function Base.:*(opsum::OperatorSum{S}, ket::AbstractKet) where S
+    total = nothing
+    for (op, w) in zip(opsum.operators, opsum.weights)
+        result = op * ket
+        if !iszero(result)
+            term = w * result
+            total = isnothing(total) ? term : total + term
+        end
     end
-end
-
-# Constructor with do-block
-function FunctionOperator(action::F, basis::B; adjoint_action::Union{Function, Nothing}=nothing, name::Symbol=:F) where {F<:Function, B<:AbstractBasis}
-    s = space(basis)
-    FunctionOperator{typeof(s),typeof(basis)}(s, basis, action, adjoint_action, name)
-end
-
-# Regular constructor
-function FunctionOperator(basis::B, action::F; adjoint_action::Union{Function, Nothing}=nothing, name::Symbol=:F) where {F<:Function, B<:AbstractBasis}
-    s = space(basis)
-    FunctionOperator{typeof(s),typeof(basis)}(s, basis, action, adjoint_action, name)
+    isnothing(total) ? 0 : total
 end

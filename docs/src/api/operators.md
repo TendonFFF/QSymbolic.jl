@@ -54,7 +54,6 @@ For operators with procedural definitions:
 
 ```@docs
 FunctionOperator
-AdjointFunctionOperator
 ```
 
 ## Identity Operator

@@ -15,11 +15,9 @@ include("spaces.jl")
 include("basis.jl")
 include("contraction_rules.jl")  # Contraction rule system
 
-# 2. Type definitions (reorganized)
-include("types/kets.jl")          # Ket, WeightedKet, SumKet, ProductKet
-include("types/bras.jl")          # Bra, WeightedBra, SumBra, ProductBra
-include("types/operators.jl")     # Outer, Operator, Identity, FunctionOperator
-include("types/operator_sum.jl")  # OperatorSum container
+# 2. Type definitions (all structs in single files for proper include order)
+include("types/states.jl")        # ALL ket/bra types: Ket, Bra, Weighted*, Sum*, Product*
+include("types/operators.jl")     # ALL operator types: Outer, Operator, Identity, FunctionOperator, OperatorSum
 
 # 3. Transforms (needs types to be defined)
 include("basis_transforms.jl")

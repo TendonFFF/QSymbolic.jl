@@ -4,24 +4,36 @@
 
 # ==================== ADJOINT OPERATIONS ====================
 
-# Ket ↔ Bra conversions
+# ==================== Ket ↔ Bra Conversions ====================
+
+# Basic Ket ↔ Bra
 Ket(bra::Bra{B}) where B<:AbstractBasis = Ket{B}(bra.index)
 Bra(ket::Ket{B}) where B<:AbstractBasis = Bra{B}(ket.index)
 
 Base.adjoint(ket::Ket) = Bra(ket)
 Base.adjoint(bra::Bra) = Ket(bra)
 
+# ProductKet ↔ ProductBra
 Base.adjoint(pk::ProductKet) = ProductBra([adjoint(k) for k in pk.kets])
 Base.adjoint(pb::ProductBra) = ProductKet([adjoint(b) for b in pb.bras])
 
-# WeightedKet ↔ WeightedBra with complex conjugate
-WeightedKet(wb::WeightedBra{B}) where B = WeightedKet(Ket(wb.bra), wb.weight')
-WeightedBra(wk::WeightedKet{B}) where B = WeightedBra(Bra(wk.ket), wk.weight')
+# WeightedKet ↔ WeightedBra with complex conjugate weight
+# Handle both basic Ket and ProductKet cases
+function WeightedKet(wb::WeightedBra{B}) where B
+    inner = wb.bra isa Bra ? Ket(wb.bra) : adjoint(wb.bra)
+    WeightedKet(inner, adjoint(wb.weight))
+end
+
+function WeightedBra(wk::WeightedKet{B}) where B
+    inner = wk.ket isa Ket ? Bra(wk.ket) : adjoint(wk.ket)
+    WeightedBra(inner, adjoint(wk.weight))
+end
 
 Base.adjoint(wk::WeightedKet) = WeightedBra(wk)
 Base.adjoint(wb::WeightedBra) = WeightedKet(wb)
 
 # SumKet ↔ SumBra with complex conjugate weights
+# Handle both basic Ket and ProductKet components
 Base.adjoint(sk::SumKet{B}) where B = SumBra([adjoint(k) for k in sk.kets], adjoint.(sk.weights); name=sk.display_name)
 Base.adjoint(sb::SumBra{B}) where B = SumKet([adjoint(b) for b in sb.bras], adjoint.(sb.weights); name=sb.display_name)
 
