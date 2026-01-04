@@ -201,3 +201,4 @@ end
 function FunctionOperator(basis::B, action::F; adjoint_action::Union{Function, Nothing}=nothing, name::Symbol=:F) where {F<:Function, B<:AbstractBasis}
     s = space(basis)
     FunctionOperator{typeof(s),typeof(basis)}(s, basis, action, adjoint_action, name)
+end
