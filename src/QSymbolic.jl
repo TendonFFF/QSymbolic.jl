@@ -4,9 +4,6 @@ module QSymbolic
 using Reexport
 @reexport using Symbolics: @variables, @syms
 
-# Exports are now in individual files for better organization and maintainability
-# See each file for what it exports
-
 # Include source files in dependency order
 # 1. Abstract types and foundational types
 include("abstract_types.jl")
