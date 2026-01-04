@@ -1,5 +1,7 @@
 # Operator * Ket applications
 
+# No additional exports - uses base * operator
+
 _bra_str(b::AbstractBra) = "⟨bra|"
 
 # Apply outer product to ket: (|ψ⟩⟨ϕ|)|χ⟩ = ⟨ϕ|χ⟩ |ψ⟩

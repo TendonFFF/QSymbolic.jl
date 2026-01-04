@@ -1,6 +1,10 @@
 # Custom contraction rules for basis inner products
 # Users can define specific rules for how indices contract in different bases
 
+# Exports
+export define_contraction_rule!, has_contraction_rule, clear_contraction_rules!
+export apply_contraction_rule
+
 # Global dictionary to store custom contraction rules
 # Key: Type{<:AbstractBasis}
 # Value: Function that takes (bra_index, ket_index) and returns result

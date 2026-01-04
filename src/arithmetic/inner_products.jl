@@ -1,5 +1,8 @@
 # Inner products: Bra * Ket contractions
 
+# Exports
+export InnerProduct
+
 # ==================== INNER PRODUCTS ====================
 # Bra * Ket contraction rules
 

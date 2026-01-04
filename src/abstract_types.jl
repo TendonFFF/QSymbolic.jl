@@ -1,5 +1,8 @@
 # Abstract types for the type hierarchy
 
+# Exports
+export AbstractSpace, AbstractBasis, AbstractKet, AbstractBra, AbstractOperator
+
 @doc """
     AbstractSpace{name, dim}
 

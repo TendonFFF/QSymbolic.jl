@@ -1,5 +1,7 @@
 # Ket/Bra arithmetic: adjoint, scalar multiplication, addition/subtraction
 
+# No additional exports - uses base operations: adjoint ('), +, -, *
+
 # ==================== ADJOINT OPERATIONS ====================
 
 # Ket ↔ Bra conversions

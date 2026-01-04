@@ -2,6 +2,9 @@
 
 # Quantum operators - Restructured to work with bra-ket arithmetic
 
+# Exports
+export Outer, Operator, Identity, FunctionOperator, AdjointFunctionOperator
+
 # space() - get the space an operator acts on
 space(::AbstractOperator{S}) where S = S
 

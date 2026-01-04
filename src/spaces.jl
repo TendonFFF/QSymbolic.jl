@@ -1,5 +1,9 @@
 # Hilbert spaces and composite spaces
 
+# Exports
+export HilbertSpace, CompositeSpace, FockSpace
+export ⊗  # Tensor product operator
+
 @doc """
     HilbertSpace(name::Symbol, dim=nothing)
 

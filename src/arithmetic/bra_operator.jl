@@ -1,5 +1,7 @@
 # Bra * Operator contractions
 
+# No additional exports - uses base * operator
+
 # ============== Bra-Operator Contractions ==============
 
 @doc """

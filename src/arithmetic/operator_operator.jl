@@ -1,5 +1,7 @@
 # Operator * Operator multiplication
 
+# No additional exports - uses base * operator
+
 # ============== Operator-Operator Multiplication ==============
 
 @doc """

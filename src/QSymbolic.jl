@@ -4,46 +4,8 @@ module QSymbolic
 using Reexport
 @reexport using Symbolics: @variables, @syms
 
-# Types - Spaces
-export AbstractSpace, HilbertSpace, CompositeSpace, FockSpace
-
-# Types - Bases
-export AbstractBasis, Basis, DefaultBasis, CompositeBasis
-
-# Types - States
-export AbstractKet, AbstractBra
-export Ket, Bra, WeightedKet, WeightedBra, SumKet, SumBra
-export ProductKet, ProductBra
-export InnerProduct
-export SingleIndexValue, KetIndex  # Index type aliases
-
-# Types - Operators
-export AbstractOperator, Operator, Outer, Identity
-export FunctionOperator, AdjointFunctionOperator
-export OperatorSum, WeightedOperator
-export TensorOperator
-export OpKet, OpBra, IdentityOp
-export create_ladder_operators
-export lift, swap, reorder, partial_trace
-
-# Types - Symbolic scalars (now using Symbolics.jl backend)
-export AbstractSymbolic, Sym, SymNum, SymExpr, KroneckerDelta, ScaledDelta
-export substitute, evaluate, symbols, is_numeric, simplify
-export is_real, is_positive, is_integer, is_nonnegative, assumptions
-
-# Functions - Spaces & Bases
-export ⊗, space, basis, basisname, basis1, basis2
-
-# Functions - States
-export FockKet, FockBra
-export check_space, check_basis
-
-# Functions - Transforms
-export define_transform!, has_transform, transform, clear_transforms!
-
-# Functions - Contraction Rules
-export define_contraction_rule!, has_contraction_rule, clear_contraction_rules!
-export apply_contraction_rule
+# Exports are now in individual files for better organization and maintainability
+# See each file for what it exports
 
 # Include source files in dependency order
 # 1. Abstract types and foundational types

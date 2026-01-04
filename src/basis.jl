@@ -1,5 +1,9 @@
 # Basis types for Hilbert spaces
 
+# Exports
+export Basis, DefaultBasis, CompositeBasis
+export space, basis, basisname, basis1, basis2
+
 @doc """
     Basis(space, name::Symbol)
 

@@ -3,6 +3,12 @@
 # New Ket and Bra state vectors with improved hierarchy
 # This is a complete restructuring of the state type system
 
+# Exports
+export Ket, WeightedKet, SumKet, ProductKet
+export SingleIndexValue, KetIndex  # Index type aliases
+export FockKet  # Convenience constructor
+export check_space, check_basis
+
 # ==================== KET TYPES ====================
 
 # Index types - support arbitrary number of indices

@@ -2,6 +2,9 @@
 Basis transformation registry and functions.
 """
 
+# Exports
+export define_transform!, has_transform, transform, clear_transforms!
+
 # Global registry: (from_basis, to_basis) => transform_function
 const BASIS_TRANSFORMS = Dict{Tuple{Type,Type}, Function}()
 

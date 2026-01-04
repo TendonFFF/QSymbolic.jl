@@ -1,5 +1,9 @@
 # Bra types: Bra, WeightedBra, SumBra, ProductBra
 
+# Exports
+export Bra, WeightedBra, SumBra, ProductBra
+export FockBra  # Convenience constructor
+
 # ==================== BRA TYPES ====================
 # Bras are lazy adjoints of kets with the same structure
 

@@ -1,6 +1,7 @@
 # OperatorSum container for lazy operator addition
 
-# OperatorSum container for lazy operator addition
+# Exports
+export OperatorSum, WeightedOperator
 
 # ============== OperatorSum: Lazy Sum of Operators ==============
 

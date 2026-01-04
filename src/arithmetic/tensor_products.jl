@@ -1,5 +1,7 @@
 # Tensor products: ⊗ operator for kets
 
+# Note: ⊗ is exported from spaces.jl
+
 # ==================== TENSOR PRODUCT ====================
 # Ket ⊗ Ket → ProductKet
 
