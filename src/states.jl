@@ -79,10 +79,14 @@ struct Ket{B<:AbstractBasis} <: AbstractKet{B}
 end
 
 @doc """
-    ProductKet{B1<:AbstractBasis, B2<:AbstractBasis}(ket1, ket2)
+    ProductKet{Bs<:Tuple}(kets::Vector{Ket})
+    ProductKet(ket1, ket2, ...)
 
-Tensor product of two basic kets: |ψ⟩⊗|ϕ⟩.
-Lives in `CompositeBasis{B1,B2}`. Same level as Ket in the hierarchy.
+Tensor product of kets: |ψ₁⟩⊗|ψ₂⟩⊗...⊗|ψₙ⟩.
+Lives in a `CompositeBasis`. This is a container struct (like SumKet),
+not a basic element - only `Ket` is a basic element.
+
+The tensor product operator `⊗` creates ProductKets automatically.
 
 # Examples
 ```jldoctest
@@ -92,13 +96,33 @@ julia> ψ, ϕ = Ket(H1, :ψ), Ket(H2, :ϕ);
 
 julia> ψ ⊗ ϕ
 |ψ⟩⊗|ϕ⟩
+
+julia> H3 = HilbertSpace(:C, 2);
+
+julia> χ = Ket(H3, :χ);
+
+julia> ψ ⊗ ϕ ⊗ χ  # Three kets
+|ψ⟩⊗|ϕ⟩⊗|χ⟩
 ```
 
 See also: [`Ket`](@ref), [`⊗`](@ref)
 """ ProductKet
-struct ProductKet{B1<:AbstractBasis, B2<:AbstractBasis} <: AbstractKet{CompositeBasis{B1,B2}}
-    ket1::Ket{B1}
-    ket2::Ket{B2}
+struct ProductKet{Bs<:Tuple} <: AbstractKet{CompositeBasis{Bs}}
+    kets::Vector{Ket}  # Vector of basic kets
+    
+    function ProductKet(kets::Vector{Ket})
+        if length(kets) < 2
+            throw(ArgumentError("ProductKet requires at least 2 kets"))
+        end
+        # Extract basis types from each ket
+        basis_types = Tuple{[basis(typeof(k)) for k in kets]...}
+        new{basis_types}(kets)
+    end
+    
+    # Convenience constructor from varargs
+    function ProductKet(ket1::Ket, ket2::Ket, kets::Ket...)
+        ProductKet([ket1, ket2, kets...])
+    end
 end
 
 @doc """
@@ -127,8 +151,8 @@ struct WeightedKet{B<:AbstractBasis, T} <: AbstractKet{B}
     function WeightedKet(ket::Ket{B}, weight::T) where {B<:AbstractBasis, T}
         new{B, T}(ket, weight)
     end
-    function WeightedKet(pk::ProductKet{B1,B2}, weight::T) where {B1,B2,T}
-        CB = CompositeBasis{B1,B2}
+    function WeightedKet(pk::ProductKet{Bs}, weight::T) where {Bs,T}
+        CB = CompositeBasis{Bs}
         new{CB, T}(pk, weight)
     end
 end
@@ -175,11 +199,11 @@ struct SumKet{B<:AbstractBasis, T} <: AbstractKet{B}
     end
     
     # Convenience constructor from single ket
-    function SumKet(ket::Union{Ket{B}, ProductKet{B1,B2}}; name::Union{Symbol, Nothing}=nothing) where {B, B1, B2}
+    function SumKet(ket::Union{Ket{B}, ProductKet{Bs}}; name::Union{Symbol, Nothing}=nothing) where {B, Bs}
         if ket isa Ket
             new{B, Int}(name, [ket], [1])
         else  # ProductKet
-            CB = CompositeBasis{B1, B2}
+            CB = CompositeBasis{Bs}
             new{CB, Int}(name, [ket], [1])
         end
     end
@@ -243,16 +267,28 @@ struct Bra{B<:AbstractBasis} <: AbstractBra{B}
 end
 
 @doc """
-    ProductBra{B1,B2}(bra1, bra2)
+    ProductBra{Bs<:Tuple}(bras::Vector{Bra})
+    ProductBra(bra1, bra2, ...)
 
-Tensor product of two bras: ⟨ψ|⊗⟨ϕ|.
+Tensor product of bras: ⟨ψ₁|⊗⟨ψ₂|⊗...⊗⟨ψₙ|.
 Created via adjoint of ProductKet.
 
-See also: [`ProductKet`](@ref)
+See also: [`ProductKet`](@ref), [`Bra`](@ref)
 """ ProductBra
-struct ProductBra{B1<:AbstractBasis, B2<:AbstractBasis} <: AbstractBra{CompositeBasis{B1,B2}}
-    bra1::Bra{B1}
-    bra2::Bra{B2}
+struct ProductBra{Bs<:Tuple} <: AbstractBra{CompositeBasis{Bs}}
+    bras::Vector{Bra}
+    
+    function ProductBra(bras::Vector{Bra})
+        if length(bras) < 2
+            throw(ArgumentError("ProductBra requires at least 2 bras"))
+        end
+        basis_types = Tuple{[basis(typeof(b)) for b in bras]...}
+        new{basis_types}(bras)
+    end
+    
+    function ProductBra(bra1::Bra, bra2::Bra, bras::Bra...)
+        ProductBra([bra1, bra2, bras...])
+    end
 end
 
 @doc """
@@ -270,8 +306,8 @@ struct WeightedBra{B<:AbstractBasis, T} <: AbstractBra{B}
     function WeightedBra(bra::Bra{B}, weight::T) where {B<:AbstractBasis, T}
         new{B, T}(bra, weight)
     end
-    function WeightedBra(pb::ProductBra{B1,B2}, weight::T) where {B1,B2,T}
-        CB = CompositeBasis{B1,B2}
+    function WeightedBra(pb::ProductBra{Bs}, weight::T) where {Bs,T}
+        CB = CompositeBasis{Bs}
         new{CB, T}(pb, weight)
     end
 end
@@ -300,11 +336,11 @@ struct SumBra{B<:AbstractBasis, T} <: AbstractBra{B}
         new{B, T}(name, bras, weights)
     end
     
-    function SumBra(bra::Union{Bra{B}, ProductBra{B1,B2}}; name::Union{Symbol, Nothing}=nothing) where {B, B1, B2}
+    function SumBra(bra::Union{Bra{B}, ProductBra{Bs}}; name::Union{Symbol, Nothing}=nothing) where {B, Bs}
         if bra isa Bra
             new{B, Int}(name, [bra], [1])
         else  # ProductBra
-            CB = CompositeBasis{B1, B2}
+            CB = CompositeBasis{Bs}
             new{CB, Int}(name, [bra], [1])
         end
     end
@@ -321,10 +357,10 @@ basis(::Ket{B}) where B = B
 basis(::Bra{B}) where B = B
 basis(::Type{Ket{B}}) where B = B
 basis(::Type{Bra{B}}) where B = B
-basis(::ProductKet{B1,B2}) where {B1,B2} = CompositeBasis{B1,B2}
-basis(::ProductBra{B1,B2}) where {B1,B2} = CompositeBasis{B1,B2}
-basis(::Type{ProductKet{B1,B2}}) where {B1,B2} = CompositeBasis{B1,B2}
-basis(::Type{ProductBra{B1,B2}}) where {B1,B2} = CompositeBasis{B1,B2}
+basis(::ProductKet{Bs}) where {Bs} = CompositeBasis{Bs}
+basis(::ProductBra{Bs}) where {Bs} = CompositeBasis{Bs}
+basis(::Type{ProductKet{Bs}}) where {Bs} = CompositeBasis{Bs}
+basis(::Type{ProductBra{Bs}}) where {Bs} = CompositeBasis{Bs}
 basis(::WeightedKet{B}) where B = B
 basis(::WeightedBra{B}) where B = B
 basis(::Type{WeightedKet{B,T}}) where {B,T} = B
@@ -350,10 +386,10 @@ check_space(b1::AbstractBra, b2::AbstractBra) =
 # Equality
 Base.:(==)(k1::Ket{B1}, k2::Ket{B2}) where {B1, B2} = B1 == B2 && k1.index == k2.index
 Base.:(==)(b1::Bra{B1}, b2::Bra{B2}) where {B1, B2} = B1 == B2 && b1.index == b2.index
-Base.:(==)(pk1::ProductKet{A1,A2}, pk2::ProductKet{B1,B2}) where {A1,A2,B1,B2} = 
-    A1 == B1 && A2 == B2 && pk1.ket1 == pk2.ket1 && pk1.ket2 == pk2.ket2
-Base.:(==)(pb1::ProductBra{A1,A2}, pb2::ProductBra{B1,B2}) where {A1,A2,B1,B2} = 
-    A1 == B1 && A2 == B2 && pb1.bra1 == pb2.bra1 && pb1.bra2 == pb2.bra2
+Base.:(==)(pk1::ProductKet{Bs1}, pk2::ProductKet{Bs2}) where {Bs1,Bs2} = 
+    Bs1 == Bs2 && all(pk1.kets[i] == pk2.kets[i] for i in 1:length(pk1.kets))
+Base.:(==)(pb1::ProductBra{Bs1}, pb2::ProductBra{Bs2}) where {Bs1,Bs2} = 
+    Bs1 == Bs2 && all(pb1.bras[i] == pb2.bras[i] for i in 1:length(pb1.bras))
 
 # Helper to format index (single or multi)
 function _format_index(idx)
@@ -378,11 +414,17 @@ function Base.show(io::IO, b::Bra)
 end
 
 function Base.show(io::IO, pk::ProductKet)
-    print(io, pk.ket1, "⊗", pk.ket2)
+    for (i, k) in enumerate(pk.kets)
+        i > 1 && print(io, "⊗")
+        print(io, k)
+    end
 end
 
 function Base.show(io::IO, pb::ProductBra)
-    print(io, pb.bra1, "⊗", pb.bra2)
+    for (i, b) in enumerate(pb.bras)
+        i > 1 && print(io, "⊗")
+        print(io, b)
+    end
 end
 
 function Base.show(io::IO, wk::WeightedKet)

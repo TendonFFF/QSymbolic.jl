@@ -10,8 +10,8 @@ Bra(ket::Ket{B}) where B<:AbstractBasis = Bra{B}(ket.index)
 Base.adjoint(ket::Ket) = Bra(ket)
 Base.adjoint(bra::Bra) = Ket(bra)
 
-Base.adjoint(pk::ProductKet) = ProductBra(adjoint(pk.ket1), adjoint(pk.ket2))
-Base.adjoint(pb::ProductBra) = ProductKet(adjoint(pb.bra1), adjoint(pb.bra2))
+Base.adjoint(pk::ProductKet) = ProductBra([adjoint(k) for k in pk.kets])
+Base.adjoint(pb::ProductBra) = ProductKet([adjoint(b) for b in pb.bras])
 
 # WeightedKet ↔ WeightedBra with complex conjugate
 WeightedKet(wb::WeightedBra{B}) where B = WeightedKet(Ket(wb.bra), wb.weight')
@@ -211,7 +211,7 @@ end
     Base.$(:(-))(sb1::SumBra{B}, sb2::SumBra{B}) where B = SumBra(vcat(sb1.bras, sb2.bras), vcat(sb1.weights, -sb2.weights))
     
     # ProductKet operations
-    function Base.$(:(+))(pk1::ProductKet{B1,B2}, pk2::ProductKet{B1,B2}) where {B1,B2}
+    function Base.$(:(+))(pk1::ProductKet{Bs}, pk2::ProductKet{Bs}) where {Bs}
         if pk1 == pk2
             return WeightedKet(pk1, 2)
         else
@@ -219,7 +219,7 @@ end
         end
     end
     
-    function Base.$(:(-))(pk1::ProductKet{B1,B2}, pk2::ProductKet{B1,B2}) where {B1,B2}
+    function Base.$(:(-))(pk1::ProductKet{Bs}, pk2::ProductKet{Bs}) where {Bs}
         if pk1 == pk2
             return WeightedKet(pk1, 0)
         else
@@ -228,7 +228,7 @@ end
     end
     
     # ProductBra operations
-    function Base.$(:(+))(pb1::ProductBra{B1,B2}, pb2::ProductBra{B1,B2}) where {B1,B2}
+    function Base.$(:(+))(pb1::ProductBra{Bs}, pb2::ProductBra{Bs}) where {Bs}
         if pb1 == pb2
             return WeightedBra(pb1, 2)
         else
@@ -236,7 +236,7 @@ end
         end
     end
     
-    function Base.$(:(-))(pb1::ProductBra{B1,B2}, pb2::ProductBra{B1,B2}) where {B1,B2}
+    function Base.$(:(-))(pb1::ProductBra{Bs}, pb2::ProductBra{Bs}) where {Bs}
         if pb1 == pb2
             return WeightedBra(pb1, 0)
         else
@@ -332,32 +332,43 @@ end
     Base.$(:(*))(wb::WeightedBra, sk::SumKet) = SumBra([wb.bra], [wb.weight]) * sk
     Base.$(:(*))(sb::SumBra, wk::WeightedKet) = sb * SumKet([wk.ket], [wk.weight])
     
-    # ProductBra * ProductKet (same basis)
-    Base.$(:(*))(pb::ProductBra{B1,B2}, pk::ProductKet{B1,B2}) where {B1,B2} = 
-        simplify((pb.bra1 * pk.ket1) * (pb.bra2 * pk.ket2))
+    # ProductBra * ProductKet (same basis) - factorized inner product
+    Base.$(:(*))(pb::ProductBra{Bs}, pk::ProductKet{Bs}) where {Bs} = 
+        simplify(prod(pb.bras[i] * pk.kets[i] for i in 1:length(pb.bras)))
     
     # ProductBra * ProductKet (cross-basis) - try factorized transform
-    function Base.$(:(*))(pb::ProductBra{A1,A2}, pk::ProductKet{B1,B2}) where {A1,A2,B1,B2}
-        space(CompositeBasis{A1,A2}) == space(CompositeBasis{B1,B2}) || 
+    function Base.$(:(*))(pb::ProductBra{Bs1}, pk::ProductKet{Bs2}) where {Bs1,Bs2}
+        space(CompositeBasis{Bs1}) == space(CompositeBasis{Bs2}) || 
             throw(DimensionMismatch("Bra and ket are in different spaces"))
         
-        # Try factorized: ⟨a₁|⊗⟨a₂| × |b₁⟩⊗|b₂⟩ = ⟨a₁|b₁⟩ × ⟨a₂|b₂⟩
-        result1 = pb.bra1 * pk.ket1
-        result2 = pb.bra2 * pk.ket2
-        
-        if (result1 isa Number || result1 isa AbstractSymbolic) && 
-           (result2 isa Number || result2 isa AbstractSymbolic)
-            return simplify(result1 * result2)
-        else
-            # Cannot evaluate, return InnerProduct or try transforms
-            # For now, just try factorized result
-            return simplify(result1 * result2)
+        # Try factorized: ⟨a₁|⊗⟨a₂|⊗... × |b₁⟩⊗|b₂⟩⊗... = ⟨a₁|b₁⟩ × ⟨a₂|b₂⟩ × ...
+        if length(pb.bras) != length(pk.kets)
+            throw(DimensionMismatch("Bra and ket have different number of subsystems"))
         end
+        
+        result = 1
+        for i in 1:length(pb.bras)
+            result_i = pb.bras[i] * pk.kets[i]
+            result = simplify(result * result_i)
+        end
+        return result
     end
 end
 
 # ==================== TENSOR PRODUCT ====================
 # Ket ⊗ Ket → ProductKet
 
-⊗(k1::Ket{B1}, k2::Ket{B2}) where {B1,B2} = ProductKet(k1, k2)
-⊗(b1::Bra{B1}, b2::Bra{B2}) where {B1,B2} = ProductBra(b1, b2)
+⊗(k1::Ket{B1}, k2::Ket{B2}) where {B1,B2} = ProductKet([k1, k2])
+⊗(b1::Bra{B1}, b2::Bra{B2}) where {B1,B2} = ProductBra([b1, b2])
+
+# ProductKet ⊗ Ket → ProductKet (chaining)
+⊗(pk::ProductKet, k::Ket) = ProductKet(vcat(pk.kets, [k]))
+⊗(k::Ket, pk::ProductKet) = ProductKet(vcat([k], pk.kets))
+
+# ProductBra ⊗ Bra → ProductBra (chaining)
+⊗(pb::ProductBra, b::Bra) = ProductBra(vcat(pb.bras, [b]))
+⊗(b::Bra, pb::ProductBra) = ProductBra(vcat([b], pb.bras))
+
+# ProductKet ⊗ ProductKet → ProductKet (concatenation)
+⊗(pk1::ProductKet, pk2::ProductKet) = ProductKet(vcat(pk1.kets, pk2.kets))
+⊗(pb1::ProductBra, pb2::ProductBra) = ProductBra(vcat(pb1.bras, pb2.bras))
