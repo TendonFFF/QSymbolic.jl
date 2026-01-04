@@ -157,8 +157,11 @@ function _composite_space_type(basis_types::Tuple)
     spaces = [space(B) for B in basis_types]
     
     # Flatten all space parameters into tuples
-    all_names = Tuple{vcat([S.parameters[1]... for S in spaces]...)...}
-    all_dims = Tuple{vcat([S.parameters[2]... for S in spaces]...)...}
+    # Collect all names and dims from each space
+    names_vec = vcat([collect(S.parameters[1]) for S in spaces]...)
+    dims_vec = vcat([collect(S.parameters[2]) for S in spaces]...)
+    all_names = Tuple(names_vec)
+    all_dims = Tuple(dims_vec)
     
     return CompositeSpace{all_names, all_dims}
 end
