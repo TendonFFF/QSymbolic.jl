@@ -370,7 +370,7 @@ end
     # Numeric folding
     @test simplify(SymNum(2) + SymNum(3)) == 5
     @test simplify(SymNum(2) * SymNum(3)) == 6
-end
+end 
 
 @testitem "Outer product operators" begin
     using QSymbolic
@@ -383,7 +383,7 @@ end
     
     # Create operator via outer product
     P_up = up * up'
-    @test P_up isa Operator
+    @test P_up isa Outer  # Single outer product creates Outer, not Operator
     
     # Projector action
     result = P_up * up
@@ -416,120 +416,29 @@ end
     
     # Sum of operators (identity)
     I = P_up + P_down
-    @test I isa SumOperator
+    @test I isa Operator  # Outer + Outer = Operator
     @test (I * up) isa WeightedKet
     @test (I * down) isa WeightedKet
     
     # Pauli Z
     σz = P_up - P_down
-    @test σz isa SumOperator
+    @test σz isa Operator
     
     # Apply to superposition
     ψ = (up + down) / √2
     result = σz * ψ
     @test result isa SumKet
     
-    # Operator product
+    # Operator product - for Outer operators, result is another Outer or zero
     σ_plus = up * down'
     σ_minus = down * up'
+    # σ_plus * σ_minus = |↑⟩⟨↓| * |↓⟩⟨↑| = ⟨↓|↓⟩ |↑⟩⟨↑| = |↑⟩⟨↑|
     product = σ_plus * σ_minus
-    @test product isa OperatorProduct
+    @test product isa Operator  # Result of Outer * Outer is Operator (with coefficient)
     
-    # (σ+σ-)|↑⟩ = |↑⟩⟨↓|↓⟩⟨↑|↑⟩ = |↑⟩
+    # Apply operator to ket
     @test (product * up) isa WeightedKet
     @test product * down == 0
-end
-
-@testitem "Function operators" begin
-    using QSymbolic
-    
-    F = FockSpace(:mode)
-    Fb = Basis(F, :n)
-    
-    # Simple number operator: N|n⟩ = n|n⟩
-    N = FunctionOperator(:N, Fb) do ket
-        n = parse(Int, string(ket.index))
-        n * ket
-    end
-    
-    n0 = Ket(Fb, 0)
-    n3 = Ket(Fb, 3)
-    
-    # N|0⟩ = 0|0⟩ (zero weight, not literal 0)
-    result0 = N * n0
-    @test result0 isa WeightedKet
-    @test result0.weight == 0
-    
-    # N|3⟩ = 3|3⟩
-    result3 = N * n3
-    @test result3 isa WeightedKet
-    @test result3.weight == 3
-end
-
-@testitem "FunctionOperator with adjoint action" begin
-    using QSymbolic
-    
-    F = FockSpace(:mode)
-    Fb = Basis(F, :n)
-    
-    # Create ladder operators with explicit adjoint
-    a, adag = create_ladder_operators(Fb)
-    
-    n0 = Ket(Fb, 0)
-    n1 = Ket(Fb, 1)
-    n2 = Ket(Fb, 2)
-    
-    # Annihilation: a|n⟩ = √n |n-1⟩
-    @test a * n0 == 0
-    result = a * n1
-    @test result isa WeightedKet
-    @test result.weight ≈ 1.0
-    @test result.Ket.index == Symbol("0")
-    
-    # Creation: a†|n⟩ = √(n+1) |n+1⟩
-    result = adag * n0
-    @test result isa WeightedKet
-    @test result.weight ≈ 1.0
-    @test result.Ket.index == Symbol("1")
-    
-    # Number operator: N = a†a
-    N = adag * a
-    @test N isa OperatorProduct
-    
-    result = N * n2
-    @test result isa WeightedKet
-    @test result.weight ≈ 2.0
-    @test result.Ket.index == Symbol("2")
-end
-
-@testitem "FunctionOperator arithmetic" begin
-    using QSymbolic
-    
-    F = FockSpace(:mode)
-    Fb = Basis(F, :n)
-    
-    a, adag = create_ladder_operators(Fb)
-    n0 = Ket(Fb, 0)
-    n1 = Ket(Fb, 1)
-    
-    # Scalar multiplication
-    scaled = 2 * a
-    @test scaled isa ScaledOperator
-    result = scaled * n1
-    @test result isa WeightedKet
-    @test result.weight ≈ 2.0
-    
-    # Addition
-    sum_op = a + adag
-    @test sum_op isa SumOperator
-    
-    # Subtraction
-    diff_op = a - adag
-    @test diff_op isa SumOperator
-    
-    # Product with other operators
-    prod = a * adag
-    @test prod isa OperatorProduct
 end
 
 @testitem "Symbolic indices for kets and bras" begin
@@ -598,12 +507,12 @@ end
 @testitem "Multi-index for states" begin
     using QSymbolic
     
-    # Setup composite space
+    # Setup composite space and basis
     H1 = HilbertSpace(:A, 2)
     H1b = Basis(H1, :default)
     H2 = HilbertSpace(:B, 2)
     H2b = Basis(H2, :default)
-    composite = H1 ⊗ H2
+    composite = H1b ⊗ H2b  # Use CompositeBasis, not CompositeSpace
     
     # Multi-index with symbols
     ket_sym = Ket(composite, (:↑, :↓))

@@ -167,6 +167,9 @@ struct WeightedKet{B<:AbstractBasis, T} <: AbstractKet{B}
     end
 end
 
+# WeightedKet is zero if its weight is zero
+Base.iszero(wk::WeightedKet) = iszero(wk.weight)
+
 @doc """
     SumKet{B<:AbstractBasis, T}(kets, weights; name=nothing)
 
@@ -493,22 +496,26 @@ end
     FockKet(space::HilbertSpace, n::Int)
 
 Create a Fock state |n⟩ in the given infinite-dimensional Hilbert space.
+Uses a default :n basis for the Fock space.
 
 See also: [`Ket`](@ref), [`FockBra`](@ref)
 """
 function FockKet(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
     dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
-    Ket(space, n)
+    Fb = Basis(space, :n)
+    Ket(Fb, n)
 end
 
 @doc """
     FockBra(space::HilbertSpace, n::Int)
 
 Create a Fock bra ⟨n| in the given infinite-dimensional Hilbert space.
+Uses a default :n basis for the Fock space.
 
 See also: [`Bra`](@ref), [`FockKet`](@ref)
 """
 function FockBra(space::HilbertSpace{T,dim}, n::Int) where {T,dim}
     dim isa Tuple{Nothing} || throw(ArgumentError("Not a valid Fock space (dimension is limited)"))
-    Bra(space, n)
+    Fb = Basis(space, :n)
+    Bra(Fb, n)
 end

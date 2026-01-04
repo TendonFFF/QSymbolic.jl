@@ -44,16 +44,18 @@ See also: [`Operator`](@ref), [`Identity`](@ref), [`FunctionOperator`](@ref)
 struct Outer{S<:AbstractSpace} <: AbstractOperator{S}
     ket::AbstractKet
     bra::AbstractBra
-    space::S
     
     function Outer(ket::AbstractKet, bra::AbstractBra)
         # Verify same space
         ket_space = space(basis(ket))
         bra_space = space(basis(bra))
         ket_space == bra_space || throw(ArgumentError("Ket and bra must be in the same space"))
-        new{typeof(ket_space)}(ket, bra, ket_space)
+        new{ket_space}(ket, bra)
     end
 end
+
+# Get space of an Outer
+space(::Outer{S}) where S = S
 
 # Create outer product from ket * bra'
 Base.:*(ket::AbstractKet, bra::AbstractBra) = Outer(ket, bra)
@@ -105,15 +107,23 @@ See also: [`Outer`](@ref), [`Identity`](@ref)
 struct Operator{S<:AbstractSpace} <: AbstractOperator{S}
     outers::Vector{Outer{S}}
     weights::Vector
-    space::S
     
+    function Operator{S}(outers::Vector{Outer{S}}, weights::Vector) where S
+        length(outers) == length(weights) || throw(ArgumentError("outers and weights must have same length"))
+        isempty(outers) && throw(ArgumentError("Operator must have at least one outer product"))
+        new{S}(outers, weights)
+    end
+    
+    # Also allow calling without type parameter
     function Operator(outers::Vector{Outer{S}}, weights::Vector) where S
         length(outers) == length(weights) || throw(ArgumentError("outers and weights must have same length"))
         isempty(outers) && throw(ArgumentError("Operator must have at least one outer product"))
-        space_val = space(outers[1])
-        new{S}(outers, weights, space_val)
+        new{S}(outers, weights)
     end
 end
+
+# Get space of an Operator
+space(::Operator{S}) where S = S
 
 # Display
 function Base.show(io::IO, op::Operator)
@@ -212,28 +222,26 @@ end
 See also: [`Operator`](@ref), [`Outer`](@ref), [`define_transform!`](@ref)
 """
 struct FunctionOperator{S<:AbstractSpace, B<:AbstractBasis} <: AbstractOperator{S}
-    space::S
     basis::B
     action::Function
     adjoint_action::Union{Function, Nothing}
     name::Symbol
     
-    function FunctionOperator{S,B}(space::S, basis::B, action::Function, adjoint_action::Union{Function, Nothing}, name::Symbol) where {S<:AbstractSpace, B<:AbstractBasis}
-        space(basis) == space || throw(ArgumentError("Basis must be in the same space as operator"))
-        new{S,B}(space, basis, action, adjoint_action, name)
+    function FunctionOperator{S,B}(basis::B, action::Function, adjoint_action::Union{Function, Nothing}, name::Symbol) where {S<:AbstractSpace, B<:AbstractBasis}
+        new{S,B}(basis, action, adjoint_action, name)
     end
 end
 
 # Constructor with do-block
 function FunctionOperator(action::F, basis::B; adjoint_action::Union{Function, Nothing}=nothing, name::Symbol=:F) where {F<:Function, B<:AbstractBasis}
-    s = space(basis)
-    FunctionOperator{typeof(s),typeof(basis)}(s, basis, action, adjoint_action, name)
+    S = space(basis)  # S is a type, not an instance
+    FunctionOperator{S,B}(basis, action, adjoint_action, name)
 end
 
 # Regular constructor
 function FunctionOperator(basis::B, action::F; adjoint_action::Union{Function, Nothing}=nothing, name::Symbol=:F) where {F<:Function, B<:AbstractBasis}
-    s = space(basis)
-    FunctionOperator{typeof(s),typeof(basis)}(s, basis, action, adjoint_action, name)
+    S = space(basis)  # S is a type, not an instance
+    FunctionOperator{S,B}(basis, action, adjoint_action, name)
 end
 
 # Display

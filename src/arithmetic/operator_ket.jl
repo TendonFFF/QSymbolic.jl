@@ -21,10 +21,11 @@ function Base.:*(op::Operator, ket::AbstractKet)
     total = nothing
     for (outer, w) in zip(op.outers, op.weights)
         result = outer * ket
-        if !iszero(result)
-            term = w * result
-            total = isnothing(total) ? term : total + term
+        if !(result isa AbstractSymbolic) && iszero(result)
+            continue
         end
+        term = w * result
+        total = isnothing(total) ? term : total + term
     end
     isnothing(total) ? 0 : total
 end

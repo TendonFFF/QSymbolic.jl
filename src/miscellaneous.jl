@@ -2,7 +2,6 @@
 
 # Exports
 export TensorOperator, OpKet, OpBra, IdentityOp
-export create_ladder_operators
 export lift, swap, reorder, partial_trace
 
 # Helper to get space name for display
