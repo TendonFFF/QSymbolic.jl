@@ -63,15 +63,15 @@ function Base.:*(ket::Ket{B}, bra::Bra{B}) where B<:AbstractBasis
 end
 
 function Base.:*(ket::WeightedKet{B}, bra::Bra{B}) where B
-    Operator(ket.Ket, bra, ket.weight)
+    Operator(ket.ket, bra, ket.weight)
 end
 
 function Base.:*(ket::Ket{B}, bra::WeightedBra{B}) where B
-    Operator(ket, bra.Bra, bra.weight)
+    Operator(ket, bra.bra, bra.weight)
 end
 
 function Base.:*(ket::WeightedKet{B}, bra::WeightedBra{B}) where B
-    Operator(ket.Ket, bra.Bra, ket.weight * bra.weight)
+    Operator(ket.ket, bra.bra, ket.weight * bra.weight)
 end
 
 # Display
@@ -98,7 +98,7 @@ function Base.:*(op::Operator{B}, ket::Ket{B}) where B
 end
 
 function Base.:*(op::Operator{B}, ket::WeightedKet{B}) where B
-    result = op * ket.Ket
+    result = op * ket.ket
     result isa Number ? result * ket.weight : ket.weight * result
 end
 
@@ -447,7 +447,7 @@ function Base.:*(op::FunctionOperator{CompositeBasis{B1,B2}}, ket::SumKet{B1,B2,
 end
 
 function Base.:*(op::FunctionOperator, ket::WeightedKet)
-    result = op * ket.Ket
+    result = op * ket.ket
     result isa Number ? result * ket.weight : ket.weight * result
 end
 
@@ -520,7 +520,7 @@ function Base.:*(op::AdjointFunctionOperator{CompositeBasis{B1,B2}}, ket::SumKet
 end
 
 function Base.:*(op::AdjointFunctionOperator{B}, ket::WeightedKet{B}) where B
-    result = op * ket.Ket
+    result = op * ket.ket
     result isa Number ? result * ket.weight : ket.weight * result
 end
 
@@ -768,15 +768,15 @@ function _tensor_combine(r1::Ket{B1}, r2::Ket{B2}) where {B1,B2}
 end
 
 function _tensor_combine(r1::WeightedKet{B1}, r2::Ket{B2}) where {B1,B2}
-    r1.weight * ProductKet(r1.Ket, r2)
+    r1.weight * ProductKet(r1.ket, r2)
 end
 
 function _tensor_combine(r1::Ket{B1}, r2::WeightedKet{B2}) where {B1,B2}
-    r2.weight * ProductKet(r1, r2.Ket)
+    r2.weight * ProductKet(r1, r2.ket)
 end
 
 function _tensor_combine(r1::WeightedKet{B1}, r2::WeightedKet{B2}) where {B1,B2}
-    (r1.weight * r2.weight) * ProductKet(r1.Ket, r2.Ket)
+    (r1.weight * r2.weight) * ProductKet(r1.ket, r2.ket)
 end
 
 function _tensor_combine(r1::SumKet{B1,T1}, r2::Ket{B2}) where {B1,B2,T1}
@@ -790,12 +790,12 @@ function _tensor_combine(r1::Ket{B1}, r2::SumKet{B2,T2}) where {B1,B2,T2}
 end
 
 function _tensor_combine(r1::WeightedKet{B1}, r2::SumKet{B2,T2}) where {B1,B2,T2}
-    kets = [ProductKet(r1.Ket, k) for k in r2.kets]
+    kets = [ProductKet(r1.ket, k) for k in r2.kets]
     SumKet(kets, r1.weight .* r2.weights)
 end
 
 function _tensor_combine(r1::SumKet{B1,T1}, r2::WeightedKet{B2}) where {B1,B2,T1}
-    kets = [ProductKet(k, r2.Ket) for k in r1.kets]
+    kets = [ProductKet(k, r2.ket) for k in r1.kets]
     SumKet(kets, r2.weight .* r1.weights)
 end
 
