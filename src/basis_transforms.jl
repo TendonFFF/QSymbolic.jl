@@ -20,7 +20,7 @@ The two bases must be on the same space. This works for:
 ```julia
 H = HilbertSpace(:spin, 2)
 Zb, Xb = Basis(H, :z), Basis(H, :x)
-up_z, down_z = BasisKet(Zb, :↑), BasisKet(Zb, :↓)
+up_z, down_z = Ket(Zb, :↑), Ket(Zb, :↓)
 
 define_transform!(Xb, Zb) do idx
     idx == :↑ ? (up_z + down_z) / √2 : (up_z - down_z) / √2
@@ -74,22 +74,22 @@ get_transform(::Type{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasi
 
 Transform a ket from its current basis to the target basis.
 Works for:
-- `BasisKet{B1}` → `B2` (single-system bases, returns sumKet)
+- `Ket{B1}` → `B2` (single-system bases, returns SumKet)
 - `ProductKet{A1,A2}` → `CompositeBasis{B1,B2}` (factorized transforms)
 - `ProductKet{A1,A2}` → `Basis` (composite to eigenbasis)
-- `SumProductKet`, `sumKet`, `weightedKet` (applies to each component)
+- `SumKet`, `SumKet`, `WeightedKet` (applies to each component)
 """ transform
-function transform(ket::BasisKet{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
+function transform(ket::Ket{B1}, ::Type{B2}) where {B1<:AbstractBasis, B2<:AbstractBasis}
     has_transform(B1, B2) || throw(ArgumentError("No transform registered from $B1 to $B2"))
     f = get_transform(B1, B2)
     # Transform function receives the index
     result = f(ket.index)
     result isa AbstractKet || throw(ArgumentError("Transform must return a ket"))
     # Wrap in appropriate sum type if needed
-    if result isa BasisKet
-        sumKet(result)
+    if result isa Ket
+        SumKet(result)
     elseif result isa ProductKet
-        SumProductKet([result], [1])
+        SumKet([result], [1])
     else
         result
     end
@@ -99,7 +99,7 @@ end
 function transform(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,B1,B2}
     # Identity transform - already in target basis
     if A1 == B1 && A2 == B2
-        return SumProductKet([ket], [1])
+        return SumKet([ket], [1])
     end
     
     # Check for explicit composite transform first
@@ -109,8 +109,8 @@ function transform(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where 
     end
     
     # Factorized transform: (U₁ ⊗ U₂)|ψ₁⟩|ψ₂⟩ = (U₁|ψ₁⟩) ⊗ (U₂|ψ₂⟩)
-    ket1_transformed = A1 == B1 ? sumKet(ket.ket1) : transform(ket.ket1, B1)
-    ket2_transformed = A2 == B2 ? sumKet(ket.ket2) : transform(ket.ket2, B2)
+    ket1_transformed = A1 == B1 ? SumKet(ket.ket1) : transform(ket.ket1, B1)
+    ket2_transformed = A2 == B2 ? SumKet(ket.ket2) : transform(ket.ket2, B2)
     
     # Combine: Σᵢⱼ wᵢwⱼ |i⟩⊗|j⟩
     result_kets = ProductKet{B1,B2}[]
@@ -123,7 +123,7 @@ function transform(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where 
         end
     end
     
-    return SumProductKet(result_kets, result_weights)
+    return SumKet(result_kets, result_weights)
 end
 
 # transform(ProductKet, Basis) - additional method
@@ -135,15 +135,15 @@ function transform(ket::ProductKet{A1,A2}, ::Type{B}) where {A1,A2,B<:Basis}
     combined_idx = (ket.ket1.index, ket.ket2.index)
     result = f(combined_idx)
     result isa AbstractKet || throw(ArgumentError("Transform must return a ket"))
-    if result isa BasisKet
-        sumKet(result)
+    if result isa Ket
+        SumKet(result)
     else
         result
     end
 end
 
-# Transform for SumProductKet
-function transform(sk::SumProductKet{A1,A2,T}, ::Type{B}) where {A1,A2,T,B<:AbstractBasis}
+# Transform for SumKet
+function transform(sk::SumKet{A1,A2,T}, ::Type{B}) where {A1,A2,T,B<:AbstractBasis}
     # Identity transform - already in target basis
     if B == CompositeBasis{A1,A2}
         return sk
@@ -158,8 +158,8 @@ function transform(sk::SumProductKet{A1,A2,T}, ::Type{B}) where {A1,A2,T,B<:Abst
     isnothing(total) ? 0 : total
 end
 
-# Transform for sumKet
-function transform(sk::sumKet{B1,T}, ::Type{B2}) where {B1,T,B2<:AbstractBasis}
+# Transform for SumKet
+function transform(sk::SumKet{B1,T}, ::Type{B2}) where {B1,T,B2<:AbstractBasis}
     has_transform(B1, B2) || throw(ArgumentError("No transform registered from $B1 to $B2"))
     # Transform each component and combine
     total = nothing
@@ -171,8 +171,8 @@ function transform(sk::sumKet{B1,T}, ::Type{B2}) where {B1,T,B2<:AbstractBasis}
     isnothing(total) ? 0 : total
 end
 
-# Transform for weightedKet
-function transform(wk::weightedKet{B1}, ::Type{B2}) where {B1,B2<:AbstractBasis}
+# Transform for WeightedKet
+function transform(wk::WeightedKet{B1}, ::Type{B2}) where {B1,B2<:AbstractBasis}
     wk.weight * transform(wk.Ket, B2)
 end
 

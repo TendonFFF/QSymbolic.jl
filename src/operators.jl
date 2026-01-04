@@ -24,8 +24,8 @@ When applied to a state: (|ψ⟩⟨ϕ|)|χ⟩ = |ψ⟩⟨ϕ|χ⟩ = ⟨ϕ|χ⟩ 
 ```julia
 H = HilbertSpace(:H, 2)
 Zb = Basis(H, :z)
-up = BasisKet(Zb, :↑)
-down = BasisKet(Zb, :↓)
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
 
 # Projector onto |↑⟩
 P_up = up * up'  # |↑⟩⟨↑|
@@ -58,19 +58,19 @@ basis(::AbstractOperator{B}) where B = B
 space(::AbstractOperator{B}) where B = space(B)
 
 # Create operator from ket * bra
-function Base.:*(ket::BasisKet{B}, bra::BasisBra{B}) where B<:AbstractBasis
+function Base.:*(ket::Ket{B}, bra::Bra{B}) where B<:AbstractBasis
     Operator(ket, bra, 1)
 end
 
-function Base.:*(ket::weightedKet{B}, bra::BasisBra{B}) where B
+function Base.:*(ket::WeightedKet{B}, bra::Bra{B}) where B
     Operator(ket.Ket, bra, ket.weight)
 end
 
-function Base.:*(ket::BasisKet{B}, bra::weightedBra{B}) where B
+function Base.:*(ket::Ket{B}, bra::WeightedBra{B}) where B
     Operator(ket, bra.Bra, bra.weight)
 end
 
-function Base.:*(ket::weightedKet{B}, bra::weightedBra{B}) where B
+function Base.:*(ket::WeightedKet{B}, bra::WeightedBra{B}) where B
     Operator(ket.Ket, bra.Bra, ket.weight * bra.weight)
 end
 
@@ -84,12 +84,12 @@ function Base.show(io::IO, op::Operator)
 end
 
 # Helper functions for display
-_ket_str(k::BasisKet) = "|$(k.index)⟩"
-_bra_str(b::BasisBra) = "⟨$(b.index)|"
+_ket_str(k::Ket) = "|$(k.index)⟩"
+_bra_str(b::Bra) = "⟨$(b.index)|"
 
 # Apply operator to ket: (|ψ⟩⟨ϕ|)|χ⟩ = ⟨ϕ|χ⟩ |ψ⟩
-function Base.:*(op::Operator{B}, ket::BasisKet{B}) where B
-    inner = BasisBra{B}(op.bra.index) * ket
+function Base.:*(op::Operator{B}, ket::Ket{B}) where B
+    inner = Bra{B}(op.bra.index) * ket
     if !(inner isa AbstractSymbolic) && isequal(inner, 0)
         return 0
     else
@@ -97,12 +97,12 @@ function Base.:*(op::Operator{B}, ket::BasisKet{B}) where B
     end
 end
 
-function Base.:*(op::Operator{B}, ket::weightedKet{B}) where B
+function Base.:*(op::Operator{B}, ket::WeightedKet{B}) where B
     result = op * ket.Ket
     result isa Number ? result * ket.weight : ket.weight * result
 end
 
-function Base.:*(op::Operator{B}, ket::sumKet{B,T}) where {B,T}
+function Base.:*(op::Operator{B}, ket::SumKet{B,T}) where {B,T}
     total = nothing
     for (k, w) in zip(ket.kets, ket.weights)
         result = op * k
@@ -117,8 +117,8 @@ end
 # Adjoint: (|ψ⟩⟨ϕ|)† = |ϕ⟩⟨ψ|
 function Base.adjoint(op::Operator{B,T}) where {B,T}
     # Swap ket↔bra and conjugate coefficient
-    new_ket = BasisKet{B}(op.bra.index)
-    new_bra = BasisBra{B}(op.ket isa BasisKet ? op.ket.index : nothing)
+    new_ket = Ket{B}(op.bra.index)
+    new_bra = Bra{B}(op.ket isa Ket ? op.ket.index : nothing)
     Operator(new_ket, new_bra, conj(op.coeff))
 end
 
@@ -153,7 +153,7 @@ function Base.show(io::IO, op::SumOperator)
 end
 
 # Apply sum of operators - specific ket types to avoid ambiguity
-function Base.:*(op::SumOperator{B}, ket::BasisKet{B}) where B
+function Base.:*(op::SumOperator{B}, ket::Ket{B}) where B
     total = nothing
     for term in op.terms
         result = term * ket
@@ -164,7 +164,7 @@ function Base.:*(op::SumOperator{B}, ket::BasisKet{B}) where B
     isnothing(total) ? 0 : total
 end
 
-function Base.:*(op::SumOperator{B}, ket::weightedKet{B}) where B
+function Base.:*(op::SumOperator{B}, ket::WeightedKet{B}) where B
     total = nothing
     for term in op.terms
         result = term * ket
@@ -175,7 +175,7 @@ function Base.:*(op::SumOperator{B}, ket::weightedKet{B}) where B
     isnothing(total) ? 0 : total
 end
 
-function Base.:*(op::SumOperator{B}, ket::sumKet{B,T}) where {B,T}
+function Base.:*(op::SumOperator{B}, ket::SumKet{B,T}) where {B,T}
     total = nothing
     for term in op.terms
         result = term * ket
@@ -198,8 +198,8 @@ function Base.:*(op::SumOperator{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B2})
     isnothing(total) ? 0 : total
 end
 
-# SumOperator on SumProductKet (CompositeBasis)
-function Base.:*(op::SumOperator{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
+# SumOperator on SumKet (CompositeBasis)
+function Base.:*(op::SumOperator{CompositeBasis{B1,B2}}, ket::SumKet{B1,B2,T}) where {B1,B2,T}
     total = nothing
     for term in op.terms
         result = term * ket
@@ -244,17 +244,17 @@ function Base.show(io::IO, op::ScaledOperator)
     print(io, op.coeff, "·(", op.op, ")")
 end
 
-function Base.:*(op::ScaledOperator{B}, ket::BasisKet{B}) where B
+function Base.:*(op::ScaledOperator{B}, ket::Ket{B}) where B
     result = op.op * ket
     result isa Number ? op.coeff * result : op.coeff * result
 end
 
-function Base.:*(op::ScaledOperator{B}, ket::weightedKet{B}) where B
+function Base.:*(op::ScaledOperator{B}, ket::WeightedKet{B}) where B
     result = op.op * ket
     result isa Number ? op.coeff * result : op.coeff * result
 end
 
-function Base.:*(op::ScaledOperator{B}, ket::sumKet{B,T}) where {B,T}
+function Base.:*(op::ScaledOperator{B}, ket::SumKet{B,T}) where {B,T}
     result = op.op * ket
     result isa Number ? op.coeff * result : op.coeff * result
 end
@@ -265,8 +265,8 @@ function Base.:*(op::ScaledOperator{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B
     result isa Number ? op.coeff * result : op.coeff * result
 end
 
-# ScaledOperator on SumProductKet (CompositeBasis)
-function Base.:*(op::ScaledOperator{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
+# ScaledOperator on SumKet (CompositeBasis)
+function Base.:*(op::ScaledOperator{CompositeBasis{B1,B2}}, ket::SumKet{B1,B2,T}) where {B1,B2,T}
     result = op.op * ket
     result isa Number ? op.coeff * result : op.coeff * result
 end
@@ -306,7 +306,7 @@ function Base.show(io::IO, prod::OperatorProduct)
 end
 
 # Apply product: (ÂB̂)|ψ⟩ = Â(B̂|ψ⟩) - specific ket types to avoid ambiguity
-function Base.:*(prod::OperatorProduct{B}, ket::BasisKet{B}) where B
+function Base.:*(prod::OperatorProduct{B}, ket::Ket{B}) where B
     result = ket
     for op in reverse(prod.ops)
         result = op * result
@@ -315,7 +315,7 @@ function Base.:*(prod::OperatorProduct{B}, ket::BasisKet{B}) where B
     result
 end
 
-function Base.:*(prod::OperatorProduct{B}, ket::weightedKet{B}) where B
+function Base.:*(prod::OperatorProduct{B}, ket::WeightedKet{B}) where B
     result = ket
     for op in reverse(prod.ops)
         result = op * result
@@ -324,7 +324,7 @@ function Base.:*(prod::OperatorProduct{B}, ket::weightedKet{B}) where B
     result
 end
 
-function Base.:*(prod::OperatorProduct{B}, ket::sumKet{B,T}) where {B,T}
+function Base.:*(prod::OperatorProduct{B}, ket::SumKet{B,T}) where {B,T}
     result = ket
     for op in reverse(prod.ops)
         result = op * result
@@ -343,8 +343,8 @@ function Base.:*(prod::OperatorProduct{CompositeBasis{B1,B2}}, ket::ProductKet{B
     result
 end
 
-# OperatorProduct on SumProductKet (CompositeBasis)
-function Base.:*(prod::OperatorProduct{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
+# OperatorProduct on SumKet (CompositeBasis)
+function Base.:*(prod::OperatorProduct{CompositeBasis{B1,B2}}, ket::SumKet{B1,B2,T}) where {B1,B2,T}
     result = ket
     for op in reverse(prod.ops)
         result = op * result
@@ -364,9 +364,9 @@ end
 
 A quantum operator defined by a function. Created via `FunctionOperator(name, basis) do ket ... end`.
 
-The `action` function receives a `BasisKet` and should return:
+The `action` function receives a `Ket` and should return:
 - A number (scalar)
-- A ket (`BasisKet`, `weightedKet`, or `sumKet`)
+- A ket (`Ket`, `WeightedKet`, or `SumKet`)
 - Zero (for annihilation of vacuum, etc.)
 
 Optionally provide `adjoint_action` to define how the adjoint operator acts.
@@ -382,18 +382,18 @@ Fb = Basis(F, :n)
 # Annihilation operator: â|n⟩ = √n |n-1⟩
 â = FunctionOperator(:â, Fb) do ket
     n = parse(Int, string(ket.index))
-    n == 0 ? 0 : √n * BasisKet(Fb, n - 1)
+    n == 0 ? 0 : √n * Ket(Fb, n - 1)
 end
 
 # With explicit adjoint action (creation operator):
 â = FunctionOperator(:â, Fb; 
     adjoint_action = ket -> begin
         n = parse(Int, string(ket.index))
-        √(n + 1) * BasisKet(Fb, n + 1)
+        √(n + 1) * Ket(Fb, n + 1)
     end
 ) do ket
     n = parse(Int, string(ket.index))
-    n == 0 ? 0 : √n * BasisKet(Fb, n - 1)
+    n == 0 ? 0 : √n * Ket(Fb, n - 1)
 end
 ```
 
@@ -424,7 +424,7 @@ function FunctionOperator(name::Symbol, basis::B, action::F; adjoint_action::Uni
 end
 
 # Apply
-function Base.:*(op::FunctionOperator{B}, ket::BasisKet{B}) where {B<:AbstractBasis}
+function Base.:*(op::FunctionOperator{B}, ket::Ket{B}) where {B<:AbstractBasis}
     op.action(ket)
 end
 
@@ -433,8 +433,8 @@ function Base.:*(op::FunctionOperator{CompositeBasis{B1,B2}}, ket::ProductKet{B1
     op.action(ket)
 end
 
-# SumProductKet lives in CompositeBasis{B1,B2}
-function Base.:*(op::FunctionOperator{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1<:AbstractBasis, B2<:AbstractBasis, T}
+# SumKet lives in CompositeBasis{B1,B2}
+function Base.:*(op::FunctionOperator{CompositeBasis{B1,B2}}, ket::SumKet{B1,B2,T}) where {B1<:AbstractBasis, B2<:AbstractBasis, T}
     total = nothing
     for (k, w) in zip(ket.kets, ket.weights)
         result = op.action(k)
@@ -446,13 +446,13 @@ function Base.:*(op::FunctionOperator{CompositeBasis{B1,B2}}, ket::SumProductKet
     isnothing(total) ? 0 : total
 end
 
-function Base.:*(op::FunctionOperator, ket::weightedKet)
+function Base.:*(op::FunctionOperator, ket::WeightedKet)
     result = op * ket.Ket
     result isa Number ? result * ket.weight : ket.weight * result
 end
 
-function Base.:*(op::FunctionOperator, ket::sumKet{B,T}) where {B,T}
-    results = [op * BasisKet{B}(k.index) for k in ket.kets]
+function Base.:*(op::FunctionOperator, ket::SumKet{B,T}) where {B,T}
+    results = [op * Ket{B}(k.index) for k in ket.kets]
     weights = ket.weights
     
     total = nothing
@@ -489,7 +489,7 @@ Base.adjoint(op::AdjointFunctionOperator) = op.parent
 Base.show(io::IO, op::AdjointFunctionOperator) = print(io, op.parent.name, "†")
 
 # AdjointFunctionOperator application - uses adjoint_action if defined, otherwise symbolic
-function Base.:*(op::AdjointFunctionOperator{B}, ket::BasisKet{B}) where B
+function Base.:*(op::AdjointFunctionOperator{B}, ket::Ket{B}) where B
     if !isnothing(op.parent.adjoint_action)
         op.parent.adjoint_action(ket)
     else
@@ -506,8 +506,8 @@ function Base.:*(op::AdjointFunctionOperator{CompositeBasis{B1,B2}}, ket::Produc
     end
 end
 
-# SumProductKet lives in CompositeBasis{B1,B2}
-function Base.:*(op::AdjointFunctionOperator{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1<:AbstractBasis, B2<:AbstractBasis, T}
+# SumKet lives in CompositeBasis{B1,B2}
+function Base.:*(op::AdjointFunctionOperator{CompositeBasis{B1,B2}}, ket::SumKet{B1,B2,T}) where {B1<:AbstractBasis, B2<:AbstractBasis, T}
     total = nothing
     for (k, w) in zip(ket.kets, ket.weights)
         result = op * k
@@ -519,12 +519,12 @@ function Base.:*(op::AdjointFunctionOperator{CompositeBasis{B1,B2}}, ket::SumPro
     isnothing(total) ? 0 : total
 end
 
-function Base.:*(op::AdjointFunctionOperator{B}, ket::weightedKet{B}) where B
+function Base.:*(op::AdjointFunctionOperator{B}, ket::WeightedKet{B}) where B
     result = op * ket.Ket
     result isa Number ? result * ket.weight : ket.weight * result
 end
 
-function Base.:*(op::AdjointFunctionOperator{B}, ket::sumKet{B,T}) where {B,T}
+function Base.:*(op::AdjointFunctionOperator{B}, ket::SumKet{B,T}) where {B,T}
     total = nothing
     for (k, w) in zip(ket.kets, ket.weights)
         result = op * k
@@ -581,8 +581,8 @@ F = FockSpace(:mode)
 Fb = Basis(F, :n)
 â, â† = create_ladder_operators(Fb)
 
-n0 = BasisKet(Fb, 0)
-n1 = BasisKet(Fb, 1)
+n0 = Ket(Fb, 0)
+n1 = Ket(Fb, 1)
 
 â * n1   # → √1 |0⟩
 â† * n0  # → √1 |1⟩
@@ -592,11 +592,11 @@ function create_ladder_operators(basis::B; name::Symbol=:a) where B<:AbstractBas
     â = FunctionOperator(name, basis; 
         adjoint_action = ket -> begin
             n = ket.index isa Symbol ? parse(Int, string(ket.index)) : Int(ket.index)
-            √(n + 1) * BasisKet(basis, n + 1)
+            √(n + 1) * Ket(basis, n + 1)
         end
     ) do ket
         n = ket.index isa Symbol ? parse(Int, string(ket.index)) : Int(ket.index)
-        n == 0 ? 0 : √n * BasisKet(basis, n - 1)
+        n == 0 ? 0 : √n * Ket(basis, n - 1)
     end
     
     return â, â'
@@ -631,7 +631,7 @@ end
 # ⟨ψ|Ô|ϕ⟩ = ⟨ψ|(Ô|ϕ⟩) - same basis
 function Base.:*(ob::OpBra{B,B}, ket::AbstractKet{B}) where B
     result = ob.op * ket
-    result isa Number ? result * (ob.bra * BasisKet{B}(nothing)) : ob.bra * result
+    result isa Number ? result * (ob.bra * Ket{B}(nothing)) : ob.bra * result
 end
 
 # ⟨ψ|Ô|ϕ⟩ - cross-basis: apply operator to ket, then inner product
@@ -763,43 +763,43 @@ function Base.:*(op::TensorOperator{B1,B2}, ket::ProductKet{B1,B2}) where {B1,B2
 end
 
 # Helper to combine tensor product results
-function _tensor_combine(r1::BasisKet{B1}, r2::BasisKet{B2}) where {B1,B2}
+function _tensor_combine(r1::Ket{B1}, r2::Ket{B2}) where {B1,B2}
     ProductKet(r1, r2)
 end
 
-function _tensor_combine(r1::weightedKet{B1}, r2::BasisKet{B2}) where {B1,B2}
+function _tensor_combine(r1::WeightedKet{B1}, r2::Ket{B2}) where {B1,B2}
     r1.weight * ProductKet(r1.Ket, r2)
 end
 
-function _tensor_combine(r1::BasisKet{B1}, r2::weightedKet{B2}) where {B1,B2}
+function _tensor_combine(r1::Ket{B1}, r2::WeightedKet{B2}) where {B1,B2}
     r2.weight * ProductKet(r1, r2.Ket)
 end
 
-function _tensor_combine(r1::weightedKet{B1}, r2::weightedKet{B2}) where {B1,B2}
+function _tensor_combine(r1::WeightedKet{B1}, r2::WeightedKet{B2}) where {B1,B2}
     (r1.weight * r2.weight) * ProductKet(r1.Ket, r2.Ket)
 end
 
-function _tensor_combine(r1::sumKet{B1,T1}, r2::BasisKet{B2}) where {B1,B2,T1}
+function _tensor_combine(r1::SumKet{B1,T1}, r2::Ket{B2}) where {B1,B2,T1}
     kets = [ProductKet(k, r2) for k in r1.kets]
-    SumProductKet(kets, r1.weights)
+    SumKet(kets, r1.weights)
 end
 
-function _tensor_combine(r1::BasisKet{B1}, r2::sumKet{B2,T2}) where {B1,B2,T2}
+function _tensor_combine(r1::Ket{B1}, r2::SumKet{B2,T2}) where {B1,B2,T2}
     kets = [ProductKet(r1, k) for k in r2.kets]
-    SumProductKet(kets, r2.weights)
+    SumKet(kets, r2.weights)
 end
 
-function _tensor_combine(r1::weightedKet{B1}, r2::sumKet{B2,T2}) where {B1,B2,T2}
+function _tensor_combine(r1::WeightedKet{B1}, r2::SumKet{B2,T2}) where {B1,B2,T2}
     kets = [ProductKet(r1.Ket, k) for k in r2.kets]
-    SumProductKet(kets, r1.weight .* r2.weights)
+    SumKet(kets, r1.weight .* r2.weights)
 end
 
-function _tensor_combine(r1::sumKet{B1,T1}, r2::weightedKet{B2}) where {B1,B2,T1}
+function _tensor_combine(r1::SumKet{B1,T1}, r2::WeightedKet{B2}) where {B1,B2,T1}
     kets = [ProductKet(k, r2.Ket) for k in r1.kets]
-    SumProductKet(kets, r2.weight .* r1.weights)
+    SumKet(kets, r2.weight .* r1.weights)
 end
 
-function _tensor_combine(r1::sumKet{B1,T1}, r2::sumKet{B2,T2}) where {B1,B2,T1,T2}
+function _tensor_combine(r1::SumKet{B1,T1}, r2::SumKet{B2,T2}) where {B1,B2,T1,T2}
     kets = ProductKet{B1,B2}[]
     weights = promote_type(T1,T2)[]
     for (k1, w1) in zip(r1.kets, r1.weights)
@@ -808,7 +808,7 @@ function _tensor_combine(r1::sumKet{B1,T1}, r2::sumKet{B2,T2}) where {B1,B2,T1,T
             push!(weights, w1 * w2)
         end
     end
-    SumProductKet(kets, weights)
+    SumKet(kets, weights)
 end
 
 # Handle Number results from operator application
@@ -825,12 +825,12 @@ function _tensor_combine(r1::Number, r2::Number)
 end
 
 # Helper to convert various ket types to a consistent form
-_to_sum_ket(k::BasisKet) = sumKet(k)
-_to_sum_ket(k::weightedKet) = sumKet(k)
-_to_sum_ket(k::sumKet) = k
+_to_sum_ket(k::Ket) = SumKet(k)
+_to_sum_ket(k::WeightedKet) = SumKet(k)
+_to_sum_ket(k::SumKet) = k
 
-# Apply TensorOperator to SumProductKet
-function Base.:*(op::TensorOperator{B1,B2}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
+# Apply TensorOperator to SumKet
+function Base.:*(op::TensorOperator{B1,B2}, ket::SumKet{B1,B2,T}) where {B1,B2,T}
     total = nothing
     for (k, w) in zip(ket.kets, ket.weights)
         result = op * k
@@ -890,7 +890,7 @@ function Base.:*(::IdentityOp{CompositeBasis{B1,B2}}, ket::ProductKet{B1,B2}) wh
     ket
 end
 
-function Base.:*(::IdentityOp{CompositeBasis{B1,B2}}, ket::SumProductKet{B1,B2,T}) where {B1,B2,T}
+function Base.:*(::IdentityOp{CompositeBasis{B1,B2}}, ket::SumKet{B1,B2,T}) where {B1,B2,T}
     ket
 end
 
@@ -975,14 +975,14 @@ function swap(bra::ProductBra{B1,B2}) where {B1,B2}
     ProductBra(bra.bra2, bra.bra1)
 end
 
-function swap(sk::SumProductKet{B1,B2,T}) where {B1,B2,T}
+function swap(sk::SumKet{B1,B2,T}) where {B1,B2,T}
     swapped_kets = [ProductKet(k.ket2, k.ket1) for k in sk.kets]
-    SumProductKet(swapped_kets, sk.weights; name=sk.display_name)
+    SumKet(swapped_kets, sk.weights; name=sk.display_name)
 end
 
-function swap(sb::SumProductBra{B1,B2,T}) where {B1,B2,T}
+function swap(sb::SumBra{B1,B2,T}) where {B1,B2,T}
     swapped_bras = [ProductBra(b.bra2, b.bra1) for b in sb.bras]
-    SumProductBra(swapped_bras, sb.weights; name=sb.display_name)
+    SumBra(swapped_bras, sb.weights; name=sb.display_name)
 end
 
 function swap(op::TensorOperator{B1,B2}) where {B1,B2}
@@ -1001,7 +1001,7 @@ If the object's basis order matches, returns as-is. If swapped, applies swap.
 H1, H2 = HilbertSpace(:A, 2), HilbertSpace(:B, 2)
 B1, B2 = Basis(H1, :z), Basis(H2, :z)
 
-ket = BasisKet(B2, :↑) ⊗ BasisKet(B1, :↓)  # In B2⊗B1 order
+ket = Ket(B2, :↑) ⊗ Ket(B1, :↓)  # In B2⊗B1 order
 target = B1 ⊗ B2
 
 reorder(ket, target)  # → |↓⟩⊗|↑⟩ in B1⊗B2 order
@@ -1020,7 +1020,7 @@ function reorder(ket::ProductKet{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A
     end
 end
 
-function reorder(sk::SumProductKet{A1,A2,T}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,T,B1,B2}
+function reorder(sk::SumKet{A1,A2,T}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,T,B1,B2}
     if A1 == B1 && A2 == B2
         return sk
     elseif A1 == B2 && A2 == B1
@@ -1040,7 +1040,7 @@ function reorder(bra::ProductBra{A1,A2}, ::Type{CompositeBasis{B1,B2}}) where {A
     end
 end
 
-function reorder(sb::SumProductBra{A1,A2,T}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,T,B1,B2}
+function reorder(sb::SumBra{A1,A2,T}, ::Type{CompositeBasis{B1,B2}}) where {A1,A2,T,B1,B2}
     if A1 == B1 && A2 == B2
         return sb
     elseif A1 == B2 && A2 == B1
@@ -1091,7 +1091,7 @@ partial_trace(op, 2)  # → Tr(P2)·P1 = P1
 function partial_trace(op::TensorOperator{B1,B2,Operator{B1,T1},O2}, subsystem::Int) where {B1,B2,T1,O2}
     if subsystem == 1
         # Trace over first: Tr(|ψ⟩⟨ϕ|) = ⟨ϕ|ψ⟩
-        inner = op.op1.bra * BasisKet{B1}(op.op1.ket.index)
+        inner = op.op1.bra * Ket{B1}(op.op1.ket.index)
         coeff = op.op1.coeff * inner
         return coeff * op.op2
     elseif subsystem == 2
@@ -1104,7 +1104,7 @@ end
 function partial_trace(op::TensorOperator{B1,B2,O1,Operator{B2,T2}}, subsystem::Int) where {B1,B2,O1,T2}
     if subsystem == 2
         # Trace over second: Tr(|ψ⟩⟨ϕ|) = ⟨ϕ|ψ⟩
-        inner = op.op2.bra * BasisKet{B2}(op.op2.ket.index)
+        inner = op.op2.bra * Ket{B2}(op.op2.ket.index)
         coeff = op.op2.coeff * inner
         return coeff * op.op1
     elseif subsystem == 1
@@ -1117,11 +1117,11 @@ end
 # Both are Operator type
 function partial_trace(op::TensorOperator{B1,B2,Operator{B1,T1},Operator{B2,T2}}, subsystem::Int) where {B1,B2,T1,T2}
     if subsystem == 1
-        inner = op.op1.bra * BasisKet{B1}(op.op1.ket.index)
+        inner = op.op1.bra * Ket{B1}(op.op1.ket.index)
         coeff = op.op1.coeff * inner
         return coeff * op.op2
     elseif subsystem == 2
-        inner = op.op2.bra * BasisKet{B2}(op.op2.ket.index)
+        inner = op.op2.bra * Ket{B2}(op.op2.ket.index)
         coeff = op.op2.coeff * inner
         return coeff * op.op1
     else
@@ -1150,7 +1150,7 @@ function _try_transform_and_apply(op::AbstractOperator{B1}, ket::AbstractKet{B2}
     # Check if same space
     space(B1) == space(B2) || return nothing
     # Check if ket is already in operator's basis (for composite bases)
-    # ProductKet{A1,A2} is in CompositeBasis{A1,A2}, SumProductKet{A1,A2} is also in CompositeBasis{A1,A2}
+    # ProductKet{A1,A2} is in CompositeBasis{A1,A2}, SumKet{A1,A2} is also in CompositeBasis{A1,A2}
     ket_basis = _ket_composite_basis(ket)
     if !isnothing(ket_basis) && ket_basis == B1
         return nothing  # Already in same basis - let specific same-basis method handle it
@@ -1164,7 +1164,7 @@ end
 
 # Helper to get the composite basis type from a product ket
 _ket_composite_basis(::ProductKet{A1,A2}) where {A1,A2} = CompositeBasis{A1,A2}
-_ket_composite_basis(::SumProductKet{A1,A2}) where {A1,A2} = CompositeBasis{A1,A2}
+_ket_composite_basis(::SumKet{A1,A2}) where {A1,A2} = CompositeBasis{A1,A2}
 _ket_composite_basis(::AbstractKet) = nothing
 
 # Cross-basis application for all operator types
