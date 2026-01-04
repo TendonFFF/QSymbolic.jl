@@ -199,3 +199,42 @@ function Base.show(io::IO, ::CompositeBasis{Bs}) where {Bs}
         show(io, B())
     end
 end
+
+# Iteration protocol for HilbertSpace to enable destructuring
+# Allows: H, Hb = HilbertSpace(:H, 2) to get both space and default basis
+# Defined here after Basis type is available
+@doc """
+    iterate(space::HilbertSpace)
+    iterate(space::HilbertSpace, state)
+
+Iteration protocol for `HilbertSpace` that enables convenient destructuring.
+
+# Examples
+```jldoctest
+julia> H = HilbertSpace(:H, 2)  # Just the space
+ℋ(H, dim=2)
+
+julia> H, Hb = HilbertSpace(:H, 2)  # Space and default basis
+(ℋ(H, dim=2), Basis{default})
+```
+
+The first iteration returns the space itself, and the second returns a default basis.
+This allows for convenient syntax where you can get both the space and a default basis in one line.
+""" Base.iterate
+function Base.iterate(space::HilbertSpace)
+    # First iteration: return the space itself, with state=1
+    return (space, 1)
+end
+
+function Base.iterate(space::HilbertSpace, state::Int)
+    if state == 1
+        # Second iteration: return a default basis, with state=2
+        return (Basis(space, :default), 2)
+    else
+        # No more iterations
+        return nothing
+    end
+end
+
+# Declare HilbertSpace as iterable with length 2
+Base.length(::HilbertSpace) = 2

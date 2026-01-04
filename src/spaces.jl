@@ -69,3 +69,5 @@ Tensor product of two Hilbert spaces.
         nameA == nameB && dimA == dimB
     end
 end
+
+# Note: Iteration protocol for HilbertSpace is defined in basis.jl after Basis type is available
