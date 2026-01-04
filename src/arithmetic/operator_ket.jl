@@ -30,6 +30,11 @@ function Base.:*(op::Operator, ket::AbstractKet)
     isnothing(total) ? 0 : total
 end
 
+# Apply FunctionOperator to ket
+function Base.:*(op::FunctionOperator{S, B}, ket::AbstractKet{B}) where {S, B}
+    op.action(ket)
+end
+
 # Adjoint: (Σᵢ wᵢ |ψᵢ⟩⟨ϕᵢ|)† = Σᵢ wᵢ* |ϕᵢ⟩⟨ψᵢ|
 function Base.adjoint(op::Operator{S}) where S
     Operator{S}([adjoint(o) for o in op.outers], [conj(w) for w in op.weights])

@@ -441,6 +441,32 @@ end
     @test product * down == 0
 end
 
+@testitem "Function operators" begin
+    using QSymbolic
+    
+    F = FockSpace(:mode)
+    Fb = Basis(F, :n)
+    
+    # Simple number operator: N|n⟩ = n|n⟩
+    N = FunctionOperator(Fb, name=:N) do ket
+        n = parse(Int, string(ket.index))
+        n * ket
+    end
+    
+    n0 = Ket(Fb, 0)
+    n3 = Ket(Fb, 3)
+    
+    # N|0⟩ = 0|0⟩ (zero weight, not literal 0)
+    result0 = N * n0
+    @test result0 isa WeightedKet
+    @test result0.weight == 0
+    
+    # N|3⟩ = 3|3⟩
+    result3 = N * n3
+    @test result3 isa WeightedKet
+    @test result3.weight == 3
+end
+
 @testitem "Symbolic indices for kets and bras" begin
     using QSymbolic
     
