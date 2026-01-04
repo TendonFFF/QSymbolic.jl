@@ -260,69 +260,11 @@ function Base.show(io::IO, ip::InnerProduct)
 end
 
 @eval begin
-    # Same basis: orthonormal → δᵢⱼ or Kronecker delta for symbolic
+    # Same basis: use contraction rule (default is orthonormal)
     # Handles arbitrary number of indices
     function Base.$(:(*))(bra::Bra{B}, ket::Ket{B}) where B
-        i, j = bra.index, ket.index
-        
-        # Handle multi-index case: must check all components
-        if i isa Tuple && j isa Tuple
-            # Both are tuples - check if same length
-            if length(i) != length(j)
-                # Different number of indices → orthogonal
-                return 0
-            end
-            
-            # Check if any index is symbolic
-            has_symbolic = any(idx isa AbstractSymbolic for idx in i) || 
-                          any(idx isa AbstractSymbolic for idx in j)
-            
-            if has_symbolic
-                # If any component is symbolic, need Kronecker delta
-                # Check if all components are symbolically equal
-                if all(isequal(i[k], j[k]) for k in 1:length(i))
-                    return 1
-                else
-                    # Return product of Kronecker deltas for each component
-                    result = 1
-                    for k in 1:length(i)
-                        if i[k] isa AbstractSymbolic || j[k] isa AbstractSymbolic
-                            if isequal(i[k], j[k])
-                                # Symbolically equal component contributes 1
-                                continue
-                            else
-                                result = simplify(result * KroneckerDelta(i[k], j[k]))
-                            end
-                        else
-                            # Concrete component
-                            if i[k] != j[k]
-                                return 0  # Orthogonal
-                            end
-                        end
-                    end
-                    return result
-                end
-            else
-                # All concrete: evaluate directly
-                return all(i[k] == j[k] for k in 1:length(i)) ? 1 : 0
-            end
-        elseif i isa Tuple || j isa Tuple
-            # One is tuple, one is not → incompatible indices
-            return 0
-        else
-            # Single indices (not tuples)
-            if i isa AbstractSymbolic || j isa AbstractSymbolic
-                # Try to simplify if indices are symbolically equal
-                if isequal(i, j)
-                    return 1
-                else
-                    return KroneckerDelta(i, j)
-                end
-            else
-                # Both concrete: evaluate directly
-                return i == j ? 1 : 0
-            end
-        end
+        # Use the contraction rule system
+        return apply_contraction_rule(B, bra.index, ket.index)
     end
     
     # Cross-basis: return symbolic or compute via transform
