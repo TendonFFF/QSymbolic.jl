@@ -326,6 +326,16 @@ m = Sym(:m)
 # With concrete values
 KroneckerDelta(1, 1)  # → 1
 KroneckerDelta(1, 2)  # → 0
+
+# With literal Symbols
+KroneckerDelta(:a, :a) |> simplify  # → 1
+KroneckerDelta(:a, :b) |> simplify  # → 0
+
+# With symbolic variables (could be equal after substitution)
+a = Sym(:a)
+b = Sym(:b)
+KroneckerDelta(a, b) |> simplify  # → δ(a,b) (not simplified - could be equal)
+KroneckerDelta(a, a) |> simplify  # → 1 (same variable)
 ```
 
 Kronecker deltas arise naturally from inner products of basis states with symbolic indices:
@@ -343,6 +353,117 @@ bra_m = Bra(Fb, m)
 # Inner product gives Kronecker delta
 bra_m * ket_n  # → δ(m,n)
 ```
+
+## Custom Contraction Rules
+
+By default, QSymbolic uses orthonormal inner products: `⟨i|j⟩ = δᵢⱼ`. You can define custom contraction rules for specific bases using `define_contraction_rule!`.
+
+### Basic Usage
+
+```julia
+using QSymbolic
+
+# Create a custom basis
+H = HilbertSpace(:H, 2)
+Cb = Basis(H, :coherent)
+
+# Define a custom contraction rule
+define_contraction_rule!(typeof(Cb)) do bra_idx, ket_idx
+    # Example: coherent states have overlap exp(-|α-β|²/2)
+    # For simplicity, returning symbolic expression
+    if bra_idx isa AbstractSymbolic || ket_idx isa AbstractSymbolic
+        # Keep symbolic
+        return KroneckerDelta(bra_idx, ket_idx)
+    else
+        # Compute numerically
+        return bra_idx == ket_idx ? 1 : 0
+    end
+end
+```
+
+### Working with Symbolic Indices
+
+!!! warning "Important: Use `isequal()` instead of `==`"
+    When writing contraction rules that might receive symbolic values (`Symbolics.Num`),
+    **never use `==` for comparisons**. The `==` operator on symbolic values returns
+    a symbolic expression, not a boolean, which will cause errors in `if` statements.
+
+    Instead, use:
+    - `isequal(a, b)` - Returns `true` if `a` and `b` are identical objects
+    - `a isa AbstractSymbolic` - Check if a value is symbolic
+    - `a isa Symbol` - Check if a value is a literal Julia Symbol
+
+### Example: Jaynes-Cummings Model
+
+Here's a complete example for a composite basis in a Jaynes-Cummings system:
+
+```julia
+using QSymbolic
+
+# Create spaces
+S_cavity, B_cavity = FockSpace(:cavity)
+S_dot = HilbertSpace(:dot, 3)
+
+# Create composite basis
+S_system = S_cavity ⊗ S_dot
+B_JC = Basis(S_system, :JC)
+
+# Define contraction rule for JC basis
+define_contraction_rule!(typeof(B_JC)) do bra_ind, ket_ind
+    m, ξ = bra_ind  # (photon number, dot state)
+    n, σ = ket_ind
+
+    # Handle special ground state symbol
+    # Use isequal() NOT == for symbol comparison!
+    if isequal(m, :g)
+        if isequal(n, :g)
+            return 1
+        elseif n isa Symbol
+            return 0  # Different literal symbols
+        end
+        return KroneckerDelta(m, n) |> simplify
+    end
+
+    # Check if values are symbolic
+    m_symbolic = m isa AbstractSymbolic
+    n_symbolic = n isa AbstractSymbolic
+    ξ_symbolic = ξ isa AbstractSymbolic
+    σ_symbolic = σ isa AbstractSymbolic
+
+    # Photon number overlap
+    if !m_symbolic && !n_symbolic
+        num = isequal(m, n) ? 1 : 0
+    else
+        num = KroneckerDelta(m, n) |> simplify
+    end
+
+    # Dot state overlap
+    if !ξ_symbolic && !σ_symbolic
+        par = isequal(ξ, σ) ? 1 : 0
+    else
+        par = KroneckerDelta(ξ, σ) |> simplify
+    end
+
+    return num * par
+end
+
+# Now inner products work correctly
+g0 = Ket(B_JC, (Sym(:n), Sym(:σ)))
+g0' * g0  # → 1 (same symbolic indices)
+
+k1 = Ket(B_JC, (1, 2))
+k2 = Ket(B_JC, (1, 3))
+k1' * k2  # → 0 (different second index)
+```
+
+### Contraction Rule API
+
+| Function | Description |
+|:---------|:------------|
+| `define_contraction_rule!(typeof(basis), rule)` | Define custom rule for a basis type |
+| `has_contraction_rule(typeof(basis))` | Check if custom rule exists |
+| `apply_contraction_rule(typeof(basis), i, j)` | Manually apply rule |
+| `clear_contraction_rules!()` | Remove all custom rules |
 
 ## API Summary
 
