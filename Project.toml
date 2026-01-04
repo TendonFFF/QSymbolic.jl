@@ -1,7 +1,7 @@
 name = "QSymbolic"
 uuid = "51350ce6-7c10-437b-ae15-8948c6144b7d"
 authors = ["Li-Xun Cai <cailixun23@gmail.com>"]
-version = "0.3.0"
+version = "0.4.0"
 
 [deps]
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
