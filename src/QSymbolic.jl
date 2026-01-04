@@ -12,10 +12,10 @@ export AbstractBasis, Basis, DefaultBasis, CompositeBasis
 
 # Types - States
 export AbstractKet, AbstractBra
-export BasisKet, BasisBra, weightedKet, weightedBra, sumKet, sumBra
-export ProductKet, ProductBra, SumProductKet, SumProductBra
+export Ket, Bra, WeightedKet, WeightedBra, SumKet, SumBra
+export ProductKet, ProductBra
 export InnerProduct
-export SingleIndex, MultiIndex, KetIndex  # Index type aliases
+export SingleIndexValue, KetIndex  # Index type aliases
 
 # Types - Operators
 export AbstractOperator, Operator, SumOperator, ScaledOperator, OperatorProduct
@@ -40,11 +40,16 @@ export check_space, check_basis
 # Functions - Transforms
 export define_transform!, has_transform, transform, clear_transforms!
 
+# Functions - Contraction Rules
+export define_contraction_rule!, has_contraction_rule, clear_contraction_rules!
+export apply_contraction_rule
+
 # Include source files in dependency order
 include("abstract_types.jl")
 include("symbolic_scalar_symbolics.jl")  # New Symbolics.jl-based implementation
 include("spaces.jl")
 include("basis.jl")
+include("contraction_rules.jl")  # Contraction rule system
 include("states.jl")
 include("basis_transforms.jl")
 include("arithmetic.jl")

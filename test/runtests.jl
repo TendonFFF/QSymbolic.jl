@@ -32,20 +32,20 @@ end
     @test basisname(Zb) == :z
 end
 
-@testitem "BasisKet and BasisBra" begin
+@testitem "Ket and Bra" begin
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
     
     # Default basis (backward compatible)
-    ψ = BasisKet(H, :ψ)
-    ϕ = BasisKet(H, :ϕ)
+    ψ = Ket(H, :ψ)
+    ϕ = Ket(H, :ϕ)
     
-    @test ψ == BasisKet(H, :ψ)
+    @test ψ == Ket(H, :ψ)
     @test ψ != ϕ
     
     # Adjoint
-    @test ψ' isa BasisBra
+    @test ψ' isa Bra
     @test (ψ')' == ψ
     
     # Inner products (same basis → orthonormal)
@@ -54,8 +54,8 @@ end
     
     # Explicit basis
     Zb = Basis(H, :z)
-    up = BasisKet(Zb, :↑)
-    down = BasisKet(Zb, :↓)
+    up = Ket(Zb, :↑)
+    down = Ket(Zb, :↓)
     @test up' * up == 1
     @test up' * down == 0
 end
@@ -67,15 +67,15 @@ end
     Zb = Basis(H, :z)
     Xb = Basis(H, :x)
     
-    up_z = BasisKet(Zb, :↑)
-    up_x = BasisKet(Xb, :↑)
+    up_z = Ket(Zb, :↑)
+    up_x = Ket(Xb, :↑)
     
     # No transform defined → symbolic
     result = up_z' * up_x
     @test result isa InnerProduct
     
     # Define transform: |↑ₓ⟩ = (|↑ᵤ⟩ + |↓ᵤ⟩)/√2
-    down_z = BasisKet(Zb, :↓)
+    down_z = Ket(Zb, :↓)
     define_transform!(Xb, Zb) do idx
         if idx == :↑
             (up_z + down_z) / √2
@@ -95,10 +95,10 @@ end
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
-    ψ = BasisKet(H, :ψ)
+    ψ = Ket(H, :ψ)
     
     wket = 2 * ψ
-    @test wket isa weightedKet
+    @test wket isa WeightedKet
     @test wket.weight == 2
     
     wket2 = 3 * wket
@@ -110,28 +110,28 @@ end
     
     # Bras
     wbra = 2 * ψ'
-    @test wbra isa weightedBra
+    @test wbra isa WeightedBra
 end
 
 @testitem "Addition" begin
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
-    ψ = BasisKet(H, :ψ)
-    ϕ = BasisKet(H, :ϕ)
+    ψ = Ket(H, :ψ)
+    ϕ = Ket(H, :ϕ)
     
     sum_ket = ψ + ϕ
-    @test sum_ket isa sumKet
+    @test sum_ket isa SumKet
     @test length(sum_ket.kets) == 2
     
     # Subtraction
     diff_ket = ψ - ϕ
-    @test diff_ket isa sumKet
+    @test diff_ket isa SumKet
     @test diff_ket.weights == [1, -1]
     
     # Same ket addition
     double_ψ = ψ + ψ
-    @test double_ψ isa weightedKet
+    @test double_ψ isa WeightedKet
     @test double_ψ.weight == 2
 end
 
@@ -139,8 +139,8 @@ end
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
-    ψ = BasisKet(H, :ψ)
-    ϕ = BasisKet(H, :ϕ)
+    ψ = Ket(H, :ψ)
+    ϕ = Ket(H, :ϕ)
     
     # ⟨ψ|ψ⟩ + ⟨ψ|ϕ⟩ = 1 + 0 = 1
     @test (ψ + ϕ)' * ψ == 1
@@ -166,8 +166,8 @@ end
     H1 = HilbertSpace(:A, 2)
     H2 = HilbertSpace(:B, 2)
     
-    ψ = BasisKet(H1, :ψ)
-    ϕ = BasisKet(H2, :ϕ)
+    ψ = Ket(H1, :ψ)
+    ϕ = Ket(H2, :ϕ)
     
     # Tensor product
     product = ψ ⊗ ϕ
@@ -181,7 +181,7 @@ end
     @test product' * product == 1
     
     # Orthogonal states
-    χ = BasisKet(H2, :χ)
+    χ = Ket(H2, :χ)
     product2 = ψ ⊗ χ
     @test product' * product2 == 0
 end
@@ -195,14 +195,14 @@ end
     # Bases for subsystem A
     Za = Basis(H1, :z)
     Xa = Basis(H1, :x)
-    up_a = BasisKet(Za, :↑)
-    down_a = BasisKet(Za, :↓)
+    up_a = Ket(Za, :↑)
+    down_a = Ket(Za, :↓)
     
     # Bases for subsystem B  
     Zb = Basis(H2, :z)
     Xb = Basis(H2, :x)
-    up_b = BasisKet(Zb, :↑)
-    down_b = BasisKet(Zb, :↓)
+    up_b = Ket(Zb, :↑)
+    down_b = Ket(Zb, :↓)
     
     # Define transforms for each subsystem
     define_transform!(Xa, Za) do idx
@@ -220,12 +220,12 @@ end
     @test has_transform(typeof(XaZb), typeof(ZaZb))
     
     # Product state in x⊗z basis
-    up_x_a = BasisKet(Xa, :↑)
+    up_x_a = Ket(Xa, :↑)
     state = up_x_a ⊗ up_b  # |↑ₓ⟩_A ⊗ |↑ᵤ⟩_B
     
     # Transform to z⊗z basis uses factorized transform
     transformed = transform(state, typeof(ZaZb))
-    @test transformed isa SumProductKet
+    @test transformed isa SumKet
     @test length(transformed.kets) == 2  # (|↑⟩+|↓⟩)/√2 ⊗ |↑⟩
     
     # Verify inner product: ⟨↑↑|transformed⟩ = 1/√2
@@ -364,8 +364,8 @@ end
     
     H = HilbertSpace(:spin, 2)
     Zb = Basis(H, :z)
-    up = BasisKet(Zb, :↑)
-    down = BasisKet(Zb, :↓)
+    up = Ket(Zb, :↑)
+    down = Ket(Zb, :↓)
     
     # Create operator via outer product
     P_up = up * up'
@@ -373,18 +373,18 @@ end
     
     # Projector action
     result = P_up * up
-    @test result isa weightedKet
+    @test result isa WeightedKet
     
     @test P_up * down == 0
     
     # Ladder operator
     σ_plus = up * down'
-    @test (σ_plus * down) isa weightedKet
+    @test (σ_plus * down) isa WeightedKet
     @test σ_plus * up == 0
     
     # Adjoint
     σ_minus = σ_plus'
-    @test (σ_minus * up) isa weightedKet
+    @test (σ_minus * up) isa WeightedKet
     @test σ_minus * down == 0
 end
 
@@ -393,8 +393,8 @@ end
     
     H = HilbertSpace(:spin, 2)
     Zb = Basis(H, :z)
-    up = BasisKet(Zb, :↑)
-    down = BasisKet(Zb, :↓)
+    up = Ket(Zb, :↑)
+    down = Ket(Zb, :↓)
     
     P_up = up * up'
     P_down = down * down'
@@ -402,8 +402,8 @@ end
     # Sum of operators (identity)
     I = P_up + P_down
     @test I isa SumOperator
-    @test (I * up) isa weightedKet
-    @test (I * down) isa weightedKet
+    @test (I * up) isa WeightedKet
+    @test (I * down) isa WeightedKet
     
     # Pauli Z
     σz = P_up - P_down
@@ -412,7 +412,7 @@ end
     # Apply to superposition
     ψ = (up + down) / √2
     result = σz * ψ
-    @test result isa sumKet
+    @test result isa SumKet
     
     # Operator product
     σ_plus = up * down'
@@ -421,7 +421,7 @@ end
     @test product isa OperatorProduct
     
     # (σ+σ-)|↑⟩ = |↑⟩⟨↓|↓⟩⟨↑|↑⟩ = |↑⟩
-    @test (product * up) isa weightedKet
+    @test (product * up) isa WeightedKet
     @test product * down == 0
 end
 
@@ -437,17 +437,17 @@ end
         n * ket
     end
     
-    n0 = BasisKet(Fb, 0)
-    n3 = BasisKet(Fb, 3)
+    n0 = Ket(Fb, 0)
+    n3 = Ket(Fb, 3)
     
     # N|0⟩ = 0|0⟩ (zero weight, not literal 0)
     result0 = N * n0
-    @test result0 isa weightedKet
+    @test result0 isa WeightedKet
     @test result0.weight == 0
     
     # N|3⟩ = 3|3⟩
     result3 = N * n3
-    @test result3 isa weightedKet
+    @test result3 isa WeightedKet
     @test result3.weight == 3
 end
 
@@ -460,20 +460,20 @@ end
     # Create ladder operators with explicit adjoint
     a, adag = create_ladder_operators(Fb)
     
-    n0 = BasisKet(Fb, 0)
-    n1 = BasisKet(Fb, 1)
-    n2 = BasisKet(Fb, 2)
+    n0 = Ket(Fb, 0)
+    n1 = Ket(Fb, 1)
+    n2 = Ket(Fb, 2)
     
     # Annihilation: a|n⟩ = √n |n-1⟩
     @test a * n0 == 0
     result = a * n1
-    @test result isa weightedKet
+    @test result isa WeightedKet
     @test result.weight ≈ 1.0
     @test result.Ket.index == Symbol("0")
     
     # Creation: a†|n⟩ = √(n+1) |n+1⟩
     result = adag * n0
-    @test result isa weightedKet
+    @test result isa WeightedKet
     @test result.weight ≈ 1.0
     @test result.Ket.index == Symbol("1")
     
@@ -482,7 +482,7 @@ end
     @test N isa OperatorProduct
     
     result = N * n2
-    @test result isa weightedKet
+    @test result isa WeightedKet
     @test result.weight ≈ 2.0
     @test result.Ket.index == Symbol("2")
 end
@@ -494,14 +494,14 @@ end
     Fb = Basis(F, :n)
     
     a, adag = create_ladder_operators(Fb)
-    n0 = BasisKet(Fb, 0)
-    n1 = BasisKet(Fb, 1)
+    n0 = Ket(Fb, 0)
+    n1 = Ket(Fb, 1)
     
     # Scalar multiplication
     scaled = 2 * a
     @test scaled isa ScaledOperator
     result = scaled * n1
-    @test result isa weightedKet
+    @test result isa WeightedKet
     @test result.weight ≈ 2.0
     
     # Addition
@@ -526,31 +526,31 @@ end
     # Create symbolic index
     n = Sym(:n)
     
-    # BasisKet with symbolic index
-    ket_n = BasisKet(Fb, n)
-    @test ket_n isa BasisKet
+    # Ket with symbolic index
+    ket_n = Ket(Fb, n)
+    @test ket_n isa Ket
     @test ket_n.index isa AbstractSymbolic
     @test isequal(ket_n.index, n)
     
-    # BasisBra with symbolic index
-    bra_n = BasisBra(Fb, n)
-    @test bra_n isa BasisBra
+    # Bra with symbolic index
+    bra_n = Bra(Fb, n)
+    @test bra_n isa Bra
     @test bra_n.index isa AbstractSymbolic
     
     # Adjoint of ket with symbolic index
     ket_n_adj = ket_n'
-    @test ket_n_adj isa BasisBra
+    @test ket_n_adj isa Bra
     @test isequal(ket_n_adj.index, n)
     
     # Weighted ket with symbolic index
     weighted = 2 * ket_n
-    @test weighted isa weightedKet
+    @test weighted isa WeightedKet
     @test isequal(weighted.Ket.index, n)
     
     # Symbolic weights
     α = Sym(:α)
-    weighted_sym = α * BasisKet(Fb, :0)
-    @test weighted_sym isa weightedKet
+    weighted_sym = α * Ket(Fb, :0)
+    @test weighted_sym isa WeightedKet
     @test weighted_sym.weight isa AbstractSymbolic
     
     # Display (should show symbolic)
@@ -563,15 +563,15 @@ end
     using QSymbolic
     
     H = HilbertSpace(:H, 2)
-    ψ = BasisKet(H, :ψ)
-    ϕ = BasisKet(H, :ϕ)
+    ψ = Ket(H, :ψ)
+    ϕ = Ket(H, :ϕ)
     
     # Symbolic coefficients in sum
     α = Sym(:α)
     β = Sym(:β)
     
     state = α * ψ + β * ϕ
-    @test state isa sumKet
+    @test state isa SumKet
     @test :α in symbols(state.weights[1])
     @test :β in symbols(state.weights[2])
     
@@ -588,34 +588,34 @@ end
     composite = H1 ⊗ H2
     
     # Multi-index with symbols
-    ket_sym = BasisKet(composite, (:↑, :↓))
-    @test ket_sym isa BasisKet
+    ket_sym = Ket(composite, (:↑, :↓))
+    @test ket_sym isa Ket
     @test ket_sym.index == (:↑, :↓)
     @test ket_sym.index isa Tuple
     
     # Multi-index with integers (converted to symbols)
-    ket_int = BasisKet(composite, (0, 1))
+    ket_int = Ket(composite, (0, 1))
     @test ket_int.index == (Symbol("0"), Symbol("1"))
     
     # Multi-index with symbolic
     n = Sym(:n)
     m = Sym(:m)
-    ket_symbolic = BasisKet(composite, (n, m))
+    ket_symbolic = Ket(composite, (n, m))
     @test ket_symbolic.index == (n, m)
     @test ket_symbolic.index[1] isa AbstractSymbolic
     @test ket_symbolic.index[2] isa AbstractSymbolic
     
     # Mixed index (symbol + symbolic)
-    ket_mixed = BasisKet(composite, (:↑, n))
+    ket_mixed = Ket(composite, (:↑, n))
     @test ket_mixed.index == (:↑, n)
     
     # Bra multi-index
-    bra_sym = BasisBra(composite, (:↑, :↓))
+    bra_sym = Bra(composite, (:↑, :↓))
     @test bra_sym.index == (:↑, :↓)
     
     # Adjoint preserves multi-index
     bra_adj = ket_sym'
-    @test bra_adj isa BasisBra
+    @test bra_adj isa Bra
     @test bra_adj.index == (:↑, :↓)
     
     # Display format (comma-separated)
@@ -627,6 +627,6 @@ end
     B1 = Basis(H1, :z)
     B2 = Basis(H2, :z)
     CB = B1 ⊗ B2
-    ket_cb = BasisKet(CB, (n, m))
+    ket_cb = Ket(CB, (n, m))
     @test ket_cb.index == (n, m)
 end

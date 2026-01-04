@@ -163,7 +163,7 @@ Symbolic scalars integrate fully with the quantum state system.
 
 ### Symbolic Indices
 
-BasisKet and BasisBra accept symbolic indices, enabling general representations like |n⟩ for arbitrary n:
+Ket and Bra accept symbolic indices, enabling general representations like |n⟩ for arbitrary n:
 
 ```julia
 using QSymbolic
@@ -175,11 +175,11 @@ Fb = Basis(F, :n)
 n = Sym(:n)
 
 # Ket with symbolic index |n⟩
-ket_n = BasisKet(Fb, n)
+ket_n = Ket(Fb, n)
 ket_n  # → |n⟩
 
 # Bra with symbolic index ⟨n|
-bra_n = BasisBra(Fb, n)
+bra_n = Bra(Fb, n)
 bra_n  # → ⟨n|
 
 # Adjoint preserves symbolic index
@@ -194,8 +194,8 @@ Weighted kets and sum states can have symbolic coefficients:
 using QSymbolic
 
 H = HilbertSpace(:H, 2)
-ψ = BasisKet(H, :ψ)
-ϕ = BasisKet(H, :ϕ)
+ψ = Ket(H, :ψ)
+ϕ = Ket(H, :ϕ)
 
 # Symbolic amplitudes
 α = Sym(:α)
@@ -336,8 +336,8 @@ Fb = Basis(F, :n)
 n = Sym(:n)
 m = Sym(:m)
 
-ket_n = BasisKet(Fb, n)
-bra_m = BasisBra(Fb, m)
+ket_n = Ket(Fb, n)
+bra_m = Bra(Fb, m)
 
 # Inner product gives Kronecker delta
 bra_m * ket_n  # → δ(m,n)

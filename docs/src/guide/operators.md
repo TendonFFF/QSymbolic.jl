@@ -16,8 +16,8 @@ using QSymbolic
 H = HilbertSpace(:spin, 2)
 Zb = Basis(H, :z)
 
-up = BasisKet(Zb, :↑)
-down = BasisKet(Zb, :↓)
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
 
 # Create operator via outer product
 P_up = up * up'      # |↑⟩⟨↑|
@@ -148,14 +148,14 @@ Fb = Basis(F, :n)
 # Annihilation operator: â|n⟩ = √n |n-1⟩
 â = FunctionOperator(:â, Fb) do ket
     n = parse(Int, string(ket.index))
-    n == 0 ? 0 : √n * BasisKet(Fb, n - 1)
+    n == 0 ? 0 : √n * Ket(Fb, n - 1)
 end
 
 # Apply to Fock states
-n3 = BasisKet(Fb, 3)
+n3 = Ket(Fb, 3)
 â * n3  # → √3 |2⟩
 
-n0 = BasisKet(Fb, 0)
+n0 = Ket(Fb, 0)
 â * n0  # → 0 (vacuum annihilated)
 ```
 
@@ -190,8 +190,8 @@ I * down  # → |↓⟩
 Zb = Basis(H, :z)
 Xb = Basis(H, :x)
 
-up_z = BasisKet(Zb, :↑)
-up_x = BasisKet(Xb, :↑)
+up_z = Ket(Zb, :↑)
+up_x = Ket(Xb, :↑)
 
 # Operator in z-basis
 P_z = up_z * up_z'
@@ -211,8 +211,8 @@ using QSymbolic
 H = HilbertSpace(:spin, 2)
 Zb = Basis(H, :z)
 
-up = BasisKet(Zb, :↑)
-down = BasisKet(Zb, :↓)
+up = Ket(Zb, :↑)
+down = Ket(Zb, :↓)
 
 # Build Pauli matrices from outer products
 σx = up * down' + down * up'         # |↑⟩⟨↓| + |↓⟩⟨↑|

@@ -46,8 +46,8 @@ H = HilbertSpace(:spin, 2)
 Zb = Basis(H, :z)
 Xb = Basis(H, :x)
 
-up_z = BasisKet(Zb, :↑)
-down_z = BasisKet(Zb, :↓)
+up_z = Ket(Zb, :↑)
+down_z = Ket(Zb, :↓)
 
 # Register X → Z transform
 define_transform!(Xb, Zb) do idx
@@ -58,7 +58,7 @@ end
 has_transform(typeof(Xb), typeof(Zb))  # true
 
 # Apply transform
-up_x = BasisKet(Xb, :↑)
+up_x = Ket(Xb, :↑)
 transform(up_x, typeof(Zb))  # (|↑⟩ + |↓⟩)/√2
 
 # Inner products now work automatically
